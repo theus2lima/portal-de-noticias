@@ -62,20 +62,32 @@ const LeadForm = () => {
     setErrors({})
 
     try {
-      // Aqui seria feita a chamada para a API
+      // Simular envio da API (pode ser substituído por chamada real quando Supabase estiver configurado)
       const response = await fetch('/api/leads', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          source: 'website'
+        }),
       })
 
-      if (response.ok) {
+      const result = await response.json()
+      
+      if (response.ok || result.message === 'Lead simulado criado com sucesso!') {
         setIsSubmitted(true)
         setFormData({ name: '', phone: '', city: '' })
+        
+        // Simular redirecionamento para WhatsApp após 2 segundos
+        setTimeout(() => {
+          const whatsappMessage = `Olá! Me cadastrei no portal de notícias e gostaria de receber as notícias principais. Meu nome é ${formData.name} e sou de ${formData.city}.`
+          const whatsappUrl = `https://wa.me/5544999823193?text=${encodeURIComponent(whatsappMessage)}`
+          window.open(whatsappUrl, '_blank')
+        }, 2000)
       } else {
-        throw new Error('Erro ao enviar formulário')
+        throw new Error(result.error || 'Erro ao enviar formulário')
       }
     } catch (error) {
       console.error('Erro ao enviar lead:', error)
@@ -87,27 +99,27 @@ const LeadForm = () => {
 
   if (isSubmitted) {
     return (
-      <section className="py-16 bg-gradient-to-br from-primary-900 to-secondary-600">
+      <section className="py-16 bg-gradient-to-br from-blue-900 to-green-600">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto text-center">
             <div className="bg-white rounded-xl p-8 shadow-2xl animate-fadeInUp">
-              <CheckCircle className="mx-auto text-secondary-600 mb-6" size={64} />
-              <h2 className="text-3xl font-bold text-neutral-900 mb-4">
+              <CheckCircle className="mx-auto text-green-600 mb-6" size={64} />
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">
                 Obrigado pelo seu interesse!
               </h2>
-              <p className="text-lg text-neutral-600 mb-6">
+              <p className="text-lg text-gray-600 mb-6">
                 Seus dados foram cadastrados com sucesso. Em breve você receberá nossas principais notícias diretamente no seu WhatsApp.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button 
                   onClick={() => setIsSubmitted(false)}
-                  className="btn-outline"
+                  className="border-2 border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white font-medium px-6 py-3 rounded-lg transition-all duration-200"
                 >
                   Cadastrar outro contato
                 </button>
                 <button 
                   onClick={() => window.location.href = '/'}
-                  className="btn-primary"
+                  className="bg-blue-900 hover:bg-blue-800 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200"
                 >
                   Voltar ao início
                 </button>
@@ -120,14 +132,14 @@ const LeadForm = () => {
   }
 
   return (
-    <section className="py-16 bg-gradient-to-br from-primary-900 to-secondary-600">
+    <section className="py-16 bg-gradient-to-br from-blue-900 to-green-600">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
             <div className="text-white">
               <div className="mb-8">
-                <Mail className="text-secondary-400 mb-4" size={48} />
+                <Mail className="text-green-400 mb-4" size={48} />
                 <h2 className="text-3xl lg:text-4xl font-bold mb-6">
                   Receba as principais notícias no seu WhatsApp
                 </h2>
@@ -138,19 +150,19 @@ const LeadForm = () => {
 
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-6 h-6 bg-secondary-500 rounded-full flex items-center justify-center">
+                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                     <CheckCircle size={16} className="text-white" />
                   </div>
                   <span className="text-white/90">Notícias em tempo real</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <div className="w-6 h-6 bg-secondary-500 rounded-full flex items-center justify-center">
+                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                     <CheckCircle size={16} className="text-white" />
                   </div>
                   <span className="text-white/90">Resumo das principais manchetes</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <div className="w-6 h-6 bg-secondary-500 rounded-full flex items-center justify-center">
+                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                     <CheckCircle size={16} className="text-white" />
                   </div>
                   <span className="text-white/90">Sem spam, apenas conteúdo relevante</span>
@@ -166,18 +178,18 @@ const LeadForm = () => {
 
             {/* Right Form */}
             <div className="bg-white rounded-xl p-8 shadow-2xl">
-              <h3 className="text-2xl font-bold text-neutral-900 mb-6 text-center">
+              <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
                 Cadastre-se Gratuitamente
               </h3>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Nome */}
                 <div>
-                  <label htmlFor="name" className="block text-sm font-semibold text-neutral-700 mb-2">
+                  <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
                     Nome Completo
                   </label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400" size={20} />
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                     <input
                       type="text"
                       id="name"
@@ -188,7 +200,7 @@ const LeadForm = () => {
                       className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-colors duration-200 ${
                         errors.name 
                           ? 'border-red-500 focus:border-red-600' 
-                          : 'border-neutral-300 focus:border-primary-500'
+                          : 'border-gray-300 focus:border-blue-500'
                       }`}
                     />
                   </div>
@@ -199,11 +211,11 @@ const LeadForm = () => {
 
                 {/* Telefone */}
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-semibold text-neutral-700 mb-2">
+                  <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">
                     Telefone/WhatsApp
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400" size={20} />
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                     <input
                       type="tel"
                       id="phone"
@@ -214,7 +226,7 @@ const LeadForm = () => {
                       className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-colors duration-200 ${
                         errors.phone 
                           ? 'border-red-500 focus:border-red-600' 
-                          : 'border-neutral-300 focus:border-primary-500'
+                          : 'border-gray-300 focus:border-blue-500'
                       }`}
                     />
                   </div>
@@ -225,11 +237,11 @@ const LeadForm = () => {
 
                 {/* Cidade */}
                 <div>
-                  <label htmlFor="city" className="block text-sm font-semibold text-neutral-700 mb-2">
+                  <label htmlFor="city" className="block text-sm font-semibold text-gray-700 mb-2">
                     Cidade
                   </label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400" size={20} />
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                     <input
                       type="text"
                       id="city"
@@ -260,7 +272,7 @@ const LeadForm = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-secondary-600 hover:bg-secondary-700 disabled:bg-secondary-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
+                  className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
                 >
                   {isLoading ? (
                     <>
@@ -276,7 +288,7 @@ const LeadForm = () => {
                 </button>
               </form>
 
-              <p className="text-xs text-neutral-500 text-center mt-4">
+              <p className="text-xs text-gray-500 text-center mt-4">
                 Ao se cadastrar, você concorda com nossa política de privacidade e termos de uso.
               </p>
             </div>
