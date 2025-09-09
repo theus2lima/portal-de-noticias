@@ -6,31 +6,52 @@ import {
   TrendingUp,
   Calendar,
   Clock,
-  BarChart3
+  BarChart3,
+  Database,
+  AlertCircle
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/server'
+import Link from 'next/link'
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
 
-  // Buscar estatísticas
-  const [
-    { data: stats },
-    { data: recentArticles },
-    { data: recentLeads }
-  ] = await Promise.all([
-    supabase.from('dashboard_stats').select('*').single(),
-    supabase
-      .from('articles_with_details')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5),
-    supabase
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5)
-  ])
+  // Tentar buscar estatísticas com fallback
+  let stats = null
+  let recentArticles = null
+  let recentLeads = null
+  let dbConnected = true
+  
+  try {
+    // Teste de conexão simples
+    const { data: testConnection } = await supabase
+      .from('categories')
+      .select('count', { count: 'exact', head: true })
+    
+    if (testConnection !== null) {
+      // Se a conexão funciona, tente buscar dados
+      const results = await Promise.allSettled([
+        supabase.from('dashboard_stats').select('*').single(),
+        supabase
+          .from('articles_with_details')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5),
+        supabase
+          .from('leads')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5)
+      ])
+      
+      stats = results[0].status === 'fulfilled' ? results[0].value.data : null
+      recentArticles = results[1].status === 'fulfilled' ? results[1].value.data : null
+      recentLeads = results[2].status === 'fulfilled' ? results[2].value.data : null
+    }
+  } catch (error) {
+    console.log('Banco não configurado ou tabelas não existem:', error)
+    dbConnected = false
+  }
 
   const statCards = [
     {
@@ -66,9 +87,24 @@ export default async function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-neutral-900">Dashboard</h1>
-        <p className="text-neutral-600">Bem-vindo ao painel administrativo</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-neutral-900">Dashboard</h1>
+          <p className="text-neutral-600">Bem-vindo ao painel administrativo</p>
+        </div>
+        {!dbConnected && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
+              <div>
+                <h3 className="text-sm font-medium text-yellow-800">Banco não configurado</h3>
+                <p className="text-sm text-yellow-700 mt-1">
+                  Execute o script SQL no Supabase para configurar as tabelas.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -178,20 +214,50 @@ export default async function AdminDashboard() {
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
         <h3 className="text-lg font-semibold text-neutral-900 mb-4">Ações Rápidas</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="btn-primary flex items-center justify-center space-x-2 py-3">
+          <Link
+            href="/admin/articles/new"
+            className="btn-primary flex items-center justify-center space-x-2 py-3 text-center"
+          >
             <FileText className="h-5 w-5" />
             <span>Novo Artigo</span>
-          </button>
-          <button className="btn-secondary flex items-center justify-center space-x-2 py-3">
+          </Link>
+          <Link
+            href="/admin/analytics"
+            className="btn-secondary flex items-center justify-center space-x-2 py-3 text-center"
+          >
             <BarChart3 className="h-5 w-5" />
             <span>Ver Analytics</span>
-          </button>
-          <button className="btn-outline flex items-center justify-center space-x-2 py-3">
+          </Link>
+          <Link
+            href="/admin/leads"
+            className="btn-outline flex items-center justify-center space-x-2 py-3 text-center"
+          >
             <MessageSquare className="h-5 w-5" />
-            <span>Exportar Leads</span>
-          </button>
+            <span>Ver Leads</span>
+          </Link>
         </div>
       </div>
+      
+      {/* Database Setup Instructions */}
+      {!dbConnected && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+          <div className="flex items-start">
+            <Database className="h-6 w-6 text-blue-600 mr-3 mt-0.5" />
+            <div>
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">Configure seu banco de dados</h3>
+              <p className="text-blue-800 mb-4">
+                Para que a dashboard funcione completamente, você precisa executar o script SQL no Supabase.
+              </p>
+              <div className="space-y-2 text-sm text-blue-700">
+                <p><strong>1.</strong> Acesse seu projeto no Supabase</p>
+                <p><strong>2.</strong> Vá para SQL Editor</p>
+                <p><strong>3.</strong> Execute o conteúdo do arquivo <code className="bg-blue-200 px-1 rounded">database-schema.sql</code></p>
+                <p><strong>4.</strong> Atualize esta página</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
