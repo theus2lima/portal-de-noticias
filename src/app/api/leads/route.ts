@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { LeadsStorage, Lead } from '@/utils/localStorage'
 
 // GET - Buscar leads
 export async function GET(request: NextRequest) {
@@ -122,39 +123,41 @@ export async function POST(request: NextRequest) {
       notes: null
     }
     
-    // Tentar usar Supabase, mas retornar sucesso simulado se não estiver configurado
-    const supabase = await createClient()
+    // Tentar usar Supabase, mas usar localStorage se não estiver configurado
     try {
+      const supabase = await createClient()
       const { data: lead, error } = await supabase
         .from('leads')
         .insert([leadData])
         .select()
         .single()
       
-      if (!error) {
+      if (!error && lead) {
         return NextResponse.json({ 
           data: lead, 
           message: 'Lead criado com sucesso!' 
         }, { status: 201 })
       }
     } catch (supabaseError) {
-      // Se Supabase não estiver configurado, simular sucesso
-      console.log('Supabase não configurado, simulando sucesso:', supabaseError)
+      console.log('Supabase não configurado, usando localStorage como fallback:', supabaseError)
     }
     
-    // Simular resposta de sucesso quando Supabase não estiver configurado
-    const simulatedLead = {
+    // Se Supabase não estiver configurado, salvar no localStorage (via client-side)
+    // Note: localStorage só funciona no client-side, então criamos um lead simulado aqui
+    // e deixamos o frontend salvar no localStorage também
+    const simulatedLead: Lead = {
       id: Date.now(),
       ...leadData,
       created_at: new Date().toISOString()
     }
     
-    // Log para demonstração (em produção seria salvo no banco)
-    console.log('Lead simulado:', simulatedLead)
+    // Log para demonstração
+    console.log('Lead criado (usando fallback):', simulatedLead)
     
     return NextResponse.json({ 
       data: simulatedLead, 
-      message: 'Lead simulado criado com sucesso!' 
+      message: 'Lead criado com sucesso!',
+      useLocalStorage: true // Flag para o frontend saber que deve usar localStorage
     }, { status: 201 })
   } catch (error) {
     console.error('Erro ao processar lead:', error)

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { User, Phone, MapPin, Mail, Send, CheckCircle } from 'lucide-react'
+import { LeadsStorage } from '@/utils/localStorage'
 
 const LeadForm = () => {
   const [formData, setFormData] = useState({
@@ -76,7 +77,26 @@ const LeadForm = () => {
 
       const result = await response.json()
       
-      if (response.ok || result.message === 'Lead simulado criado com sucesso!') {
+      if (response.ok) {
+        // Se a API indicar para usar localStorage, salvar o lead localmente também
+        if (result.useLocalStorage && result.data) {
+          try {
+            LeadsStorage.addLead({
+              name: result.data.name,
+              phone: result.data.phone,
+              city: result.data.city,
+              email: result.data.email,
+              source: result.data.source,
+              message: result.data.message,
+              is_contacted: result.data.is_contacted,
+              notes: result.data.notes
+            })
+            console.log('Lead salvo no localStorage:', result.data)
+          } catch (localStorageError) {
+            console.error('Erro ao salvar no localStorage:', localStorageError)
+          }
+        }
+        
         setIsSubmitted(true)
         setFormData({ name: '', phone: '', city: '' })
         
@@ -168,7 +188,7 @@ const LeadForm = () => {
                   <span className="text-white/90">Sem spam, apenas conteúdo relevante</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <div className="w-6 h-6 bg-secondary-500 rounded-full flex items-center justify-center">
+                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                     <CheckCircle size={16} className="text-white" />
                   </div>
                   <span className="text-white/90">Cancele quando quiser</span>
@@ -252,7 +272,7 @@ const LeadForm = () => {
                       className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-colors duration-200 ${
                         errors.city 
                           ? 'border-red-500 focus:border-red-600' 
-                          : 'border-neutral-300 focus:border-primary-500'
+                          : 'border-gray-300 focus:border-blue-500'
                       }`}
                     />
                   </div>
