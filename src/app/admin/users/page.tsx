@@ -33,9 +33,9 @@ export default async function UsersPage() {
 
   // Estatísticas dos usuários
   const totalUsers = users?.length || 0
-  const activeUsers = users?.filter(user => user.is_active).length || 0
-  const adminUsers = users?.filter(user => user.role === 'admin').length || 0
-  const editorUsers = users?.filter(user => user.role === 'editor').length || 0
+  const activeUsers = users?.filter((user: any) => user.is_active).length || 0
+  const adminUsers = users?.filter((user: any) => user.role === 'admin').length || 0
+  const editorUsers = users?.filter((user: any) => user.role === 'editor').length || 0
 
   const getRoleIcon = (role: string) => {
     switch (role) {

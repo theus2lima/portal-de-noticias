@@ -23,33 +23,42 @@ export default async function AdminDashboard() {
   let dbConnected = true
   
   try {
-    // Teste de conexão simples
-    const { data: testConnection } = await supabase
-      .from('categories')
-      .select('count', { count: 'exact', head: true })
-    
-    if (testConnection !== null) {
-      // Se a conexão funciona, tente buscar dados
-      const results = await Promise.allSettled([
-        supabase.from('dashboard_stats').select('*').single(),
-        supabase
-          .from('articles_with_details')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(5),
-        supabase
-          .from('leads')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(5)
-      ])
+    // Verifica se as variáveis de ambiente estão configuradas
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.log('Variáveis de ambiente do Supabase não configuradas')
+      dbConnected = false
+    } else {
+      // Teste de conexão simples
+      const { data: testConnection, error: testError } = await supabase
+        .from('categories')
+        .select('count', { count: 'exact', head: true })
       
-      stats = results[0].status === 'fulfilled' ? results[0].value.data : null
-      recentArticles = results[1].status === 'fulfilled' ? results[1].value.data : null
-      recentLeads = results[2].status === 'fulfilled' ? results[2].value.data : null
+      if (!testError && testConnection !== undefined) {
+        // Se a conexão funciona, tente buscar dados
+        const results = await Promise.allSettled([
+          supabase.from('dashboard_stats').select('*').single(),
+          supabase
+            .from('articles_with_details')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(5),
+          supabase
+            .from('leads')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(5)
+        ])
+        
+        stats = results[0].status === 'fulfilled' ? results[0].value.data : null
+        recentArticles = results[1].status === 'fulfilled' ? results[1].value.data : null
+        recentLeads = results[2].status === 'fulfilled' ? results[2].value.data : null
+      } else {
+        console.log('Teste de conexão falhou:', testError?.message || 'Tabelas não existem')
+        dbConnected = false
+      }
     }
   } catch (error) {
-    console.log('Banco não configurado ou tabelas não existem:', error)
+    console.log('Erro ao conectar com banco:', error)
     dbConnected = false
   }
 

@@ -14,7 +14,8 @@ import {
   Menu,
   X,
   LogOut,
-  Bell
+  Bell,
+  Activity
 } from 'lucide-react'
 
 interface DashboardLayoutProps {
@@ -55,6 +56,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       name: 'Analytics',
       href: '/admin/analytics',
       icon: BarChart3
+    },
+    {
+      name: 'Status',
+      href: '/admin/status',
+      icon: Activity
     },
     {
       name: 'Configurações',

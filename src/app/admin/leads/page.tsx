@@ -24,9 +24,9 @@ export default async function LeadsPage() {
 
   // Estatísticas dos leads
   const totalLeads = leads?.length || 0
-  const contactedLeads = leads?.filter(lead => lead.is_contacted).length || 0
+  const contactedLeads = leads?.filter((lead: any) => lead.is_contacted).length || 0
   const pendingLeads = totalLeads - contactedLeads
-  const recentLeads = leads?.filter(lead => {
+  const recentLeads = leads?.filter((lead: any) => {
     const leadDate = new Date(lead.created_at)
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)

@@ -60,7 +60,7 @@ export default async function ArticlesPage() {
           {/* Category Filter */}
           <select className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
             <option value="">Todas as categorias</option>
-            {categories?.map((category) => (
+            {categories?.map((category: any) => (
               <option key={category.id} value={category.id}>
                 {category.name}
               </option>
