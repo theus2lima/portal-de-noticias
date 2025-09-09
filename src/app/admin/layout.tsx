@@ -1,4 +1,6 @@
 import { Metadata } from 'next'
+import { AuthProvider } from '@/contexts/AuthContext'
+import ProtectedRoute from '@/components/Auth/ProtectedRoute'
 import DashboardLayout from '@/components/Dashboard/DashboardLayout'
 
 export const metadata: Metadata = {
@@ -13,8 +15,12 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   return (
-    <DashboardLayout>
-      {children}
-    </DashboardLayout>
+    <AuthProvider>
+      <ProtectedRoute>
+        <DashboardLayout>
+          {children}
+        </DashboardLayout>
+      </ProtectedRoute>
+    </AuthProvider>
   )
 }

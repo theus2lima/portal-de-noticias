@@ -1,41 +1,121 @@
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Search,
-  Shield,
-  User,
-  Crown,
-  Calendar,
-  FileText,
-  Mail,
-  Phone
-} from 'lucide-react'
-import { createClient } from '@/utils/supabase/server'
+'use client'
 
-export default async function UsersPage() {
-  const supabase = await createClient()
+import { useState, useEffect } from 'react'
+import { Plus, Edit, Trash2, Eye, EyeOff, UserCheck, UserX, Search, Crown, User, Shield } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
-  // Buscar usuários
-  const { data: users } = await supabase
-    .from('users')
-    .select(`
-      id,
-      name,
-      email,
-      role,
-      is_active,
-      created_at,
-      updated_at,
-      articles:articles(count)
-    `)
-    .order('created_at', { ascending: false })
+interface User {
+  id: string
+  email: string
+  name: string
+  role: string
+  is_active: boolean
+  created_at: string
+}
 
-  // Estatísticas dos usuários
-  const totalUsers = users?.length || 0
-  const activeUsers = users?.filter((user: any) => user.is_active).length || 0
-  const adminUsers = users?.filter((user: any) => user.role === 'admin').length || 0
-  const editorUsers = users?.filter((user: any) => user.role === 'editor').length || 0
+export default function UsersPage() {
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [newUser, setNewUser] = useState({
+    email: '',
+    password: '',
+    name: '',
+    role: 'admin'
+  })
+  const [showPassword, setShowPassword] = useState(false)
+  const [submitLoading, setSubmitLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  const { user: currentUser } = useAuth()
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('admin_token')
+      const response = await fetch('/api/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data.users)
+      } else {
+        setError('Erro ao carregar usuários')
+      }
+    } catch (error) {
+      setError('Erro de conexão')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitLoading(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const token = localStorage.getItem('admin_token')
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newUser)
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setUsers([data.user, ...users])
+        setNewUser({ email: '', password: '', name: '', role: 'admin' })
+        setShowAddModal(false)
+        setSuccess('Usuário criado com sucesso!')
+        setTimeout(() => setSuccess(''), 3000)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Erro ao criar usuário')
+      }
+    } catch (error) {
+      setError('Erro de conexão')
+    } finally {
+      setSubmitLoading(false)
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'bg-red-100 text-red-800'
+      case 'editor':
+        return 'bg-blue-100 text-blue-800'
+      case 'author':
+        return 'bg-green-100 text-green-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
 
   const getRoleIcon = (role: string) => {
     switch (role) {
@@ -48,26 +128,43 @@ export default async function UsersPage() {
     }
   }
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-red-100 text-red-800'
-      case 'editor':
-        return 'bg-blue-100 text-blue-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   const getRoleName = (role: string) => {
     switch (role) {
       case 'admin':
         return 'Administrador'
       case 'editor':
         return 'Editor'
+      case 'author':
+        return 'Autor'
       default:
         return 'Usuário'
     }
+  }
+
+  // Filtrar usuários
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesRole = !roleFilter || user.role === roleFilter
+    const matchesStatus = !statusFilter || 
+                         (statusFilter === 'active' && user.is_active) ||
+                         (statusFilter === 'inactive' && !user.is_active)
+    
+    return matchesSearch && matchesRole && matchesStatus
+  })
+
+  // Estatísticas
+  const totalUsers = users.length
+  const activeUsers = users.filter(user => user.is_active).length
+  const adminUsers = users.filter(user => user.role === 'admin').length
+  const editorUsers = users.filter(user => user.role === 'editor').length
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    )
   }
 
   return (
@@ -78,11 +175,26 @@ export default async function UsersPage() {
           <h1 className="text-3xl font-bold text-neutral-900">Usuários</h1>
           <p className="text-neutral-600">Gerencie usuários e suas permissões</p>
         </div>
-        <button className="btn-primary flex items-center space-x-2">
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="btn-primary flex items-center space-x-2"
+        >
           <Plus className="h-5 w-5" />
           <span>Novo Usuário</span>
         </button>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md">
+          {success}
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -135,7 +247,7 @@ export default async function UsersPage() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filtros */}
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search */}
@@ -144,19 +256,30 @@ export default async function UsersPage() {
             <input
               type="text"
               placeholder="Buscar usuários por nome ou email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
           
           {/* Role Filter */}
-          <select className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+          <select 
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
             <option value="">Todas as funções</option>
             <option value="admin">Administrador</option>
             <option value="editor">Editor</option>
+            <option value="author">Autor</option>
           </select>
 
           {/* Status Filter */}
-          <select className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+          <select 
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
             <option value="">Todos os status</option>
             <option value="active">Ativo</option>
             <option value="inactive">Inativo</option>
@@ -164,7 +287,7 @@ export default async function UsersPage() {
         </div>
       </div>
 
-      {/* Users Table */}
+      {/* Tabela de Usuários */}
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-neutral-200">
@@ -180,9 +303,6 @@ export default async function UsersPage() {
                   Função
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                  Artigos
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
@@ -194,179 +314,195 @@ export default async function UsersPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-neutral-200">
-              {users && users.length > 0 ? (
-                users.map((user: any) => {
-                  const RoleIcon = getRoleIcon(user.role)
-                  return (
-                    <tr key={user.id} className="hover:bg-neutral-50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <div className="bg-primary-100 p-2 rounded-full mr-4">
-                            <User className="h-5 w-5 text-primary-600" />
+              {filteredUsers.map((user) => {
+                const RoleIcon = getRoleIcon(user.role)
+                return (
+                  <tr key={user.id} className="hover:bg-neutral-50">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="bg-primary-100 p-2 rounded-full mr-4">
+                          <User className="h-5 w-5 text-primary-600" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-neutral-900">
+                            {user.name}
                           </div>
-                          <div>
-                            <div className="text-sm font-medium text-neutral-900">
-                              {user.name}
-                            </div>
-                            <div className="text-sm text-neutral-500">
-                              ID: {user.id.slice(0, 8)}...
-                            </div>
+                          <div className="text-sm text-neutral-500">
+                            ID: {user.id.slice(0, 8)}...
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center text-sm text-neutral-900">
-                          <Mail className="h-4 w-4 text-neutral-400 mr-2" />
-                          {user.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
-                          <RoleIcon className="h-3 w-3 mr-1" />
-                          {getRoleName(user.role)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900">
-                        <div className="flex items-center">
-                          <FileText className="h-4 w-4 text-neutral-400 mr-1" />
-                          {user.articles?.[0]?.count || 0}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          user.is_active
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {user.is_active ? 'Ativo' : 'Inativo'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 text-neutral-400 mr-1" />
-                          {new Date(user.created_at).toLocaleDateString('pt-BR')}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            className="text-primary-600 hover:text-primary-900 transition-colors"
-                            title="Editar usuário"
-                          >
-                            <Edit className="h-4 w-4" />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-neutral-900">{user.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
+                        <RoleIcon className="h-3 w-3 mr-1" />
+                        {getRoleName(user.role)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        {user.is_active ? (
+                          <>
+                            <UserCheck className="w-4 h-4 text-green-500 mr-2" />
+                            <span className="text-sm text-green-700">Ativo</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserX className="w-4 h-4 text-red-500 mr-2" />
+                            <span className="text-sm text-red-700">Inativo</span>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                      {formatDate(user.created_at)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button className="text-primary-600 hover:text-primary-900 transition-colors p-1">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        {user.id !== currentUser?.id && (
+                          <button className="text-red-600 hover:text-red-900 transition-colors p-1">
+                            <Trash2 className="w-4 h-4" />
                           </button>
-                          <button
-                            className="text-neutral-600 hover:text-neutral-900 transition-colors"
-                            title="Alterar permissões"
-                          >
-                            <Shield className="h-4 w-4" />
-                          </button>
-                          <button
-                            className="text-red-600 hover:text-red-900 transition-colors"
-                            title="Excluir usuário"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })
-              ) : (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
-                    <User className="mx-auto h-12 w-12 text-neutral-400" />
-                    <h3 className="mt-2 text-sm font-medium text-neutral-900">
-                      Nenhum usuário encontrado
-                    </h3>
-                    <p className="mt-1 text-sm text-neutral-500">
-                      Comece criando o primeiro usuário.
-                    </p>
-                    <div className="mt-6">
-                      <button className="btn-primary inline-flex items-center space-x-2">
-                        <Plus className="h-4 w-4" />
-                        <span>Novo Usuário</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )}
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* User Roles Info */}
-      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Informações sobre Funções</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="border border-neutral-200 rounded-lg p-4">
-            <div className="flex items-center mb-3">
-              <div className="bg-red-100 p-2 rounded-lg mr-3">
-                <Crown className="h-5 w-5 text-red-600" />
-              </div>
-              <h4 className="font-medium text-neutral-900">Administrador</h4>
-            </div>
-            <ul className="text-sm text-neutral-600 space-y-1">
-              <li>• Acesso total ao sistema</li>
-              <li>• Gerenciar usuários e permissões</li>
-              <li>• Configurações avançadas</li>
-              <li>• Relatórios e analytics</li>
-            </ul>
-          </div>
+      {filteredUsers.length === 0 && (
+        <div className="text-center py-12">
+          <User className="mx-auto h-12 w-12 text-neutral-400" />
+          <h3 className="mt-2 text-sm font-medium text-neutral-900">
+            Nenhum usuário encontrado
+          </h3>
+          <p className="mt-1 text-sm text-neutral-500">
+            {users.length === 0 ? 'Comece criando o primeiro usuário.' : 'Ajuste os filtros para ver mais resultados.'}
+          </p>
+        </div>
+      )}
 
-          <div className="border border-neutral-200 rounded-lg p-4">
-            <div className="flex items-center mb-3">
-              <div className="bg-blue-100 p-2 rounded-lg mr-3">
-                <Edit className="h-5 w-5 text-blue-600" />
+      {/* Modal Adicionar Usuário */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">
+              Adicionar Novo Usuário
+            </h3>
+            
+            <form onSubmit={handleAddUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  Nome Completo
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Digite o nome completo"
+                />
               </div>
-              <h4 className="font-medium text-neutral-900">Editor</h4>
-            </div>
-            <ul className="text-sm text-neutral-600 space-y-1">
-              <li>• Criar e editar artigos</li>
-              <li>• Gerenciar categorias</li>
-              <li>• Moderar comentários</li>
-              <li>• Visualizar relatórios básicos</li>
-            </ul>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="usuario@exemplo.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  Senha
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    className="w-full px-3 py-2 pr-10 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Digite a senha"
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-neutral-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-neutral-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  Função
+                </label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="admin">Administrador</option>
+                  <option value="editor">Editor</option>
+                  <option value="author">Autor</option>
+                </select>
+              </div>
+
+              {error && (
+                <div className="text-red-600 text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddModal(false)
+                    setNewUser({ email: '', password: '', name: '', role: 'admin' })
+                    setError('')
+                  }}
+                  className="flex-1 px-4 py-2 border border-neutral-300 rounded-md text-neutral-700 hover:bg-neutral-50"
+                  disabled={submitLoading}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitLoading}
+                  className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-neutral-400 text-white py-2 px-4 rounded-md"
+                >
+                  {submitLoading ? 'Criando...' : 'Criar Usuário'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      </div>
-
-      {/* Activity Log */}
-      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Atividades Recentes</h3>
-        <div className="space-y-3">
-          <div className="flex items-center p-3 bg-neutral-50 rounded-lg">
-            <div className="bg-green-100 p-2 rounded-full mr-3">
-              <User className="h-4 w-4 text-green-600" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-neutral-900">Novo usuário registrado</p>
-              <p className="text-xs text-neutral-500">João Silva se registrou como editor há 2 horas</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center p-3 bg-neutral-50 rounded-lg">
-            <div className="bg-blue-100 p-2 rounded-full mr-3">
-              <Edit className="h-4 w-4 text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-neutral-900">Permissões alteradas</p>
-              <p className="text-xs text-neutral-500">Maria Santos foi promovida a administradora há 1 dia</p>
-            </div>
-          </div>
-
-          <div className="flex items-center p-3 bg-neutral-50 rounded-lg">
-            <div className="bg-red-100 p-2 rounded-full mr-3">
-              <Trash2 className="h-4 w-4 text-red-600" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-neutral-900">Usuário desativado</p>
-              <p className="text-xs text-neutral-500">Carlos Oliveira foi desativado há 3 dias</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   )
 }

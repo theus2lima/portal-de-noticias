@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 import { 
   Home, 
   FileText, 
@@ -26,6 +27,7 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
+  const { user, logout } = useAuth()
 
   const menuItems = [
     {
@@ -134,14 +136,23 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="bg-primary-800 rounded-lg p-4">
             <div className="flex items-center space-x-3 mb-3">
               <div className="w-8 h-8 bg-secondary-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">A</span>
+                <span className="text-white text-sm font-medium">
+                  {user?.name?.charAt(0)?.toUpperCase() || 'A'}
+                </span>
               </div>
-              <div>
-                <p className="text-white text-sm font-medium">Admin</p>
-                <p className="text-primary-300 text-xs">Administrador</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-sm font-medium truncate">
+                  {user?.name || 'Admin'}
+                </p>
+                <p className="text-primary-300 text-xs truncate">
+                  {user?.email || 'admin@exemplo.com'}
+                </p>
               </div>
             </div>
-            <button className="flex items-center w-full text-primary-200 hover:text-white text-sm transition-colors duration-200">
+            <button 
+              onClick={logout}
+              className="flex items-center w-full text-primary-200 hover:text-white text-sm transition-colors duration-200"
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Sair
             </button>
