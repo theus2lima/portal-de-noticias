@@ -12,9 +12,12 @@ import {
   Calendar,
   Users,
   Check,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  Table
 } from 'lucide-react'
 import { Lead, LeadsStorage } from '@/utils/localStorage'
+import * as XLSX from 'xlsx'
 
 interface LeadsActionsProps {
   leads: Lead[]
@@ -43,28 +46,38 @@ const LeadsActions = ({
     type: 'success' | 'error' | 'info'
     message: string
   } | null>(null)
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportType, setExportType] = useState<'all' | 'selected'>('all')
+
+  // Função para preparar dados para exportação
+  const prepareExportData = (leadsToExport: Lead[]) => {
+    return leadsToExport.map(lead => ({
+      'Nome': lead.name,
+      'Telefone': lead.phone,
+      'Email': lead.email || '',
+      'Cidade': lead.city,
+      'Status': lead.is_contacted ? 'Contatado' : 'Pendente',
+      'Data': new Date(lead.created_at).toLocaleDateString('pt-BR'),
+      'Mensagem': lead.message || '',
+      'Observações': lead.notes || ''
+    }))
+  }
 
   // Função para exportar para CSV
   const exportToCSV = (leadsToExport: Lead[]) => {
     if (leadsToExport.length === 0) {
-      alert('Nenhum lead para exportar!')
+      showNotification('error', 'Nenhum lead para exportar!')
       return
     }
 
-    const csvHeaders = ['Nome', 'Telefone', 'Email', 'Cidade', 'Status', 'Data', 'Mensagem', 'Observações']
+    const data = prepareExportData(leadsToExport)
+    const csvHeaders = Object.keys(data[0])
     
     const csvContent = [
       csvHeaders.join(','),
-      ...leadsToExport.map(lead => [
-        `"${lead.name}"`,
-        `"${lead.phone}"`,
-        `"${lead.email || ''}"`,
-        `"${lead.city}"`,
-        `"${lead.is_contacted ? 'Contatado' : 'Pendente'}"`,
-        `"${new Date(lead.created_at).toLocaleDateString('pt-BR')}"`,
-        `"${lead.message || ''}"`,
-        `"${lead.notes || ''}"`
-      ].join(','))
+      ...data.map(row => 
+        csvHeaders.map(header => `"${row[header as keyof typeof row]}"`).join(',')
+      )
     ].join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -74,17 +87,63 @@ const LeadsActions = ({
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    
+    showNotification('success', `${leadsToExport.length} lead(s) exportado(s) em CSV!`)
   }
 
-  // Função para exportar todos os leads
-  const exportAllLeads = () => {
-    exportToCSV(leads)
+  // Função para exportar para XLSX
+  const exportToXLSX = (leadsToExport: Lead[]) => {
+    if (leadsToExport.length === 0) {
+      showNotification('error', 'Nenhum lead para exportar!')
+      return
+    }
+
+    const data = prepareExportData(leadsToExport)
+    
+    // Criar workbook e worksheet
+    const wb = XLSX.utils.book_new()
+    const ws = XLSX.utils.json_to_sheet(data)
+    
+    // Definir largura das colunas
+    const colWidths = [
+      { wch: 25 }, // Nome
+      { wch: 15 }, // Telefone
+      { wch: 25 }, // Email
+      { wch: 20 }, // Cidade
+      { wch: 12 }, // Status
+      { wch: 12 }, // Data
+      { wch: 30 }, // Mensagem
+      { wch: 30 }  // Observações
+    ]
+    ws['!cols'] = colWidths
+    
+    // Adicionar worksheet ao workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Leads')
+    
+    // Gerar e baixar arquivo
+    const fileName = `leads_${new Date().toISOString().split('T')[0]}.xlsx`
+    XLSX.writeFile(wb, fileName)
+    
+    showNotification('success', `${leadsToExport.length} lead(s) exportado(s) em Excel!`)
   }
 
-  // Função para exportar leads selecionados
-  const exportSelectedLeads = () => {
-    const leadsToExport = leads.filter(lead => selectedLeads.includes(lead.id))
-    exportToCSV(leadsToExport)
+  // Função para abrir modal de exportação
+  const openExportModal = (type: 'all' | 'selected') => {
+    setExportType(type)
+    setShowExportModal(true)
+  }
+
+  // Função para executar exportação
+  const executeExport = (format: 'csv' | 'xlsx') => {
+    const leadsToExport = exportType === 'all' ? leads : leads.filter(lead => selectedLeads.includes(lead.id))
+    
+    if (format === 'csv') {
+      exportToCSV(leadsToExport)
+    } else {
+      exportToXLSX(leadsToExport)
+    }
+    
+    setShowExportModal(false)
   }
 
   // Função para mostrar notificação
@@ -212,7 +271,7 @@ const LeadsActions = ({
           {someSelected && (
             <>
               <button 
-                onClick={exportSelectedLeads}
+                onClick={() => openExportModal('selected')}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2 text-sm"
               >
                 <Download className="h-4 w-4" />
@@ -241,7 +300,7 @@ const LeadsActions = ({
           )}
           
           <button 
-            onClick={exportAllLeads}
+            onClick={() => openExportModal('all')}
             className="bg-blue-900 hover:bg-blue-800 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
             <Download className="h-5 w-5" />
@@ -292,11 +351,11 @@ const LeadsActions = ({
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button 
-            onClick={exportAllLeads}
+            onClick={() => openExportModal('all')}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors duration-200"
           >
             <Download className="h-5 w-5" />
-            <span>Exportar para CSV</span>
+            <span>Exportar</span>
           </button>
           <button 
             onClick={someSelected ? startFollowUpCampaign : () => alert('Selecione pelo menos um lead primeiro')}
@@ -413,6 +472,38 @@ const LeadsActions = ({
                   <span>Iniciar Campanha</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Exportar {exportType === 'all' ? 'todos os leads' : 'leads selecionados'}
+              </h3>
+              <button onClick={() => setShowExportModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                onClick={() => executeExport('csv')}
+                className="p-4 border-2 rounded-lg hover:border-blue-400 transition-colors flex items-center justify-center space-x-2"
+              >
+                <FileText className="h-5 w-5 text-blue-600" />
+                <span>CSV</span>
+              </button>
+              <button
+                onClick={() => executeExport('xlsx')}
+                className="p-4 border-2 rounded-lg hover:border-green-400 transition-colors flex items-center justify-center space-x-2"
+              >
+                <Table className="h-5 w-5 text-green-600" />
+                <span>Excel (.xlsx)</span>
+              </button>
             </div>
           </div>
         </div>
