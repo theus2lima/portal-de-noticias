@@ -118,7 +118,7 @@ export default function NewArticlePage() {
           .replace(/^# (.*)/g, '<h1 class="text-2xl font-bold mt-6 mb-4">$1</h1>') // # heading
         
         return (
-          <div key={index} className="mb-4" dangerouslySetInnerHTML={{ __html: formatted }} />
+          <div key={index} className="mb-4 text-justify" dangerouslySetInnerHTML={{ __html: formatted }} />
         )
       })
       .filter(Boolean)
@@ -473,18 +473,18 @@ export default function NewArticlePage() {
       {/* Preview Modal */}
       {showPreview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white w-full max-w-4xl rounded-xl overflow-hidden shadow-xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div className="bg-white w-full max-w-5xl max-h-[85vh] rounded-xl overflow-hidden shadow-xl flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0">
               <h3 className="text-lg font-semibold">Pré-visualização do Artigo</h3>
               <button onClick={() => setShowPreview(false)} className="text-neutral-500 hover:text-neutral-800">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 overflow-y-auto flex-1">
               {/* Content */}
               <div className="md:col-span-2">
-                <h1 className="text-3xl font-bold text-neutral-900">{formData.title || 'Título do artigo'}</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-neutral-900">{formData.title || 'Título do artigo'}</h1>
                 {formData.subtitle && (
                   <p className="mt-2 text-neutral-600">{formData.subtitle}</p>
                 )}
@@ -502,12 +502,12 @@ export default function NewArticlePage() {
                 </div>
 
                 {formData.featured_image && (
-                  <div className="relative w-full h-56 md:h-72 mt-4 rounded-lg overflow-hidden">
+                  <div className="relative w-full h-48 md:h-64 mt-4 rounded-lg overflow-hidden">
                     <Image src={formData.featured_image} alt={formData.image_alt || 'Imagem destacada'} fill className="object-cover" />
                   </div>
                 )}
 
-                <div className="prose prose-neutral max-w-none mt-6">
+                <div className="prose prose-sm md:prose-base prose-neutral max-w-none mt-6 prose-p:text-justify">
                   {formatContent(formData.content)}
                 </div>
               </div>

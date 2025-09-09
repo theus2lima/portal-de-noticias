@@ -1,3 +1,6 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { 
@@ -9,7 +12,8 @@ import {
   Facebook, 
   Twitter, 
   MessageCircle,
-  Calendar 
+  Calendar,
+  FileText
 } from 'lucide-react'
 
 interface ArticlePageProps {
@@ -18,95 +22,104 @@ interface ArticlePageProps {
   }
 }
 
-// Dados mock - em produção viriam de uma API ou banco de dados
-const getArticleData = (slug: string) => {
-  return {
-    id: 1,
-    slug: slug,
-    title: "Reforma Tributária é Aprovada em Primeira Votação no Congresso Nacional",
-    subtitle: "Proposta prevê simplificação do sistema de impostos e redução da carga tributária para empresas de pequeno porte em todo o território nacional",
-    image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1200&h=600&fit=crop",
-    category: "Política",
-    author: {
-      name: "Ana Costa",
-      bio: "Jornalista especializada em política brasileira há mais de 15 anos",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=100&h=100&fit=crop"
-    },
-    publishedAt: "2024-01-08T14:30:00Z",
-    updatedAt: "2024-01-08T16:45:00Z",
-    views: 1254,
-    readTime: "5 min",
-    content: `
-      <p class="lead">A Reforma Tributária brasileira deu um importante passo nesta segunda-feira, sendo aprovada em primeira votação no Congresso Nacional com ampla maioria dos parlamentares.</p>
-      
-      <p>A proposta, que tramita há mais de dois anos no Legislativo, prevê uma significativa simplificação do complexo sistema tributário brasileiro, consolidando diversos impostos em um único tributo sobre valor agregado (IVA).</p>
-      
-      <h3>Principais mudanças propostas</h3>
-      
-      <p>Entre as principais alterações estão:</p>
-      
-      <ul>
-        <li>Unificação do PIS, Cofins, IPI, ICMS e ISS em um único imposto</li>
-        <li>Redução da carga tributária para micro e pequenas empresas</li>
-        <li>Simplificação das obrigações acessórias</li>
-        <li>Criação de um sistema único de arrecadação</li>
-      </ul>
-      
-      <p>O relator da proposta, deputado federal João Silva (PL-SP), destacou que "esta reforma representa uma revolução na forma como o Brasil tributa suas empresas e cidadãos".</p>
-      
-      <blockquote>
-        "Estamos promovendo a maior simplificação tributária da história do país. Isso vai reduzir custos, aumentar a competitividade e gerar mais empregos."
-        <cite>— João Silva, relator da reforma</cite>
-      </blockquote>
-      
-      <h3>Impacto para as empresas</h3>
-      
-      <p>Segundo estudos do Ministério da Fazenda, a reforma pode representar uma economia de até R$ 50 bilhões anuais para o setor privado, principalmente através da:</p>
-      
-      <ul>
-        <li>Redução de custos com consultoria tributária</li>
-        <li>Diminuição do tempo gasto com obrigações fiscais</li>
-        <li>Maior previsibilidade jurídica</li>
-        <li>Facilidade para operações interestaduais</li>
-      </ul>
-      
-      <p>A presidente da Confederação Nacional da Indústria (CNI), Maria Santos, manifestou apoio à proposta: "Esta é uma demanda antiga do setor produtivo brasileiro. A simplificação tributária era essencial para melhorar nosso ambiente de negócios".</p>
-      
-      <h3>Próximos passos</h3>
-      
-      <p>Após a aprovação em primeiro turno, a proposta ainda precisa passar por:</p>
-      
-      <ol>
-        <li>Segunda votação na Câmara dos Deputados</li>
-        <li>Análise do Senado Federal</li>
-        <li>Regulamentação pelo Executivo</li>
-        <li>Período de transição de 3 anos</li>
-      </ol>
-      
-      <p>O presidente da Câmara, Roberto Almeida (MDB-RJ), prevê que todo o processo de aprovação deve ser concluído até o final do primeiro semestre de 2024.</p>
-      
-      <p>A implementação da reforma será gradual, com período de adaptação para empresas e órgãos fiscalizadores. Estados e municípios terão prazo de até 36 meses para se adequar ao novo sistema.</p>
-    `,
-    tags: ["reforma tributária", "política", "economia", "impostos", "empresas"],
-    relatedArticles: [
-      {
-        id: 2,
-        title: "Entenda como a reforma afetará sua empresa",
-        href: "/noticia/reforma-tributaria-empresas",
-        image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=300&h=200&fit=crop"
-      },
-      {
-        id: 3,
-        title: "Especialistas analisam impactos da mudança",
-        href: "/noticia/analise-reforma-tributaria",
-        image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=200&fit=crop"
-      }
-    ]
-  }
+interface Article {
+  id: string
+  title: string
+  subtitle?: string
+  slug: string
+  content: string
+  excerpt: string
+  featured_image?: string
+  image_alt?: string
+  category_name: string
+  author_name: string
+  created_at: string
+  updated_at?: string
+  views_count: number
+  reading_time: number
+  keywords?: string[]
+  published_at: string
 }
 
 export default function ArticlePage({ params }: ArticlePageProps) {
-  const article = getArticleData(params.slug)
+  const [article, setArticle] = useState<Article | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [relatedArticles, setRelatedArticles] = useState<Article[]>([])
+
+  useEffect(() => {
+    const fetchArticle = async () => {
+      try {
+        const response = await fetch(`/api/articles/by-slug/${params.slug}`)
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError('Artigo não encontrado')
+          } else {
+            setError('Erro ao carregar artigo')
+          }
+          return
+        }
+        const data = await response.json()
+        setArticle(data.data)
+        
+        // Buscar artigos relacionados da mesma categoria
+        const relatedResponse = await fetch(`/api/articles?status=published&category=${data.data.category_id}&limit=3`)
+        if (relatedResponse.ok) {
+          const relatedData = await relatedResponse.json()
+          setRelatedArticles(relatedData.data?.filter((a: Article) => a.id !== data.data.id) || [])
+        }
+      } catch (err) {
+        setError('Erro ao carregar artigo')
+        console.error('Erro ao buscar artigo:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchArticle()
+  }, [params.slug])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto animate-pulse">
+            <div className="h-8 bg-neutral-200 rounded mb-4 w-1/4"></div>
+            <div className="h-12 bg-neutral-200 rounded mb-4"></div>
+            <div className="h-6 bg-neutral-200 rounded mb-8 w-3/4"></div>
+            <div className="h-96 bg-neutral-200 rounded mb-8"></div>
+            <div className="space-y-4">
+              <div className="h-4 bg-neutral-200 rounded"></div>
+              <div className="h-4 bg-neutral-200 rounded"></div>
+              <div className="h-4 bg-neutral-200 rounded w-2/3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !article) {
+    return (
+      <div className="min-h-screen bg-neutral-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <FileText className="mx-auto h-16 w-16 text-neutral-400 mb-4" />
+            <h1 className="text-2xl font-bold text-neutral-900 mb-2">
+              {error || 'Artigo não encontrado'}
+            </h1>
+            <p className="text-neutral-600 mb-6">
+              O artigo que você está procurando não existe ou foi removido.
+            </p>
+            <Link href="/" className="btn-primary">
+              <ArrowLeft size={16} className="mr-2" />
+              Voltar ao início
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -143,10 +156,10 @@ export default function ArticlePage({ params }: ArticlePageProps) {
             </Link>
             <span className="text-neutral-400">/</span>
             <Link 
-              href={`/categoria/${article.category.toLowerCase()}`} 
+              href={`/categoria/${article.category_name.toLowerCase()}`} 
               className="text-primary-600 hover:text-primary-700"
             >
-              {article.category}
+              {article.category_name}
             </Link>
             <span className="text-neutral-400">/</span>
             <span className="text-neutral-600 truncate">{article.title}</span>
@@ -168,8 +181,8 @@ export default function ArticlePage({ params }: ArticlePageProps) {
               </Link>
 
               <div className="mb-4">
-                <span className={`inline-block px-3 py-1 text-sm font-semibold text-white rounded-full ${getCategoryColor(article.category)}`}>
-                  {article.category}
+                <span className={`inline-block px-3 py-1 text-sm font-semibold text-white rounded-full ${getCategoryColor(article.category_name)}`}>
+                  {article.category_name}
                 </span>
               </div>
 
@@ -184,31 +197,27 @@ export default function ArticlePage({ params }: ArticlePageProps) {
               {/* Meta info */}
               <div className="flex flex-wrap items-center gap-6 text-neutral-500 mb-6">
                 <div className="flex items-center space-x-2">
-                  <Image
-                    src={article.author.avatar}
-                    alt={article.author.name}
-                    width={40}
-                    height={40}
-                    className="rounded-full"
-                  />
+                  <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium">
+                    {article.author_name.charAt(0).toUpperCase()}
+                  </div>
                   <div>
-                    <p className="font-medium text-neutral-900">{article.author.name}</p>
-                    <p className="text-sm">{article.author.bio}</p>
+                    <p className="font-medium text-neutral-900">{article.author_name}</p>
+                    <p className="text-sm">Autor</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center space-x-4 text-sm">
                   <div className="flex items-center space-x-1">
                     <Calendar size={16} />
-                    <span>{formatDate(article.publishedAt)}</span>
+                    <span>{formatDate(article.published_at)}</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Clock size={16} />
-                    <span>{article.readTime} de leitura</span>
+                    <span>{article.reading_time} min de leitura</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Eye size={16} />
-                    <span>{article.views.toLocaleString()} visualizações</span>
+                    <span>{article.views_count.toLocaleString()} visualizações</span>
                   </div>
                 </div>
               </div>
@@ -249,55 +258,69 @@ export default function ArticlePage({ params }: ArticlePageProps) {
             </header>
 
             {/* Featured image */}
-            <div className="relative h-96 lg:h-[500px] mb-8 rounded-xl overflow-hidden">
-              <Image
-                src={article.image}
-                alt={article.title}
-                fill
-                className="object-cover"
-                priority
-              />
-            </div>
+            {article.featured_image ? (
+              <div className="relative h-96 lg:h-[500px] mb-8 rounded-xl overflow-hidden">
+                <Image
+                  src={article.featured_image}
+                  alt={article.image_alt || article.title}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              </div>
+            ) : (
+              <div className="relative h-96 lg:h-[500px] mb-8 rounded-xl overflow-hidden bg-neutral-200 flex items-center justify-center">
+                <FileText className="h-24 w-24 text-neutral-400" />
+              </div>
+            )}
 
             {/* Article content */}
             <div 
-              className="prose prose-lg max-w-none prose-headings:text-neutral-900 prose-p:text-neutral-700 prose-a:text-primary-600 prose-strong:text-neutral-900 prose-blockquote:border-primary-600 prose-blockquote:bg-neutral-50 prose-blockquote:rounded-lg prose-blockquote:p-6"
+              className="prose prose-lg max-w-none prose-headings:text-neutral-900 prose-p:text-neutral-700 prose-p:text-justify prose-a:text-primary-600 prose-strong:text-neutral-900 prose-blockquote:border-primary-600 prose-blockquote:bg-neutral-50 prose-blockquote:rounded-lg prose-blockquote:p-6"
               dangerouslySetInnerHTML={{ __html: article.content }}
             />
 
             {/* Tags */}
-            <div className="mt-12 pt-8 border-t border-neutral-200">
-              <h3 className="text-lg font-semibold mb-4">Tags relacionadas:</h3>
-              <div className="flex flex-wrap gap-2">
-                {article.tags.map(tag => (
-                  <span 
-                    key={tag}
-                    className="px-3 py-1 bg-neutral-200 text-neutral-700 rounded-full text-sm hover:bg-neutral-300 transition-colors duration-200 cursor-pointer"
-                  >
-                    #{tag}
-                  </span>
-                ))}
+            {article.keywords && article.keywords.length > 0 && (
+              <div className="mt-12 pt-8 border-t border-neutral-200">
+                <h3 className="text-lg font-semibold mb-4">Tags relacionadas:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {article.keywords.map(tag => (
+                    <span 
+                      key={tag}
+                      className="px-3 py-1 bg-neutral-200 text-neutral-700 rounded-full text-sm hover:bg-neutral-300 transition-colors duration-200 cursor-pointer"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Related articles */}
-            {article.relatedArticles.length > 0 && (
+            {relatedArticles.length > 0 && (
               <div className="mt-12 pt-8 border-t border-neutral-200">
                 <h3 className="text-2xl font-bold mb-6">Leia também</h3>
                 <div className="grid md:grid-cols-2 gap-6">
-                  {article.relatedArticles.map(related => (
+                  {relatedArticles.map(related => (
                     <Link 
                       key={related.id}
-                      href={related.href}
+                      href={`/noticia/${related.slug}`}
                       className="flex space-x-4 p-4 bg-white rounded-lg border border-neutral-200 hover:shadow-md transition-shadow duration-200"
                     >
                       <div className="relative w-24 h-24 flex-shrink-0">
-                        <Image
-                          src={related.image}
-                          alt={related.title}
-                          fill
-                          className="object-cover rounded-lg"
-                        />
+                        {related.featured_image ? (
+                          <Image
+                            src={related.featured_image}
+                            alt={related.title}
+                            fill
+                            className="object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-neutral-200 rounded-lg flex items-center justify-center">
+                            <FileText className="h-8 w-8 text-neutral-400" />
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1">
                         <h4 className="font-medium text-neutral-900 line-clamp-3">
@@ -314,19 +337,4 @@ export default function ArticlePage({ params }: ArticlePageProps) {
       </article>
     </div>
   )
-}
-
-export async function generateMetadata({ params }: ArticlePageProps) {
-  const article = getArticleData(params.slug)
-  
-  return {
-    title: `${article.title} - Portal de Notícias`,
-    description: article.subtitle,
-    openGraph: {
-      title: article.title,
-      description: article.subtitle,
-      images: [article.image],
-      type: 'article',
-    },
-  }
 }

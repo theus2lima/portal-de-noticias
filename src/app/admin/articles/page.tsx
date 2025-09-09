@@ -1,3 +1,6 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import { 
   Plus, 
   Edit, 
@@ -10,22 +13,56 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { createClient } from '@/utils/supabase/server'
 
-export default async function ArticlesPage() {
-  const supabase = await createClient()
-
-  // Buscar artigos com detalhes
-  const { data: articles } = await supabase
-    .from('articles_with_details')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  // Buscar categorias para filtros
-  const { data: categories } = await supabase
-    .from('categories')
-    .select('id, name, slug')
-    .order('name')
+export default function ArticlesPage() {
+  const [articles, setArticles] = useState<any[]>([])
+  const [categories, setCategories] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Tentar buscar dados via API
+        const articlesResponse = await fetch('/api/articles')
+        if (articlesResponse.ok) {
+          const articlesData = await articlesResponse.json()
+          setArticles(articlesData.data || [])
+        }
+        
+        // Buscar categorias (usar dados mockados por enquanto)
+        const mockCategories = [
+          { id: '1', name: 'Política', slug: 'politica' },
+          { id: '2', name: 'Economia', slug: 'economia' },
+          { id: '3', name: 'Esportes', slug: 'esportes' },
+          { id: '4', name: 'Cultura', slug: 'cultura' },
+          { id: '5', name: 'Cidades', slug: 'cidades' }
+        ]
+        setCategories(mockCategories)
+      } catch (error) {
+        console.log('Erro ao buscar dados:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchData()
+  }, [])
+  
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-neutral-900">Artigos</h1>
+          <div className="h-10 w-32 bg-neutral-200 rounded animate-pulse"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-48 bg-neutral-200 rounded-xl animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -170,20 +207,21 @@ export default async function ArticlesPage() {
                       <div className="flex items-center justify-end space-x-2">
                         {article.status === 'published' && (
                           <Link
-                            href={`/noticias/${article.slug}`}
+                            href={`/noticia/${article.slug}`}
                             className="text-neutral-600 hover:text-neutral-900 transition-colors"
                             title="Ver artigo"
+                            target="_blank"
                           >
                             <Eye className="h-4 w-4" />
                           </Link>
                         )}
-                        <Link
-                          href={`/admin/articles/${article.id}/edit`}
+                        <button
+                          onClick={() => alert('Funcionalidade de edição será implementada em breve!')}
                           className="text-primary-600 hover:text-primary-900 transition-colors"
                           title="Editar artigo"
                         >
                           <Edit className="h-4 w-4" />
-                        </Link>
+                        </button>
                         <button
                           className="text-red-600 hover:text-red-900 transition-colors"
                           title="Excluir artigo"
