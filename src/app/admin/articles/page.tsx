@@ -215,13 +215,13 @@ export default function ArticlesPage() {
                             <Eye className="h-4 w-4" />
                           </Link>
                         )}
-                        <button
-                          onClick={() => alert('Funcionalidade de edição será implementada em breve!')}
+                        <Link
+                          href={`/admin/articles/${article.id}/edit`}
                           className="text-primary-600 hover:text-primary-900 transition-colors"
                           title="Editar artigo"
                         >
                           <Edit className="h-4 w-4" />
-                        </button>
+                        </Link>
                         <button
                           className="text-red-600 hover:text-red-900 transition-colors"
                           title="Excluir artigo"

@@ -1,5 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import fs from 'fs'
+import path from 'path'
+
+// Função para ler artigos do arquivo local
+function readLocalArticles() {
+  try {
+    const filePath = path.join(process.cwd(), 'data', 'articles.json')
+    if (!fs.existsSync(filePath)) {
+      return []
+    }
+    const data = fs.readFileSync(filePath, 'utf8')
+    return JSON.parse(data)
+  } catch (error) {
+    console.log('Erro ao ler artigos locais:', error)
+    return []
+  }
+}
+
+// Função para salvar artigos no arquivo local
+function saveLocalArticles(articles: any[]) {
+  try {
+    const filePath = path.join(process.cwd(), 'data', 'articles.json')
+    const dir = path.dirname(filePath)
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
+    }
+    fs.writeFileSync(filePath, JSON.stringify(articles, null, 2))
+    return true
+  } catch (error) {
+    console.log('Erro ao salvar artigos locais:', error)
+    return false
+  }
+}
 
 // GET - Buscar artigo específico
 export async function GET(
@@ -10,17 +43,44 @@ export async function GET(
     const supabase = await createClient()
     const { id } = params
     
-    const { data: article, error } = await supabase
-      .from('articles_with_details')
-      .select('*')
-      .eq('id', id)
-      .single()
-    
-    if (error) {
-      return NextResponse.json({ error: 'Artigo não encontrado' }, { status: 404 })
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID é obrigatório' },
+        { status: 400 }
+      )
+    }
+
+    try {
+      // Tentar buscar do Supabase primeiro
+      const { data: article, error } = await supabase
+        .from('articles_with_details')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (!error && article) {
+        return NextResponse.json({ data: article })
+      }
+      
+      console.log('Supabase query error, using local fallback:', error)
+    } catch (supabaseError) {
+      console.log('Supabase connection error, using local fallback:', supabaseError)
     }
     
-    return NextResponse.json({ data: article })
+    // Fallback: buscar nos arquivos locais
+    console.log('Searching in local articles for ID:', id)
+    const localArticles = readLocalArticles()
+    const article = localArticles.find((a: any) => a.id === id)
+    
+    if (article) {
+      console.log('Found article in local storage:', article.title)
+      return NextResponse.json({ data: article })
+    }
+
+    return NextResponse.json(
+      { error: 'Artigo não encontrado' },
+      { status: 404 }
+    )
   } catch (error) {
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
@@ -82,58 +142,106 @@ export async function PUT(
                     body.status === 'published' ? new Date().toISOString() : null
     }
     
-    const { data: article, error } = await supabase
-      .from('articles')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single()
-    
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
-    }
-    
-    // Atualizar tags se fornecidas
-    if (body.keywords && Array.isArray(body.keywords)) {
-      // Remover tags antigas
-      await supabase
-        .from('article_tags')
-        .delete()
-        .eq('article_id', id)
+    try {
+      // Tentar atualizar no Supabase
+      const { data: article, error } = await supabase
+        .from('articles')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single()
       
-      // Adicionar novas tags
-      for (const keyword of body.keywords) {
-        const tagSlug = keyword.toLowerCase().replace(/\s+/g, '-')
-        
-        // Buscar ou criar tag
-        let { data: existingTag } = await supabase
-          .from('tags')
-          .select('id')
-          .eq('slug', tagSlug)
-          .single()
-        
-        if (!existingTag) {
-          const { data: newTag, error: tagError } = await supabase
-            .from('tags')
-            .insert([{ name: keyword, slug: tagSlug }])
-            .select('id')
-            .single()
-          
-          if (!tagError) {
-            existingTag = newTag
-          }
-        }
-        
-        // Associar tag ao artigo
-        if (existingTag) {
+      if (!error && article) {
+        // Atualizar tags se fornecidas
+        if (body.keywords && Array.isArray(body.keywords)) {
+          // Remover tags antigas
           await supabase
             .from('article_tags')
-            .insert([{ article_id: id, tag_id: existingTag.id }])
+            .delete()
+            .eq('article_id', id)
+          
+          // Adicionar novas tags
+          for (const keyword of body.keywords) {
+            const tagSlug = keyword.toLowerCase().replace(/\s+/g, '-')
+            
+            // Buscar ou criar tag
+            let { data: existingTag } = await supabase
+              .from('tags')
+              .select('id')
+              .eq('slug', tagSlug)
+              .single()
+            
+            if (!existingTag) {
+              const { data: newTag, error: tagError } = await supabase
+                .from('tags')
+                .insert([{ name: keyword, slug: tagSlug }])
+                .select('id')
+                .single()
+              
+              if (!tagError) {
+                existingTag = newTag
+              }
+            }
+            
+            // Associar tag ao artigo
+            if (existingTag) {
+              await supabase
+                .from('article_tags')
+                .insert([{ article_id: id, tag_id: existingTag.id }])
+            }
+          }
         }
+        return NextResponse.json({ data: article })
       }
+      
+      console.log('Supabase update error, using local fallback:', error)
+    } catch (supabaseError) {
+      console.log('Supabase connection error, using local fallback:', supabaseError)
     }
     
-    return NextResponse.json({ data: article })
+    // Fallback: atualizar nos arquivos locais
+    const localArticles = readLocalArticles()
+    const articleIndex = localArticles.findIndex((a: any) => a.id === id)
+    
+    if (articleIndex === -1) {
+      return NextResponse.json({ error: 'Artigo não encontrado' }, { status: 404 })
+    }
+    
+    // Mapear category_id para category_name
+    const categoryNames: { [key: string]: string } = {
+      '1': 'Política',
+      '2': 'Economia', 
+      '3': 'Esportes',
+      '4': 'Cultura',
+      '5': 'Cidades'
+    }
+    
+    // Atualizar artigo
+    const updatedArticle = {
+      ...localArticles[articleIndex],
+      ...updateData,
+      category_name: categoryNames[body.category_id] || 'Geral',
+      keywords: body.keywords || localArticles[articleIndex].keywords || [],
+      updated_at: new Date().toISOString()
+    }
+    
+    localArticles[articleIndex] = updatedArticle
+    
+    // Salvar arquivo
+    const saved = saveLocalArticles(localArticles)
+    
+    if (saved) {
+      console.log('Article updated locally:', updatedArticle.title)
+      return NextResponse.json({ 
+        data: updatedArticle,
+        message: 'Artigo atualizado com sucesso' 
+      })
+    } else {
+      return NextResponse.json(
+        { error: 'Erro ao salvar artigo' },
+        { status: 500 }
+      )
+    }
   } catch (error) {
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
