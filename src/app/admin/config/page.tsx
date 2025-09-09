@@ -1,12 +1,8 @@
 import { 
   Database, 
-  Settings, 
   CheckCircle,
   AlertCircle,
-  ExternalLink,
-  Copy,
-  Eye,
-  EyeOff
+  ExternalLink
 } from 'lucide-react'
 
 export default function ConfigPage() {
