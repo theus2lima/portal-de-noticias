@@ -1,0 +1,35 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="url(#gradient)"/>
+  
+  <!-- Background pattern -->
+  <defs>
+    <pattern id="dots" patternUnits="userSpaceOnUse" width="50" height="50">
+      <circle cx="25" cy="25" r="2" fill="white" opacity="0.1"/>
+    </pattern>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E3A8A;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16A34A;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="1200" height="630" fill="url(#dots)"/>
+  
+  <!-- Logo -->
+  <circle cx="300" cy="315" r="80" fill="white" opacity="0.2"/>
+  <text x="300" y="340" font-family="Arial, sans-serif" font-weight="bold" font-size="64" text-anchor="middle" fill="white">PN</text>
+  
+  <!-- Title -->
+  <text x="500" y="280" font-family="Arial, sans-serif" font-weight="bold" font-size="56" fill="white">Portal de Notícias</text>
+  
+  <!-- Subtitle -->
+  <text x="500" y="340" font-family="Arial, sans-serif" font-weight="normal" font-size="32" fill="white" opacity="0.9">Sua fonte confiável de informação</text>
+  
+  <!-- Categories -->
+  <text x="500" y="420" font-family="Arial, sans-serif" font-weight="medium" font-size="24" fill="white" opacity="0.8">Política • Economia • Esportes • Cultura • Cidades</text>
+  
+  <!-- Accent elements -->
+  <circle cx="1000" cy="150" r="60" fill="#16A34A" opacity="0.3"/>
+  <circle cx="1050" cy="500" r="40" fill="#FFFF00" opacity="0.4"/>
+  <rect x="950" y="300" width="100" height="4" fill="white" opacity="0.6"/>
+</svg>

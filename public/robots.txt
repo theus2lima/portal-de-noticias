@@ -1,0 +1,32 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://portal-de-noticias.vercel.app/sitemap.xml
+
+# Preferred domain
+Host: https://portal-de-noticias.vercel.app
+
+# Crawl delay (optional)
+Crawl-delay: 1
+
+# Disallow admin pages (when implemented)
+Disallow: /admin/
+Disallow: /api/
+
+# Allow specific bot access
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+# Social media crawlers
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /

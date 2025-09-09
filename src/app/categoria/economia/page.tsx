@@ -1,9 +1,13 @@
 import CategoryPage from '@/components/CategoryPage'
+import { generateSEO } from '@/lib/seo'
 
-export const metadata = {
-  title: 'Economia - Portal de Notícias',
-  description: 'Últimas notícias sobre economia brasileira, mercado financeiro, negócios e indicadores econômicos.',
-}
+export const metadata = generateSEO({
+  title: 'Economia Brasileira - Notícias e Análises',
+  description: 'Notícias sobre economia brasileira, mercado financeiro, bolsa de valores, PIB, inflação, juros, negócios e indicadores econômicos atualizados.',
+  keywords: ['economia brasil', 'mercado financeiro', 'bolsa valores', 'PIB', 'inflação', 'juros', 'banco central', 'dolar', 'investimentos', 'negócios'],
+  url: 'https://portal-de-noticias.vercel.app/categoria/economia',
+  category: 'Economia'
+})
 
 export default function EconomiaPage() {
   return (

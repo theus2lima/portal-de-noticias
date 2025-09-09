@@ -1,0 +1,44 @@
+{
+  "name": "Portal de Notícias - Sua fonte confiável de informação",
+  "short_name": "Portal Notícias",
+  "description": "Fique por dentro das principais notícias de política, economia, esportes, cultura e cidades",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1E3A8A",
+  "theme_color": "#16A34A",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "32x32",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "news",
+    "information",
+    "politics",
+    "business",
+    "sports",
+    "culture"
+  ],
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "orientation": "portrait-primary"
+}

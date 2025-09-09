@@ -1,9 +1,13 @@
 import CategoryPage from '@/components/CategoryPage'
+import { generateSEO } from '@/lib/seo'
 
-export const metadata = {
-  title: 'Esportes - Portal de Notícias',
-  description: 'Resultados, análises e novidades do mundo esportivo. Futebol, olimpíadas, campeonatos nacionais e internacionais.',
-}
+export const metadata = generateSEO({
+  title: 'Esportes - Notícias e Resultados Esportivos',
+  description: 'Notícias esportivas, resultados de jogos, futebol brasileiro, Brasileirão, Copa do Mundo, Olimpíadas, basquete, vôlei e todos os esportes.',
+  keywords: ['esportes brasil', 'futebol brasileiro', 'brasileirão', 'copa mundo', 'olimpíadas', 'basquete', 'vôlei', 'resultados jogos', 'campeonatos', 'seleção brasileira'],
+  url: 'https://portal-de-noticias.vercel.app/categoria/esportes',
+  category: 'Esportes'
+})
 
 export default function EsportesPage() {
   return (

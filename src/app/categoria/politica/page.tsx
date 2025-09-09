@@ -1,9 +1,13 @@
 import CategoryPage from '@/components/CategoryPage'
+import { generateSEO } from '@/lib/seo'
 
-export const metadata = {
-  title: 'Política - Portal de Notícias',
-  description: 'Acompanhe as últimas notícias de política brasileira, decisões governamentais e análises políticas.',
-}
+export const metadata = generateSEO({
+  title: 'Notícias de Política Brasileira',
+  description: 'Acompanhe as últimas notícias de política brasileira, decisões governamentais, eleições, Congresso Nacional e análises políticas atualizadas.',
+  keywords: ['política brasileira', 'notícias políticas', 'governo brasil', 'congresso nacional', 'eleições', 'senado', 'câmara deputados', 'STF'],
+  url: 'https://portal-de-noticias.vercel.app/categoria/politica',
+  category: 'Política'
+})
 
 export default function PoliticaPage() {
   return (

@@ -1,9 +1,13 @@
 import CategoryPage from '@/components/CategoryPage'
+import { generateSEO } from '@/lib/seo'
 
-export const metadata = {
-  title: 'Cultura - Portal de Notícias',
-  description: 'Arte, música, literatura, cinema e eventos culturais. Descubra o que há de melhor na cultura brasileira.',
-}
+export const metadata = generateSEO({
+  title: 'Cultura Brasileira - Arte, Música e Entretenimento',
+  description: 'Notícias culturais, arte brasileira, música, literatura, cinema nacional, teatro, festivais, exposições e eventos culturais.',
+  keywords: ['cultura brasileira', 'arte brasil', 'música brasileira', 'cinema nacional', 'teatro', 'literatura', 'festivais', 'exposições', 'eventos culturais', 'entretenimento'],
+  url: 'https://portal-de-noticias.vercel.app/categoria/cultura',
+  category: 'Cultura'
+})
 
 export default function CulturaPage() {
   return (

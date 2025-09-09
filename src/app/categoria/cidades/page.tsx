@@ -1,9 +1,13 @@
 import CategoryPage from '@/components/CategoryPage'
+import { generateSEO } from '@/lib/seo'
 
-export const metadata = {
-  title: 'Cidades - Portal de Notícias',
-  description: 'Notícias locais, infraestrutura, mobilidade urbana e qualidade de vida nas cidades brasileiras.',
-}
+export const metadata = generateSEO({
+  title: 'Cidades - Notícias Locais e Vida Urbana',
+  description: 'Notícias das cidades brasileiras, infraestrutura urbana, transporte público, segurança, saúde, educação e qualidade de vida municipal.',
+  keywords: ['cidades brasil', 'notícias locais', 'infraestrutura urbana', 'transporte público', 'segurança', 'prefeitura', 'município', 'vida urbana', 'saúde pública', 'educação'],
+  url: 'https://portal-de-noticias.vercel.app/categoria/cidades',
+  category: 'Cidades'
+})
 
 export default function CidadesPage() {
   return (
