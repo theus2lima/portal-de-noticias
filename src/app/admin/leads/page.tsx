@@ -1,21 +1,17 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import { 
-  Phone, 
-  Mail, 
-  MapPin,
-  Calendar,
   Search,
   Filter,
-  Download,
-  MessageSquare,
-  Clock,
-  CheckCircle,
-  User
+  Calendar
 } from 'lucide-react'
-import { createClient } from '@/utils/supabase/server'
 import LeadsClient from '@/components/LeadsClient'
+import LeadsActions from '@/components/LeadsActions'
+import { Lead } from '@/utils/localStorage'
 
-export default async function LeadsPage() {
-  // Dados simulados para demonstração quando Supabase não estiver configurado
+// Dados simulados - no client-side, usaremos apenas dados mock por enquanto
+function getLeadsData() {
   const mockLeads = [
     {
       id: 1,
@@ -55,39 +51,68 @@ export default async function LeadsPage() {
     }
   ]
 
-  let leads = mockLeads
-  
-  // Tentar buscar leads do Supabase se configurado
-  try {
-    const supabase = await createClient()
-    const { data: supabaseLeads, error } = await supabase
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false })
-    
-    if (supabaseLeads && !error) {
-      leads = supabaseLeads
-    }
-  } catch (error) {
-    console.log('Usando dados simulados para leads:', error)
+  return { leads: mockLeads, useLocalStorage: true }
+}
+
+function LeadsPageContent() {
+  const [leads, setLeads] = useState<Lead[]>([])
+  const [useLocalStorage, setUseLocalStorage] = useState(false)
+  const [selectedLeads, setSelectedLeads] = useState<number[]>([])
+  const [mounted, setMounted] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  useEffect(() => {
+    const { leads: initialLeads, useLocalStorage } = getLeadsData()
+    setLeads(initialLeads)
+    setUseLocalStorage(useLocalStorage)
+    setMounted(true)
+  }, [refreshKey]) // Recarregar quando refreshKey mudar
+
+  const handleSelectLead = (leadId: number) => {
+    setSelectedLeads(prev => 
+      prev.includes(leadId) 
+        ? prev.filter(id => id !== leadId)
+        : [...prev, leadId]
+    )
   }
 
-  // Determinar se devemos usar localStorage como fallback
-  const useLocalStorage = leads === mockLeads // Se ainda estamos usando dados mock, significa que Supabase não está configurado
+  const handleSelectAll = () => {
+    setSelectedLeads(leads.map(lead => lead.id))
+  }
+
+  const handleDeselectAll = () => {
+    setSelectedLeads([])
+  }
+
+  const handleLeadsUpdate = () => {
+    // Forçar uma atualização dos leads
+    setRefreshKey(prev => prev + 1)
+    // Limpar seleção
+    setSelectedLeads([])
+  }
+
+  if (!mounted) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 bg-gray-200 rounded w-40"></div>
+        <div className="h-32 bg-gray-200 rounded"></div>
+        <div className="h-64 bg-gray-200 rounded"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Leads</h1>
-          <p className="text-gray-600">Gerencie todos os leads captados</p>
-        </div>
-        <button className="bg-blue-900 hover:bg-blue-800 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200 flex items-center space-x-2">
-          <Download className="h-5 w-5" />
-          <span>Exportar Leads</span>
-        </button>
-      </div>
+      {/* Header com LeadsActions */}
+      <LeadsActions 
+        leads={leads}
+        selectedLeads={selectedLeads}
+        onSelectLead={handleSelectLead}
+        onSelectAll={handleSelectAll}
+        onDeselectAll={handleDeselectAll}
+        onLeadsUpdate={handleLeadsUpdate}
+        useLocalStorage={useLocalStorage}
+      />
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
@@ -124,30 +149,13 @@ export default async function LeadsPage() {
         </div>
       </div>
 
-      {/* Client-side Leads Display with localStorage support */}
+      {/* Client-side Leads Display with selection support */}
       <LeadsClient 
         initialLeads={leads} 
-        shouldUseLocalStorage={useLocalStorage} 
+        shouldUseLocalStorage={useLocalStorage}
+        selectedLeads={selectedLeads}
+        onSelectLead={handleSelectLead}
       />
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg flex items-center justify-center space-x-2">
-            <Download className="h-5 w-5" />
-            <span>Exportar para CSV</span>
-          </button>
-          <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg flex items-center justify-center space-x-2">
-            <MessageSquare className="h-5 w-5" />
-            <span>Campanhas de Follow-up</span>
-          </button>
-          <button className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-3 rounded-lg flex items-center justify-center space-x-2">
-            <CheckCircle className="h-5 w-5" />
-            <span>Marcar Selecionados</span>
-          </button>
-        </div>
-      </div>
 
       {/* Conversion Chart Placeholder */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -161,4 +169,8 @@ export default async function LeadsPage() {
       </div>
     </div>
   )
+}
+
+export default function LeadsPage() {
+  return <LeadsPageContent />
 }

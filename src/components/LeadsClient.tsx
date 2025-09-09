@@ -15,9 +15,16 @@ import { LeadsStorage, Lead } from '@/utils/localStorage'
 interface LeadsClientProps {
   initialLeads: Lead[]
   shouldUseLocalStorage?: boolean
+  selectedLeads?: number[]
+  onSelectLead?: (leadId: number) => void
 }
 
-const LeadsClient = ({ initialLeads, shouldUseLocalStorage = true }: LeadsClientProps) => {
+const LeadsClient = ({ 
+  initialLeads, 
+  shouldUseLocalStorage = true, 
+  selectedLeads = [], 
+  onSelectLead 
+}: LeadsClientProps) => {
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
   const [mounted, setMounted] = useState(false)
 
@@ -155,6 +162,11 @@ const LeadsClient = ({ initialLeads, shouldUseLocalStorage = true }: LeadsClient
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                {onSelectLead && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <span className="sr-only">Selecionar</span>
+                  </th>
+                )}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Lead
                 </th>
@@ -179,6 +191,16 @@ const LeadsClient = ({ initialLeads, shouldUseLocalStorage = true }: LeadsClient
               {leads && leads.length > 0 ? (
                 leads.map((lead: Lead) => (
                   <tr key={lead.id} className="hover:bg-gray-50">
+                    {onSelectLead && (
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedLeads.includes(lead.id)}
+                          onChange={() => onSelectLead(lead.id)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </td>
+                    )}
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <div className="bg-blue-100 p-2 rounded-full mr-4">
@@ -279,7 +301,7 @@ const LeadsClient = ({ initialLeads, shouldUseLocalStorage = true }: LeadsClient
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={onSelectLead ? 7 : 6} className="px-6 py-12 text-center">
                     <User className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-2 text-sm font-medium text-gray-900">
                       Nenhum lead encontrado
