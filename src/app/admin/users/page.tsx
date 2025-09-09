@@ -26,6 +26,10 @@ export default function UsersPage() {
     name: '',
     role: 'admin'
   })
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<User | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [error, setError] = useState('')
@@ -37,24 +41,125 @@ export default function UsersPage() {
     fetchUsers()
   }, [])
 
-  const fetchUsers = async () => {
-    try {
-      const token = localStorage.getItem('admin_token')
-      const response = await fetch('/api/admin/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+  const handleEditUser = (user: User) => {
+    setEditingUser(user)
+    setShowEditModal(true)
+  }
 
-      if (response.ok) {
-        const data = await response.json()
-        setUsers(data.users)
-      } else {
-        setError('Erro ao carregar usuários')
-      }
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingUser) return
+    
+    setSubmitLoading(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      // Simular update de usuário localmente
+      setTimeout(() => {
+        setUsers(users.map(user => 
+          user.id === editingUser.id 
+            ? { ...user, name: editingUser.name, email: editingUser.email, role: editingUser.role }
+            : user
+        ))
+        
+        setEditingUser(null)
+        setShowEditModal(false)
+        setSuccess('Usuário atualizado com sucesso! (demonstração)')
+        setTimeout(() => setSuccess(''), 3000)
+        setSubmitLoading(false)
+      }, 1000)
+      
     } catch (error) {
       setError('Erro de conexão')
-    } finally {
+      setSubmitLoading(false)
+    }
+  }
+
+  const handleDeleteUser = (user: User) => {
+    setUserToDelete(user)
+    setShowDeleteModal(true)
+  }
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return
+    
+    setSubmitLoading(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      // Simular delete de usuário localmente
+      setTimeout(() => {
+        setUsers(users.filter(user => user.id !== userToDelete.id))
+        
+        setUserToDelete(null)
+        setShowDeleteModal(false)
+        setSuccess('Usuário removido com sucesso! (demonstração)')
+        setTimeout(() => setSuccess(''), 3000)
+        setSubmitLoading(false)
+      }, 1000)
+      
+    } catch (error) {
+      setError('Erro de conexão')
+      setSubmitLoading(false)
+    }
+  }
+
+  const fetchUsers = async () => {
+    try {
+      // Usar dados de demonstração locais
+      const mockUsers: User[] = [
+        {
+          id: '1',
+          email: 'admin@portalnoticias.com.br',
+          name: 'Administrador Principal',
+          role: 'admin',
+          is_active: true,
+          created_at: '2024-01-01T10:00:00Z'
+        },
+        {
+          id: '2',
+          email: 'editor@portalnoticias.com.br',
+          name: 'Editor Chefe',
+          role: 'editor',
+          is_active: true,
+          created_at: '2024-01-02T14:30:00Z'
+        },
+        {
+          id: '3',
+          email: 'maria.silva@portalnoticias.com.br',
+          name: 'Maria Silva',
+          role: 'author',
+          is_active: true,
+          created_at: '2024-01-03T16:45:00Z'
+        },
+        {
+          id: '4',
+          email: 'carlos.santos@portalnoticias.com.br',
+          name: 'Carlos Santos',
+          role: 'editor',
+          is_active: false,
+          created_at: '2024-01-04T09:15:00Z'
+        },
+        {
+          id: '5',
+          email: 'ana.costa@portalnoticias.com.br',
+          name: 'Ana Costa',
+          role: 'author',
+          is_active: true,
+          created_at: '2024-01-05T11:20:00Z'
+        }
+      ]
+      
+      // Simular delay de carregamento
+      setTimeout(() => {
+        setUsers(mockUsers)
+        setLoading(false)
+      }, 800)
+      
+    } catch (error) {
+      setError('Erro de conexão')
       setLoading(false)
     }
   }
@@ -66,30 +171,40 @@ export default function UsersPage() {
     setSuccess('')
 
     try {
-      const token = localStorage.getItem('admin_token')
-      const response = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(newUser)
-      })
+      // Validações
+      if (!newUser.name || !newUser.email || !newUser.password) {
+        setError('Todos os campos são obrigatórios')
+        return
+      }
 
-      if (response.ok) {
-        const data = await response.json()
-        setUsers([data.user, ...users])
+      // Verificar se email já existe
+      const existingUser = users.find(user => user.email === newUser.email)
+      if (existingUser) {
+        setError('Email já está em uso')
+        return
+      }
+
+      // Simular criação de usuário localmente
+      setTimeout(() => {
+        const mockNewUser: User = {
+          id: Date.now().toString(),
+          email: newUser.email,
+          name: newUser.name,
+          role: newUser.role,
+          is_active: true,
+          created_at: new Date().toISOString()
+        }
+        
+        setUsers([mockNewUser, ...users])
         setNewUser({ email: '', password: '', name: '', role: 'admin' })
         setShowAddModal(false)
-        setSuccess('Usuário criado com sucesso!')
+        setSuccess('Usuário criado com sucesso! (demonstração)')
         setTimeout(() => setSuccess(''), 3000)
-      } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Erro ao criar usuário')
-      }
+        setSubmitLoading(false)
+      }, 1000)
+      
     } catch (error) {
       setError('Erro de conexão')
-    } finally {
       setSubmitLoading(false)
     }
   }
@@ -174,6 +289,9 @@ export default function UsersPage() {
         <div>
           <h1 className="text-3xl font-bold text-neutral-900">Usuários</h1>
           <p className="text-neutral-600">Gerencie usuários e suas permissões</p>
+          <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+            🎓 Modo Demonstração - Dados ficcionais para teste
+          </div>
         </div>
         <button 
           onClick={() => setShowAddModal(true)}
@@ -362,11 +480,19 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
-                        <button className="text-primary-600 hover:text-primary-900 transition-colors p-1">
+                        <button 
+                          onClick={() => handleEditUser(user)}
+                          className="text-primary-600 hover:text-primary-900 transition-colors p-1"
+                          title="Editar usuário"
+                        >
                           <Edit className="w-4 h-4" />
                         </button>
                         {user.id !== currentUser?.id && (
-                          <button className="text-red-600 hover:text-red-900 transition-colors p-1">
+                          <button 
+                            onClick={() => handleDeleteUser(user)}
+                            className="text-red-600 hover:text-red-900 transition-colors p-1"
+                            title="Excluir usuário"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         )}
@@ -389,6 +515,141 @@ export default function UsersPage() {
           <p className="mt-1 text-sm text-neutral-500">
             {users.length === 0 ? 'Comece criando o primeiro usuário.' : 'Ajuste os filtros para ver mais resultados.'}
           </p>
+        </div>
+      )}
+
+      {/* Modal Editar Usuário */}
+      {showEditModal && editingUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">
+              Editar Usuário
+            </h3>
+            
+            <form onSubmit={handleUpdateUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  Nome Completo
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingUser.name}
+                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Digite o nome completo"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={editingUser.email}
+                  onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="usuario@exemplo.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  Função
+                </label>
+                <select
+                  value={editingUser.role}
+                  onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="admin">Administrador</option>
+                  <option value="editor">Editor</option>
+                  <option value="author">Autor</option>
+                </select>
+              </div>
+
+              {error && (
+                <div className="text-red-600 text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false)
+                    setEditingUser(null)
+                    setError('')
+                  }}
+                  className="flex-1 px-4 py-2 border border-neutral-300 rounded-md text-neutral-700 hover:bg-neutral-50"
+                  disabled={submitLoading}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitLoading}
+                  className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-neutral-400 text-white py-2 px-4 rounded-md"
+                >
+                  {submitLoading ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmar Exclusão */}
+      {showDeleteModal && userToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <Trash2 className="h-6 w-6 text-red-600" />
+              </div>
+              
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                Confirmar Exclusão
+              </h3>
+              
+              <p className="text-sm text-neutral-600 mb-6">
+                Tem certeza que deseja excluir o usuário <strong>{userToDelete.name}</strong>?
+                <br />
+                Esta ação não pode ser desfeita.
+              </p>
+
+              {error && (
+                <div className="text-red-600 text-sm mb-4">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteModal(false)
+                    setUserToDelete(null)
+                    setError('')
+                  }}
+                  className="flex-1 px-4 py-2 border border-neutral-300 rounded-md text-neutral-700 hover:bg-neutral-50"
+                  disabled={submitLoading}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmDeleteUser}
+                  disabled={submitLoading}
+                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-neutral-400 text-white py-2 px-4 rounded-md"
+                >
+                  {submitLoading ? 'Excluindo...' : 'Excluir'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
