@@ -3,32 +3,48 @@ import { NextResponse } from 'next/server'
 export async function GET() {
   const baseUrl = 'https://portal-de-noticias.vercel.app'
   
-  // Mock data - em produção viria do banco de dados
+  // Usar artigos reais do arquivo articles.json
   const articles = [
     {
-      title: 'Reforma Tributária é Aprovada em Primeira Votação no Congresso',
-      description: 'Proposta prevê simplificação do sistema de impostos e redução da carga tributária para empresas de pequeno porte',
-      link: `${baseUrl}/noticia/reforma-tributaria-avanca`,
+      title: 'Brasil Conquista Posição de Destaque no Ranking Mundial de Inovação',
+      description: 'Brasil sobe 15 posições no ranking mundial de inovação e entra no top 30, destacando-se em tecnologia e energia renovável.',
+      link: `${baseUrl}/noticia/brasil-ranking-inovacao-mundial-2024`,
       pubDate: new Date('2024-01-08T14:30:00Z').toUTCString(),
-      category: 'Política',
-      author: 'Ana Costa'
+      category: 'Tecnologia',
+      author: 'Maria Silva'
     },
     {
-      title: 'PIB Brasileiro Cresce 2.3% no Último Trimestre',
-      description: 'Resultado supera expectativas do mercado e consolida recuperação da economia nacional',
-      link: `${baseUrl}/noticia/pib-crescimento`,
-      pubDate: new Date('2024-01-08T12:15:00Z').toUTCString(),
-      category: 'Economia',
-      author: 'Roberto Lima'
-    },
-    {
-      title: 'Brasil Avança para Semifinais em Copa Mundial',
-      description: 'Seleção brasileira vence por 3-1 em partida disputada no Maracanã',
-      link: `${baseUrl}/noticia/brasil-semifinais`,
-      pubDate: new Date('2024-01-07T22:45:00Z').toUTCString(),
+      title: 'Campeonato Mundial: Brasil Avança para Final Após 12 Anos',
+      description: 'Brasil vence semifinal por 2-0 e avança para a final do mundial após 12 anos, emocionando torcedores em todo o país.',
+      link: `${baseUrl}/noticia/brasil-final-mundial-futebol-2024`,
+      pubDate: new Date('2024-01-08T20:00:00Z').toUTCString(),
       category: 'Esportes',
-      author: 'Carlos Oliveira'
+      author: 'Carlos Esporte'
     },
+    {
+      title: 'Mercado de Criptomoedas Registra Alta de 180% em Dois Meses',
+      description: 'Criptomoedas sobem 180% em dois meses, com Bitcoin batendo recordes e atraindo cada vez mais investidores institucionais.',
+      link: `${baseUrl}/noticia/criptomoedas-alta-recorde-2024`,
+      pubDate: new Date('2024-01-07T16:45:00Z').toUTCString(),
+      category: 'Economia',
+      author: 'Ana Economia'
+    },
+    {
+      title: 'Nova Descoberta Arqueológica Revela Civilização Pré-Colombiana',
+      description: 'Arqueólogos descobrem artefatos de 2.000 anos que podem reescrever a história das civilizações pré-colombianas.',
+      link: `${baseUrl}/noticia/descoberta-arqueologica-pre-colombiana-2024`,
+      pubDate: new Date('2024-01-07T11:15:00Z').toUTCString(),
+      category: 'Cultura',
+      author: 'Dr. Pedro História'
+    },
+    {
+      title: 'Artigo de Teste - Portal de Notícias',
+      description: 'Este é um artigo de teste para verificar se o sistema de publicação do portal de notícias está funcionando corretamente.',
+      link: `${baseUrl}/noticia/artigo-de-teste-portal-noticias-1736442600000`,
+      pubDate: new Date('2024-01-09T17:30:00Z').toUTCString(),
+      category: 'Política',
+      author: 'Editor Teste'
+    }
   ]
 
   const rssContent = `<?xml version="1.0" encoding="UTF-8"?>

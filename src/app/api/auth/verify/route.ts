@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { createClient } from '@/utils/supabase/server'
 
+// Configurar runtime para edge (opcional, mas otimiza performance)
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 export async function GET(request: NextRequest) {

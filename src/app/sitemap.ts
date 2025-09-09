@@ -46,28 +46,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ]
 
-  // URLs de notícias (mock data - em produção viria do banco)
+  // URLs de notícias (usando slugs reais do arquivo articles.json)
   const newsArticles = [
-    'reforma-tributaria-avanca',
-    'nova-politica-economica',
-    'lei-transparencia',
-    'investimentos-infraestrutura',
-    'mudancas-lei-eleitoral',
-    'acordo-comercial',
-    'lei-protecao-dados',
-    'modernizacao-estado',
-    'reforma-administrativa',
-    'agenda-ambiental',
-    'orcamento-2024',
-    'tecnologia-verde',
-    'brasil-semifinais',
-    'brasil-inovacao-ranking',
-    'descoberta-arqueologica',
-    'criptomoedas-alta',
-    'brasil-final-mundial',
-    'lei-ambiental-amazonia',
-    'selecao-feminina-ouro',
-    'energia-solar'
+    'artigo-de-teste-portal-noticias-1736442600000',
+    'segunda-noticia-teste-economia-local-1736442700000',
+    'brasil-ranking-inovacao-mundial-2024',
+    'brasil-final-mundial-futebol-2024',
+    'criptomoedas-alta-recorde-2024',
+    'descoberta-arqueologica-pre-colombiana-2024'
   ]
 
   const newsRoutes = newsArticles.map((slug) => ({

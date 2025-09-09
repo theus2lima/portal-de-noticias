@@ -3,44 +3,65 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronLeft, ChevronRight, Clock, User } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, User, FileText } from 'lucide-react'
+
+interface Article {
+  id: string
+  title: string
+  subtitle?: string
+  slug: string
+  featured_image?: string
+  category_name: string
+  author_name: string
+  created_at: string
+}
 
 const Hero = () => {
   const [currentSlide, setCurrentSlide] = useState(0)
+  const [headlines, setHeadlines] = useState<Article[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Mock data - será substituído por dados reais da API
-  const headlines = [
-    {
-      id: 1,
-      title: "Nova Política Econômica Promete Revolucionar o Mercado Brasileiro",
-      subtitle: "Medidas incluem redução de juros e incentivos para pequenas empresas",
-      image: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=1200&h=600&fit=crop",
-      category: "Economia",
-      author: "João Silva",
-      publishedAt: "2024-01-08T10:30:00Z",
-      href: "/noticia/nova-politica-economica"
-    },
-    {
-      id: 2,
-      title: "Breakthrough em Tecnologia Verde Pode Transformar Energia no País",
-      subtitle: "Pesquisadores desenvolvem nova fonte de energia limpa e renovável",
-      image: "https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=1200&h=600&fit=crop",
-      category: "Ciência",
-      author: "Maria Santos",
-      publishedAt: "2024-01-08T08:15:00Z",
-      href: "/noticia/tecnologia-verde"
-    },
-    {
-      id: 3,
-      title: "Copa Mundial: Brasil Avança para as Semifinais em Jogo Emocionante",
-      subtitle: "Seleção brasileira vence por 3-1 em partida disputada no Maracanã",
-      image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&h=600&fit=crop",
-      category: "Esportes",
-      author: "Carlos Oliveira",
-      publishedAt: "2024-01-07T22:45:00Z",
-      href: "/noticia/brasil-semifinais"
+  // Carregar artigos reais da API
+  useEffect(() => {
+    const fetchHeadlines = async () => {
+      try {
+        const response = await fetch('/api/articles?status=published&limit=3')
+        if (response.ok) {
+          const data = await response.json()
+          setHeadlines(data.data || [])
+        }
+      } catch (error) {
+        console.error('Erro ao buscar artigos para o hero:', error)
+        // Fallback com artigos padrão usando os slugs reais
+        setHeadlines([
+          {
+            id: 'test-article-001',
+            title: 'Artigo de Teste - Portal de Notícias',
+            subtitle: 'Este é um artigo de teste para verificar se a publicação funciona corretamente',
+            slug: 'artigo-de-teste-portal-noticias-1736442600000',
+            featured_image: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&h=600&fit=crop',
+            category_name: 'Política',
+            author_name: 'Editor Teste',
+            created_at: '2024-01-09T17:30:00Z'
+          },
+          {
+            id: 'test-article-002',
+            title: 'Segunda Notícia de Teste - Economia Local',
+            subtitle: 'Análise sobre o desenvolvimento econômico da região',
+            slug: 'segunda-noticia-teste-economia-local-1736442700000',
+            featured_image: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=1200&h=600&fit=crop',
+            category_name: 'Economia',
+            author_name: 'Repórter Econômico',
+            created_at: '2024-01-09T16:45:00Z'
+          }
+        ])
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+
+    fetchHeadlines()
+  }, [])
 
   // Auto-play do carrossel
   useEffect(() => {
@@ -87,55 +108,86 @@ const Hero = () => {
       <div className="container mx-auto px-4 py-8 lg:py-12">
         <div className="relative">
           {/* Carrossel */}
-          <div className="relative h-[500px] lg:h-[600px] rounded-xl overflow-hidden shadow-2xl">
-            {headlines.map((headline, index) => (
-              <div
-                key={headline.id}
-                className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                  index === currentSlide ? 'opacity-100' : 'opacity-0'
-                }`}
-              >
-                <div className="relative h-full w-full">
-                  <Image
-                    src={headline.image}
-                    alt={headline.title}
-                    fill
-                    className="object-cover"
-                    priority={index === 0}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                  
-                  <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-8">
-                    <div className="max-w-4xl">
-                      <span className={`inline-block px-3 py-1 text-sm font-semibold text-white rounded-full mb-4 ${getCategoryColor(headline.category)}`}>
-                        {headline.category}
-                      </span>
-                      
-                      <Link href={headline.href} className="block group">
-                        <h1 className="text-2xl lg:text-4xl font-bold mb-3 group-hover:text-secondary-400 transition-colors duration-200 leading-tight">
-                          {headline.title}
-                        </h1>
-                        <p className="text-lg lg:text-xl text-gray-200 mb-4 leading-relaxed">
-                          {headline.subtitle}
-                        </p>
-                      </Link>
-                      
-                      <div className="flex items-center space-x-4 text-sm text-gray-300">
-                        <div className="flex items-center space-x-1">
-                          <User size={16} />
-                          <span>{headline.author}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Clock size={16} />
-                          <span>{formatDate(headline.publishedAt)}</span>
+          {loading ? (
+            <div className="relative h-[500px] lg:h-[600px] rounded-xl overflow-hidden shadow-2xl bg-neutral-200 animate-pulse">
+              <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-8">
+                <div className="max-w-4xl">
+                  <div className="h-6 bg-neutral-300 rounded mb-4 w-24"></div>
+                  <div className="h-8 bg-neutral-300 rounded mb-3 w-3/4"></div>
+                  <div className="h-6 bg-neutral-300 rounded mb-4 w-1/2"></div>
+                  <div className="flex space-x-4">
+                    <div className="h-4 bg-neutral-300 rounded w-20"></div>
+                    <div className="h-4 bg-neutral-300 rounded w-24"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : headlines.length > 0 ? (
+            <div className="relative h-[500px] lg:h-[600px] rounded-xl overflow-hidden shadow-2xl">
+              {headlines.map((headline, index) => (
+                <div
+                  key={headline.id}
+                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                    index === currentSlide ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  <div className="relative h-full w-full">
+                    {headline.featured_image ? (
+                      <Image
+                        src={headline.featured_image}
+                        alt={headline.title}
+                        fill
+                        className="object-cover"
+                        priority={index === 0}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-neutral-300 flex items-center justify-center">
+                        <FileText className="h-24 w-24 text-neutral-400" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                    
+                    <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-8">
+                      <div className="max-w-4xl">
+                        <span className={`inline-block px-3 py-1 text-sm font-semibold text-white rounded-full mb-4 ${getCategoryColor(headline.category_name)}`}>
+                          {headline.category_name}
+                        </span>
+                        
+                        <Link href={`/noticia/${headline.slug}`} className="block group">
+                          <h1 className="text-2xl lg:text-4xl font-bold mb-3 group-hover:text-secondary-400 transition-colors duration-200 leading-tight">
+                            {headline.title}
+                          </h1>
+                          {headline.subtitle && (
+                            <p className="text-lg lg:text-xl text-gray-200 mb-4 leading-relaxed">
+                              {headline.subtitle}
+                            </p>
+                          )}
+                        </Link>
+                        
+                        <div className="flex items-center space-x-4 text-sm text-gray-300">
+                          <div className="flex items-center space-x-1">
+                            <User size={16} />
+                            <span>{headline.author_name}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Clock size={16} />
+                            <span>{formatDate(headline.created_at)}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
+              ))}
+            </div>
+          ) : (
+            <div className="relative h-[500px] lg:h-[600px] rounded-xl overflow-hidden shadow-2xl bg-neutral-100 flex items-center justify-center">
+              <div className="text-center">
+                <FileText className="h-16 w-16 text-neutral-400 mx-auto mb-4" />
+                <p className="text-neutral-600 text-lg">Nenhum artigo encontrado</p>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
 
           {/* Controles do Carrossel */}
           <button

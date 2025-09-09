@@ -1,124 +1,58 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Search, Filter, Clock, User, Eye, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Filter, Clock, User, Eye, ArrowLeft, ChevronLeft, ChevronRight, FileText } from 'lucide-react'
+
+interface Article {
+  id: string
+  title: string
+  excerpt: string
+  featured_image?: string
+  slug: string
+  author_name: string
+  created_at: string
+  views_count: number
+}
 
 interface CategoryPageProps {
   category: string
   categoryColor: string
   description: string
+  categoryId?: string
 }
 
-const CategoryPage = ({ category, categoryColor, description }: CategoryPageProps) => {
+const CategoryPage = ({ category, categoryColor, description, categoryId }: CategoryPageProps) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [allArticles, setAllArticles] = useState<Article[]>([])
+  const [loading, setLoading] = useState(true)
   const articlesPerPage = 9
 
-  // Mock data - seria substituído por dados reais da API filtrados por categoria
-  const allArticles = [
-    {
-      id: 1,
-      title: "Reforma Tributária Avança no Congresso com Amplo Apoio",
-      excerpt: "Proposta de simplificação do sistema tributário brasileiro recebe aprovação em primeira votação...",
-      image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400&h=250&fit=crop",
-      author: "Ana Costa",
-      publishedAt: "2024-01-08T14:30:00Z",
-      views: 1254,
-      href: "/noticia/reforma-tributaria-avanca"
-    },
-    {
-      id: 2,
-      title: "Nova Lei de Transparência Pública Entra em Vigor",
-      excerpt: "Medidas visam aumentar o acesso da população às informações governamentais...",
-      image: "https://images.unsplash.com/photo-1586880244386-8b3e34c8382c?w=400&h=250&fit=crop",
-      author: "Roberto Lima",
-      publishedAt: "2024-01-08T12:15:00Z",
-      views: 987,
-      href: "/noticia/lei-transparencia"
-    },
-    {
-      id: 3,
-      title: "Ministro Anuncia Investimentos em Infraestrutura",
-      excerpt: "R$ 200 bilhões serão destinados para obras de saneamento e mobilidade urbana...",
-      image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=250&fit=crop",
-      author: "Carla Santos",
-      publishedAt: "2024-01-08T10:45:00Z",
-      views: 756,
-      href: "/noticia/investimentos-infraestrutura"
-    },
-    {
-      id: 4,
-      title: "Congresso Debate Mudanças na Lei Eleitoral",
-      excerpt: "Propostas incluem modificações no financiamento de campanhas e propaganda eleitoral...",
-      image: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=400&h=250&fit=crop",
-      author: "Marcos Silva",
-      publishedAt: "2024-01-08T09:20:00Z",
-      views: 642,
-      href: "/noticia/mudancas-lei-eleitoral"
-    },
-    {
-      id: 5,
-      title: "Acordo Internacional Fortalece Relações Comerciais",
-      excerpt: "Brasil assina tratado que facilita exportações para mercados europeus...",
-      image: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=400&h=250&fit=crop",
-      author: "Paulo Mendes",
-      publishedAt: "2024-01-07T20:30:00Z",
-      views: 1876,
-      href: "/noticia/acordo-comercial"
-    },
-    {
-      id: 6,
-      title: "Presidente Sanciona Lei de Proteção de Dados",
-      excerpt: "Nova legislação estabelece regras mais rígidas para uso de informações pessoais...",
-      image: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400&h=250&fit=crop",
-      author: "Julia Fernandes",
-      publishedAt: "2024-01-07T16:45:00Z",
-      views: 1123,
-      href: "/noticia/lei-protecao-dados"
-    },
-    {
-      id: 7,
-      title: "Comissão Aprova Projeto de Modernização do Estado",
-      excerpt: "Iniciativa prevê digitalização de serviços públicos e redução da burocracia...",
-      image: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=250&fit=crop",
-      author: "Marina Rodrigues",
-      publishedAt: "2024-01-07T14:20:00Z",
-      views: 834,
-      href: "/noticia/modernizacao-estado"
-    },
-    {
-      id: 8,
-      title: "Senado Analisa Proposta de Reforma Administrativa",
-      excerpt: "Projeto visa reorganizar a estrutura do funcionalismo público federal...",
-      image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=250&fit=crop",
-      author: "Diego Almeida",
-      publishedAt: "2024-01-07T11:30:00Z",
-      views: 698,
-      href: "/noticia/reforma-administrativa"
-    },
-    {
-      id: 9,
-      title: "Nova Agenda Ambiental é Apresentada no Planalto",
-      excerpt: "Governo lança plano estratégico para redução de emissões até 2030...",
-      image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=250&fit=crop",
-      author: "Fernanda Costa",
-      publishedAt: "2024-01-06T18:45:00Z",
-      views: 1567,
-      href: "/noticia/agenda-ambiental"
-    },
-    {
-      id: 10,
-      title: "Câmara Vota Orçamento 2024 na Próxima Semana",
-      excerpt: "Projeto prevê investimentos recordes em educação e saúde pública...",
-      image: "https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=400&h=250&fit=crop",
-      author: "Ricardo Santos",
-      publishedAt: "2024-01-06T15:20:00Z",
-      views: 945,
-      href: "/noticia/orcamento-2024"
+  // Carregar artigos da API
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        let url = '/api/articles?status=published&limit=50'
+        if (categoryId) {
+          url += `&category=${categoryId}`
+        }
+        
+        const response = await fetch(url)
+        if (response.ok) {
+          const data = await response.json()
+          setAllArticles(data.data || [])
+        }
+      } catch (error) {
+        console.error('Erro ao buscar artigos da categoria:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+
+    fetchArticles()
+  }, [categoryId])
 
   // Filtrar artigos baseado na busca
   const filteredArticles = allArticles.filter(article =>
@@ -205,23 +139,46 @@ const CategoryPage = ({ category, categoryColor, description }: CategoryPageProp
       {/* Grid de Artigos */}
       <section className="py-12">
         <div className="container mx-auto px-4">
-          {currentArticles.length > 0 ? (
+          {loading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="news-card animate-pulse">
+                  <div className="h-48 bg-neutral-200 mb-4"></div>
+                  <div className="p-6">
+                    <div className="h-6 bg-neutral-200 rounded mb-3"></div>
+                    <div className="h-4 bg-neutral-200 rounded mb-2"></div>
+                    <div className="h-4 bg-neutral-200 rounded w-3/4 mb-4"></div>
+                    <div className="flex justify-between">
+                      <div className="h-4 bg-neutral-200 rounded w-20"></div>
+                      <div className="h-4 bg-neutral-200 rounded w-16"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : currentArticles.length > 0 ? (
             <>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {currentArticles.map((article, index) => (
                   <Link 
                     key={article.id}
-                    href={article.href}
+                    href={`/noticia/${article.slug}`}
                     className="news-card group animate-fadeInUp"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <div className="relative h-48 mb-4">
-                      <Image
-                        src={article.image}
-                        alt={article.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+                      {article.featured_image ? (
+                        <Image
+                          src={article.featured_image}
+                          alt={article.title}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-neutral-200 flex items-center justify-center">
+                          <FileText className="h-12 w-12 text-neutral-400" />
+                        </div>
+                      )}
                     </div>
                     
                     <div className="p-6">
@@ -235,16 +192,16 @@ const CategoryPage = ({ category, categoryColor, description }: CategoryPageProp
                       <div className="flex items-center justify-between text-sm text-neutral-500">
                         <div className="flex items-center space-x-2">
                           <User size={16} />
-                          <span>{article.author}</span>
+                          <span>{article.author_name}</span>
                         </div>
                         <div className="flex items-center space-x-4">
                           <div className="flex items-center space-x-1">
                             <Clock size={16} />
-                            <span>{formatDate(article.publishedAt)}</span>
+                            <span>{formatDate(article.created_at)}</span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Eye size={16} />
-                            <span>{article.views}</span>
+                            <span>{article.views_count}</span>
                           </div>
                         </div>
                       </div>
