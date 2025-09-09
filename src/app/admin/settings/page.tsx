@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import { 
   Settings, 
   Globe, 
@@ -9,10 +12,100 @@ import {
   Save,
   RefreshCw,
   Eye,
-  Lock
+  Lock,
+  Upload,
+  Check
 } from 'lucide-react'
 
 export default function SettingsPage() {
+  const [settings, setSettings] = useState({
+    siteName: 'Portal de Notícias',
+    siteDescription: 'Seu portal de notícias mais confiável',
+    siteUrl: 'https://portal-noticias.com',
+    adminEmail: 'admin@portal-noticias.com',
+    contactEmail: 'contato@portal-noticias.com',
+    smtpServer: 'smtp.gmail.com',
+    smtpPort: 587,
+    encryption: 'tls',
+    twoFactorAuth: false,
+    googleLogin: true,
+    captcha: true,
+    sessionTimeout: 120,
+    articlesPerPage: '15',
+    allowComments: true,
+    moderateComments: true,
+    newsletter: true,
+    colorScheme: 'default',
+    font: 'Inter (Atual)',
+    darkMode: false,
+    animations: true,
+    emailNewArticles: true,
+    emailNewComments: true,
+    emailNewLeads: true,
+    pushSystemUpdates: false,
+    pushWeeklyReports: true,
+    pushSecurityAlerts: true
+  })
+  
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState('')
+  const [error, setError] = useState('')
+  
+  const handleInputChange = (field: string, value: any) => {
+    setSettings(prev => ({ ...prev, [field]: value }))
+  }
+  
+  const handleSave = async () => {
+    setLoading(true)
+    setError('')
+    setSuccess('')
+    
+    try {
+      // Simular salvamento
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      setSuccess('Configurações salvas com sucesso!')
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (err) {
+      setError('Erro ao salvar configurações')
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  const handleReset = () => {
+    if (confirm('Tem certeza que deseja restaurar as configurações padrão?')) {
+      setSettings({
+        siteName: 'Portal de Notícias',
+        siteDescription: 'Seu portal de notícias mais confiável',
+        siteUrl: 'https://portal-noticias.com',
+        adminEmail: 'admin@portal-noticias.com',
+        contactEmail: 'contato@portal-noticias.com',
+        smtpServer: 'smtp.gmail.com',
+        smtpPort: 587,
+        encryption: 'tls',
+        twoFactorAuth: false,
+        googleLogin: true,
+        captcha: true,
+        sessionTimeout: 120,
+        articlesPerPage: '15',
+        allowComments: true,
+        moderateComments: true,
+        newsletter: true,
+        colorScheme: 'default',
+        font: 'Inter (Atual)',
+        darkMode: false,
+        animations: true,
+        emailNewArticles: true,
+        emailNewComments: true,
+        emailNewLeads: true,
+        pushSystemUpdates: false,
+        pushWeeklyReports: true,
+        pushSecurityAlerts: true
+      })
+      setSuccess('Configurações restauradas!')
+      setTimeout(() => setSuccess(''), 3000)
+    }
+  }
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -20,12 +113,42 @@ export default function SettingsPage() {
         <div>
           <h1 className="text-3xl font-bold text-neutral-900">Configurações</h1>
           <p className="text-neutral-600">Gerencie as configurações do portal</p>
+          <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+            🎓 Modo Demonstração - Configurações simuladas
+          </div>
         </div>
-        <button className="btn-primary flex items-center space-x-2">
-          <Save className="h-5 w-5" />
-          <span>Salvar Alterações</span>
+        <button 
+          onClick={handleSave}
+          disabled={loading}
+          className="btn-primary flex items-center space-x-2 disabled:bg-neutral-400"
+        >
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              <span>Salvando...</span>
+            </>
+          ) : (
+            <>
+              <Save className="h-5 w-5" />
+              <span>Salvar Alterações</span>
+            </>
+          )}
         </button>
       </div>
+
+      {/* Success/Error Messages */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md flex items-center space-x-2">
+          <Check className="h-5 w-5" />
+          <span>{success}</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          {error}
+        </div>
+      )}
 
       {/* Settings Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -408,20 +531,45 @@ export default function SettingsPage() {
       {/* Action Buttons */}
       <div className="flex items-center justify-between p-6 bg-neutral-50 rounded-xl">
         <div className="flex items-center space-x-4">
-          <button className="btn-outline flex items-center space-x-2">
+          <button 
+            onClick={handleReset}
+            disabled={loading}
+            className="btn-outline flex items-center space-x-2 disabled:opacity-50"
+          >
             <RefreshCw className="h-4 w-4" />
             <span>Restaurar Padrões</span>
           </button>
-          <button className="btn-outline flex items-center space-x-2">
+          <button 
+            onClick={() => alert('Pré-visualização indisponível no modo demonstração')}
+            className="btn-outline flex items-center space-x-2"
+          >
             <Eye className="h-4 w-4" />
             <span>Pré-visualizar</span>
           </button>
         </div>
         <div className="flex items-center space-x-3">
-          <button className="btn-secondary">Cancelar</button>
-          <button className="btn-primary flex items-center space-x-2">
-            <Save className="h-4 w-4" />
-            <span>Salvar Configurações</span>
+          <button 
+            onClick={() => window.history.back()}
+            className="btn-secondary"
+          >
+            Cancelar
+          </button>
+          <button 
+            onClick={handleSave}
+            disabled={loading}
+            className="btn-primary flex items-center space-x-2 disabled:bg-neutral-400"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Salvando...</span>
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                <span>Salvar Configurações</span>
+              </>
+            )}
           </button>
         </div>
       </div>
