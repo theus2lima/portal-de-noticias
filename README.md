@@ -70,8 +70,8 @@ news-portal/
 
 1. Clone o repositório:
 ```bash
-git clone <repository-url>
-cd news-portal
+git clone https://github.com/theus2lima/portal-de-noticias.git
+cd portal-de-noticias
 ```
 
 2. Instale as dependências:
