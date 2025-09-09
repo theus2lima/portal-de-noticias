@@ -11,6 +11,7 @@ import {
   MessageSquare, 
   BarChart3, 
   Settings,
+  Database,
   Menu,
   X,
   LogOut,
@@ -29,8 +30,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const menuItems = [
     {
       name: 'Dashboard',
-      href: '/admin',
+      href: '/admin/dashboard',
       icon: Home
+    },
+    {
+      name: 'Configuração',
+      href: '/admin/config',
+      icon: Database
     },
     {
       name: 'Artigos',
