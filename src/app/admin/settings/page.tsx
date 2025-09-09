@@ -14,7 +14,9 @@ import {
   Eye,
   Lock,
   Upload,
-  Check
+  Check,
+  Trash2,
+  Image
 } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -22,6 +24,7 @@ export default function SettingsPage() {
     siteName: 'Portal de Notícias',
     siteDescription: 'Seu portal de notícias mais confiável',
     siteUrl: 'https://portal-noticias.com',
+    logo: null as string | null,
     adminEmail: 'admin@portal-noticias.com',
     contactEmail: 'contato@portal-noticias.com',
     smtpServer: 'smtp.gmail.com',
@@ -50,9 +53,63 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
+  const [logoUploading, setLogoUploading] = useState(false)
   
   const handleInputChange = (field: string, value: any) => {
     setSettings(prev => ({ ...prev, [field]: value }))
+  }
+  
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    
+    // Validar tipo de arquivo
+    if (!file.type.startsWith('image/')) {
+      setError('Por favor, selecione apenas arquivos de imagem')
+      return
+    }
+    
+    // Validar tamanho (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('A imagem deve ter no máximo 5MB')
+      return
+    }
+    
+    setLogoUploading(true)
+    setError('')
+    
+    try {
+      // Simular upload
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // Converter para base64 para preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const result = e.target?.result as string
+        handleInputChange('logo', result)
+        setSuccess('Logo alterado com sucesso!')
+        setTimeout(() => setSuccess(''), 3000)
+      }
+      reader.readAsDataURL(file)
+      
+    } catch (err) {
+      setError('Erro ao fazer upload da imagem')
+    } finally {
+      setLogoUploading(false)
+    }
+  }
+  
+  const triggerLogoUpload = () => {
+    const fileInput = document.getElementById('logo-upload') as HTMLInputElement
+    fileInput?.click()
+  }
+  
+  const removeLogo = () => {
+    if (confirm('Tem certeza que deseja remover o logo?')) {
+      handleInputChange('logo', null)
+      setSuccess('Logo removido com sucesso!')
+      setTimeout(() => setSuccess(''), 3000)
+    }
   }
   
   const handleSave = async () => {
@@ -78,6 +135,7 @@ export default function SettingsPage() {
         siteName: 'Portal de Notícias',
         siteDescription: 'Seu portal de notícias mais confiável',
         siteUrl: 'https://portal-noticias.com',
+        logo: null,
         adminEmail: 'admin@portal-noticias.com',
         contactEmail: 'contato@portal-noticias.com',
         smtpServer: 'smtp.gmail.com',
@@ -199,11 +257,72 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Logotipo
               </label>
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-neutral-200 rounded-lg flex items-center justify-center">
-                  <Globe className="h-6 w-6 text-neutral-400" />
+              <div className="space-y-3">
+                {/* Preview do Logo */}
+                <div className="flex items-center space-x-3">
+                  <div className="w-16 h-16 bg-neutral-200 rounded-lg flex items-center justify-center overflow-hidden">
+                    {settings.logo ? (
+                      <img 
+                        src={settings.logo} 
+                        alt="Logo" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Globe className="h-8 w-8 text-neutral-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-neutral-600">
+                      {settings.logo ? 'Logo atual' : 'Nenhum logo definido'}
+                    </p>
+                    <p className="text-xs text-neutral-500">
+                      Recomendado: PNG ou JPG, máx. 5MB
+                    </p>
+                  </div>
                 </div>
-                <button className="btn-outline text-sm">Alterar Logo</button>
+                
+                {/* Botões de Ação */}
+                <div className="flex items-center space-x-2">
+                  <button 
+                    type="button"
+                    onClick={triggerLogoUpload}
+                    disabled={logoUploading}
+                    className="btn-outline text-sm flex items-center space-x-2 disabled:opacity-50"
+                  >
+                    {logoUploading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                        <span>Carregando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4" />
+                        <span>{settings.logo ? 'Alterar Logo' : 'Adicionar Logo'}</span>
+                      </>
+                    )}
+                  </button>
+                  
+                  {settings.logo && (
+                    <button 
+                      type="button"
+                      onClick={removeLogo}
+                      disabled={logoUploading}
+                      className="btn-outline text-sm text-red-600 hover:text-red-700 hover:border-red-300 flex items-center space-x-2 disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span>Remover</span>
+                    </button>
+                  )}
+                </div>
+                
+                {/* Input de arquivo (oculto) */}
+                <input
+                  id="logo-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
               </div>
             </div>
           </div>

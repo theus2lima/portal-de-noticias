@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Search, Menu, X, Facebook, Twitter, Instagram, MessageCircle } from 'lucide-react'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const router = useRouter()
 
   const categories = [
     { name: 'Política', href: '/categoria/politica' },
@@ -22,6 +24,21 @@ const Header = () => {
     { icon: Instagram, href: '#', color: 'hover:text-pink-600' },
     { icon: MessageCircle, href: '#', color: 'hover:text-green-500' },
   ]
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/buscar?q=${encodeURIComponent(searchQuery.trim())}`)
+      setSearchQuery('')
+      setIsMenuOpen(false)
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch(e as any)
+    }
+  }
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -69,6 +86,7 @@ const Header = () => {
                 placeholder="Buscar notícias..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={handleKeyPress}
                 className="w-full px-4 py-2 pl-10 border-2 border-neutral-200 rounded-lg focus:border-primary-500 focus:outline-none transition-colors duration-200"
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400" size={20} />
@@ -120,6 +138,7 @@ const Header = () => {
                   placeholder="Buscar notícias..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleKeyPress}
                   className="w-full px-4 py-2 pl-10 border-2 border-neutral-200 rounded-lg focus:border-primary-500 focus:outline-none"
                 />
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400" size={20} />

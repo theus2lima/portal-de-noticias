@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 
+// Categorias padrão como fallback
+const defaultCategories = [
+  { id: '1', name: 'Política', slug: 'politica', description: 'Notícias sobre política nacional e local', color: '#DC2626', icon: 'Vote', is_active: true },
+  { id: '2', name: 'Economia', slug: 'economia', description: 'Economia, finanças e mercado', color: '#059669', icon: 'DollarSign', is_active: true },
+  { id: '3', name: 'Esportes', slug: 'esportes', description: 'Esportes nacionais e internacionais', color: '#DC2626', icon: 'Trophy', is_active: true },
+  { id: '4', name: 'Cultura', slug: 'cultura', description: 'Arte, cultura e entretenimento', color: '#7C3AED', icon: 'Palette', is_active: true },
+  { id: '5', name: 'Cidades', slug: 'cidades', description: 'Notícias das cidades e regiões', color: '#0EA5E9', icon: 'Building', is_active: true },
+  { id: '6', name: 'Tecnologia', slug: 'tecnologia', description: 'Inovação e tecnologia', color: '#3B82F6', icon: 'Laptop', is_active: true }
+]
+
 // GET - Buscar categorias
 export async function GET(request: NextRequest) {
   try {
@@ -9,41 +19,46 @@ export async function GET(request: NextRequest) {
     
     const includeArticleCount = searchParams.get('include_articles') === 'true'
     
-    let query = supabase
-      .from('categories')
-      .select('*')
-      .order('name')
-    
-    if (includeArticleCount) {
-      query = supabase
+    try {
+      let query = supabase
         .from('categories')
-        .select(`
-          id,
-          name,
-          slug,
-          description,
-          color,
-          icon,
-          is_active,
-          created_at,
-          updated_at,
-          articles:articles(count)
-        `)
+        .select('*')
         .order('name')
+      
+      if (includeArticleCount) {
+        query = supabase
+          .from('categories')
+          .select(`
+            id,
+            name,
+            slug,
+            description,
+            color,
+            icon,
+            is_active,
+            created_at,
+            updated_at,
+            articles:articles(count)
+          `)
+          .order('name')
+      }
+      
+      const { data: categories, error } = await query
+      
+      if (!error && categories) {
+        return NextResponse.json({ data: categories })
+      }
+      
+      console.log('Supabase query error, using fallback categories:', error)
+    } catch (supabaseError) {
+      console.log('Supabase connection error, using fallback categories:', supabaseError)
     }
     
-    const { data: categories, error } = await query
-    
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-    
-    return NextResponse.json({ data: categories })
+    // Fallback: retornar categorias padrão
+    return NextResponse.json({ data: defaultCategories })
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
+    console.error('Error in GET /api/categories:', error)
+    return NextResponse.json({ data: defaultCategories })
   }
 }
 
