@@ -37,6 +37,7 @@ export default function NewArticlePage() {
 
   const [tags, setTags] = useState<string[]>([])
   const [currentTag, setCurrentTag] = useState('')
+  const [showPreview, setShowPreview] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
@@ -93,6 +94,36 @@ export default function NewArticlePage() {
     }
   }
 
+  // Função para abrir pré-visualização
+  const handlePreview = () => {
+    if (!formData.title || !formData.content) {
+      alert('Preencha pelo menos o título e conteúdo para visualizar')
+      return
+    }
+    setShowPreview(true)
+  }
+
+  // Função para formatar conteúdo (simular markdown básico)
+  const formatContent = (content: string) => {
+    return content
+      .split('\n')
+      .map((paragraph, index) => {
+        if (paragraph.trim() === '') return null
+        
+        // Simular alguns formatos markdown básicos
+        let formatted = paragraph
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **bold**
+          .replace(/\*(.*?)\*/g, '<em>$1</em>') // *italic*
+          .replace(/^## (.*)/g, '<h2 class="text-xl font-semibold mt-6 mb-3">$1</h2>') // ## heading
+          .replace(/^# (.*)/g, '<h1 class="text-2xl font-bold mt-6 mb-4">$1</h1>') // # heading
+        
+        return (
+          <div key={index} className="mb-4" dangerouslySetInnerHTML={{ __html: formatted }} />
+        )
+      })
+      .filter(Boolean)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -112,6 +143,7 @@ export default function NewArticlePage() {
         <div className="flex items-center space-x-3">
           <button 
             type="button"
+            onClick={handlePreview}
             className="btn-outline flex items-center space-x-2"
             disabled={loading}
           >
@@ -437,6 +469,82 @@ export default function NewArticlePage() {
           </div>
         </div>
       </form>
+
+      {/* Preview Modal */}
+      {showPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white w-full max-w-4xl rounded-xl overflow-hidden shadow-xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <h3 className="text-lg font-semibold">Pré-visualização do Artigo</h3>
+              <button onClick={() => setShowPreview(false)} className="text-neutral-500 hover:text-neutral-800">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+              {/* Content */}
+              <div className="md:col-span-2">
+                <h1 className="text-3xl font-bold text-neutral-900">{formData.title || 'Título do artigo'}</h1>
+                {formData.subtitle && (
+                  <p className="mt-2 text-neutral-600">{formData.subtitle}</p>
+                )}
+                <div className="mt-4 text-sm text-neutral-500 flex gap-3">
+                  <span>{new Date().toLocaleDateString('pt-BR')}</span>
+                  {formData.category_id && (
+                    <span>
+                      • {formData.category_id === '1' ? 'Política' :
+                          formData.category_id === '2' ? 'Economia' :
+                          formData.category_id === '3' ? 'Esportes' :
+                          formData.category_id === '4' ? 'Cultura' :
+                          formData.category_id === '5' ? 'Cidades' : 'Geral'}
+                    </span>
+                  )}
+                </div>
+
+                {formData.featured_image && (
+                  <div className="relative w-full h-56 md:h-72 mt-4 rounded-lg overflow-hidden">
+                    <Image src={formData.featured_image} alt={formData.image_alt || 'Imagem destacada'} fill className="object-cover" />
+                  </div>
+                )}
+
+                <div className="prose prose-neutral max-w-none mt-6">
+                  {formatContent(formData.content)}
+                </div>
+              </div>
+
+              {/* Sidebar */}
+              <div className="space-y-4">
+                {formData.excerpt && (
+                  <div className="bg-neutral-50 rounded-lg p-4">
+                    <h4 className="font-medium mb-2">Resumo</h4>
+                    <p className="text-sm text-neutral-700">{formData.excerpt}</p>
+                  </div>
+                )}
+
+                {tags.length > 0 && (
+                  <div className="bg-neutral-50 rounded-lg p-4">
+                    <h4 className="font-medium mb-2">Tags</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {tags.map((t, i) => (
+                        <span key={i} className="px-2 py-0.5 rounded-full bg-primary-100 text-primary-800 text-xs">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-neutral-50 rounded-lg p-4 text-sm text-neutral-600">
+                  <div className="flex items-center justify-between">
+                    <span>Tempo de leitura</span>
+                    <span className="font-medium text-neutral-900">{Math.max(1, Math.ceil(formData.content.split(' ').length / 200))} min</span>
+                  </div>
+                </div>
+
+                <button onClick={() => setShowPreview(false)} className="w-full btn-secondary">Fechar Pré-visualização</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
