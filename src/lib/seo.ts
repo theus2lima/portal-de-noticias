@@ -15,11 +15,11 @@ interface SEOProps {
 }
 
 export function generateSEO({
-  title = 'Portal de Notícias',
-  description = 'Fique por dentro das principais notícias de política, economia, esportes, cultura e cidades. Portal de notícias confiável e atualizado.',
-  keywords = ['notícias', 'política', 'economia', 'esportes', 'cultura', 'cidades', 'jornalismo', 'brasil'],
+  title = 'Radar Noroeste PR',
+  description = 'Fique por dentro das principais notícias de política, economia, esportes, cultura e cidades do Noroeste do Paraná. Portal de notícias confiável e atualizado.',
+  keywords = ['notícias', 'política', 'economia', 'esportes', 'cultura', 'cidades', 'jornalismo', 'paraná', 'noroeste'],
   image = '/og-image.svg',
-  url = 'https://portal-de-noticias.vercel.app',
+  url = 'https://radarnoroestepr.com.br',
   type = 'website',
   publishedTime,
   modifiedTime,
@@ -28,20 +28,20 @@ export function generateSEO({
   tags = []
 }: SEOProps = {}): Metadata {
   
-  const fullTitle = title === 'Portal de Notícias' 
-    ? 'Portal de Notícias - Sua fonte confiável de informação'
-    : `${title} - Portal de Notícias`
+  const fullTitle = title === 'Radar Noroeste PR' 
+    ? 'Radar Noroeste PR - Sua fonte confiável de informação'
+    : `${title} - Radar Noroeste PR`
 
   const allKeywords = [...keywords, ...tags].join(', ')
 
   const metadata: Metadata = {
-    metadataBase: new URL('https://portal-de-noticias.vercel.app'),
+    metadataBase: new URL('https://radarnoroestepr.com.br'),
     title: fullTitle,
     description,
     keywords: allKeywords,
-    authors: author ? [{ name: author }] : [{ name: 'Portal de Notícias' }],
-    creator: 'Portal de Notícias',
-    publisher: 'Portal de Notícias',
+    authors: author ? [{ name: author }] : [{ name: 'Radar Noroeste PR' }],
+    creator: 'Radar Noroeste PR',
+    publisher: 'Radar Noroeste PR',
     robots: {
       index: true,
       follow: true,
@@ -60,7 +60,7 @@ export function generateSEO({
       type: type as any,
       locale: 'pt_BR',
       url,
-      siteName: 'Portal de Notícias',
+      siteName: 'Radar Noroeste PR',
       title: fullTitle,
       description,
       images: [
@@ -77,8 +77,8 @@ export function generateSEO({
       title: fullTitle,
       description,
       images: [image],
-      creator: '@portalnoticias',
-      site: '@portalnoticias',
+      creator: '@radarnoroestepr',
+      site: '@radarnoroestepr',
     },
     verification: {
       google: 'google-site-verification-token', // Substituir pelo token real
@@ -133,15 +133,15 @@ export function generateArticleSchema({
     author: {
       '@type': 'Person',
       name: author,
-      url: 'https://portal-de-noticias.vercel.app/autor/' + author.toLowerCase().replace(' ', '-'),
+      url: 'https://radarnoroestepr.com.br/autor/' + author.toLowerCase().replace(' ', '-'),
     },
     publisher: {
       '@type': 'Organization',
-      name: 'Portal de Notícias',
-      url: 'https://portal-de-noticias.vercel.app',
+      name: 'Radar Noroeste PR',
+      url: 'https://radarnoroestepr.com.br',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://portal-de-noticias.vercel.app/icon.svg',
+        url: 'https://radarnoroestepr.com.br/icon.svg',
         width: 60,
         height: 60,
       },
@@ -160,38 +160,40 @@ export function generateOrganizationSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'NewsMediaOrganization',
-    name: 'Portal de Notícias',
-    alternateName: 'Portal Notícias',
-    description: 'Sua fonte confiável de informação sobre política, economia, esportes, cultura e cidades',
-    url: 'https://portal-de-noticias.vercel.app',
+    name: 'Radar Noroeste PR',
+    alternateName: 'Radar Noroeste',
+    description: 'Sua fonte confiável de informação sobre política, economia, esportes, cultura e cidades do Noroeste do Paraná',
+    url: 'https://radarnoroestepr.com.br',
     logo: {
       '@type': 'ImageObject',
-      url: 'https://portal-de-noticias.vercel.app/icon.svg',
+      url: 'https://radarnoroestepr.com.br/icon.svg',
       width: 60,
       height: 60,
     },
     sameAs: [
-      'https://facebook.com/portalnoticias',
-      'https://twitter.com/portalnoticias',
-      'https://instagram.com/portalnoticias',
+      'https://facebook.com/radarnoroestepr',
+      'https://twitter.com/radarnoroestepr',
+      'https://instagram.com/radarnoroestepr',
     ],
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'editorial',
-      email: 'contato@portalnoticias.com.br',
+      email: 'contato@radarnoroestepr.com.br',
     },
     address: {
       '@type': 'PostalAddress',
       addressCountry: 'BR',
-      addressLocality: 'São Paulo',
-      addressRegion: 'SP',
+      addressLocality: 'Paranavaí',
+      addressRegion: 'PR',
     },
     knowsAbout: [
       'política brasileira',
       'economia',
       'esportes',
       'cultura',
-      'notícias locais',
+      'notícias do noroeste do paraná',
+      'Paranavaí',
+      'região noroeste',
     ],
   }
 }
