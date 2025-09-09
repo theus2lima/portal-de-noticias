@@ -11,17 +11,17 @@ import {
 
 export default function ConfigPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
       <div className="max-w-4xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary-600 to-secondary-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Database className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-neutral-900 mb-4">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Configure seu Portal de Notícias
           </h1>
-          <p className="text-xl text-neutral-600">
+          <p className="text-xl text-gray-600">
             Siga os passos abaixo para ativar sua dashboard administrativa
           </p>
         </div>
@@ -29,18 +29,18 @@ export default function ConfigPage() {
         {/* Steps */}
         <div className="space-y-8">
           {/* Step 1 */}
-          <div className="bg-white rounded-2xl shadow-lg border border-neutral-200 p-8">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
             <div className="flex items-center mb-6">
               <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold mr-4">
                 1
               </div>
-              <h2 className="text-2xl font-semibold text-neutral-900">
+              <h2 className="text-2xl font-semibold text-gray-900">
                 Criar Projeto no Supabase
               </h2>
             </div>
             
             <div className="space-y-4">
-              <p className="text-neutral-700">
+              <p className="text-gray-700">
                 Primeiro, você precisa criar um projeto gratuito no Supabase:
               </p>
               
@@ -70,18 +70,18 @@ export default function ConfigPage() {
           </div>
 
           {/* Step 2 */}
-          <div className="bg-white rounded-2xl shadow-lg border border-neutral-200 p-8">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
             <div className="flex items-center mb-6">
               <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-bold mr-4">
                 2
               </div>
-              <h2 className="text-2xl font-semibold text-neutral-900">
+              <h2 className="text-2xl font-semibold text-gray-900">
                 Executar Script SQL
               </h2>
             </div>
             
             <div className="space-y-4">
-              <p className="text-neutral-700">
+              <p className="text-gray-700">
                 Agora você precisa criar as tabelas do banco de dados:
               </p>
               
@@ -95,28 +95,28 @@ export default function ConfigPage() {
                 </ol>
               </div>
 
-              <div className="bg-neutral-100 rounded-lg p-4">
+              <div className="bg-gray-100 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-neutral-700">Localização do arquivo:</span>
+                  <span className="text-sm font-medium text-gray-700">Localização do arquivo:</span>
                 </div>
-                <code className="text-sm text-neutral-800">📁 news-portal/database-schema.sql</code>
+                <code className="text-sm text-gray-800">📁 news-portal/database-schema.sql</code>
               </div>
             </div>
           </div>
 
           {/* Step 3 */}
-          <div className="bg-white rounded-2xl shadow-lg border border-neutral-200 p-8">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
             <div className="flex items-center mb-6">
               <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold mr-4">
                 3
               </div>
-              <h2 className="text-2xl font-semibold text-neutral-900">
+              <h2 className="text-2xl font-semibold text-gray-900">
                 Configurar Variáveis no Vercel
               </h2>
             </div>
             
             <div className="space-y-4">
-              <p className="text-neutral-700">
+              <p className="text-gray-700">
                 Copie as credenciais do Supabase e configure no Vercel:
               </p>
               
@@ -138,22 +138,22 @@ export default function ConfigPage() {
               </div>
 
               <div className="space-y-3">
-                <div className="bg-neutral-100 rounded-lg p-4">
+                <div className="bg-gray-100 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-neutral-700">Nome da Variável:</label>
+                    <label className="text-sm font-medium text-gray-700">Nome da Variável:</label>
                   </div>
-                  <code className="text-sm text-neutral-800">NEXT_PUBLIC_SUPABASE_URL</code>
-                  <div className="mt-2 text-xs text-neutral-600">
+                  <code className="text-sm text-gray-800">NEXT_PUBLIC_SUPABASE_URL</code>
+                  <div className="mt-2 text-xs text-gray-600">
                     Cole aqui a Project URL do seu Supabase
                   </div>
                 </div>
 
-                <div className="bg-neutral-100 rounded-lg p-4">
+                <div className="bg-gray-100 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-neutral-700">Nome da Variável:</label>
+                    <label className="text-sm font-medium text-gray-700">Nome da Variável:</label>
                   </div>
-                  <code className="text-sm text-neutral-800">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>
-                  <div className="mt-2 text-xs text-neutral-600">
+                  <code className="text-sm text-gray-800">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>
+                  <div className="mt-2 text-xs text-gray-600">
                     Cole aqui a anon/public key do seu Supabase
                   </div>
                 </div>
@@ -173,18 +173,18 @@ export default function ConfigPage() {
           </div>
 
           {/* Step 4 */}
-          <div className="bg-white rounded-2xl shadow-lg border border-neutral-200 p-8">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
             <div className="flex items-center mb-6">
               <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold mr-4">
                 4
               </div>
-              <h2 className="text-2xl font-semibold text-neutral-900">
+              <h2 className="text-2xl font-semibold text-gray-900">
                 Testar a Configuração
               </h2>
             </div>
             
             <div className="space-y-4">
-              <p className="text-neutral-700">
+              <p className="text-gray-700">
                 Após configurar as variáveis, teste se tudo está funcionando:
               </p>
               
@@ -223,13 +223,13 @@ export default function ConfigPage() {
         <div className="flex flex-col sm:flex-row gap-4 mt-12">
           <a 
             href="/admin/dashboard" 
-            className="flex-1 bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition-all duration-200 text-center"
+            className="flex-1 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition-all duration-200 text-center"
           >
             Acessar Dashboard →
           </a>
           <a 
             href="/admin/status" 
-            className="flex-1 bg-white border-2 border-primary-200 hover:border-primary-300 text-primary-700 font-semibold py-4 px-6 rounded-xl transition-all duration-200 text-center"
+            className="flex-1 bg-white border-2 border-blue-200 hover:border-blue-300 text-blue-700 font-semibold py-4 px-6 rounded-xl transition-all duration-200 text-center"
           >
             Verificar Status
           </a>
