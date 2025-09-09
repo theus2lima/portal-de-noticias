@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@prisma/client": "^5.7.1",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.57.2",
     "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.0.0",
