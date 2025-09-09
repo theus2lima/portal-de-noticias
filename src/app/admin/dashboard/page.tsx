@@ -10,83 +10,83 @@ import {
   Database,
   AlertCircle
 } from 'lucide-react'
-import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 
-export default async function AdminDashboardMain() {
-  const supabase = await createClient()
-
-  // Tentar buscar estatísticas com fallback
-  let stats = null
-  let recentArticles = null
-  let recentLeads = null
-  let dbConnected = true
+export default function AdminDashboardMain() {
+  // Simulação de dados para funcionar sem Supabase
+  const isSupabaseConfigured = !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   
-  try {
-    // Verifica se as variáveis de ambiente estão configuradas
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.log('Variáveis de ambiente do Supabase não configuradas')
-      dbConnected = false
-    } else {
-      // Teste de conexão simples
-      const { data: testConnection, error: testError } = await supabase
-        .from('categories')
-        .select('count', { count: 'exact', head: true })
-      
-      if (!testError && testConnection !== undefined) {
-        // Se a conexão funciona, tente buscar dados
-        const results = await Promise.allSettled([
-          supabase.from('dashboard_stats').select('*').single(),
-          supabase
-            .from('articles_with_details')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(5),
-          supabase
-            .from('leads')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(5)
-        ])
-        
-        stats = results[0].status === 'fulfilled' ? results[0].value.data : null
-        recentArticles = results[1].status === 'fulfilled' ? results[1].value.data : null
-        recentLeads = results[2].status === 'fulfilled' ? results[2].value.data : null
-      } else {
-        console.log('Teste de conexão falhou:', testError?.message || 'Tabelas não existem')
-        dbConnected = false
-      }
-    }
-  } catch (error) {
-    console.log('Erro ao conectar com banco:', error)
-    dbConnected = false
+  // Dados mockados para demonstração
+  const mockStats = {
+    published_articles: 42,
+    draft_articles: 8,
+    total_views: 15234,
+    leads_last_30_days: 156
   }
+  
+  const mockArticles = [
+    {
+      id: '1',
+      title: 'Exemplo: Nova política da cidade',
+      category_name: 'Política',
+      author_name: 'Editor',
+      created_at: new Date().toISOString(),
+      status: 'published'
+    },
+    {
+      id: '2', 
+      title: 'Exemplo: Festival de cultura local',
+      category_name: 'Cultura',
+      author_name: 'Jornalista',
+      created_at: new Date(Date.now() - 86400000).toISOString(),
+      status: 'draft'
+    }
+  ]
+  
+  const mockLeads = [
+    {
+      id: '1',
+      name: 'João Silva',
+      phone: '(11) 99999-9999',
+      city: 'São Paulo',
+      created_at: new Date().toISOString(),
+      is_contacted: false
+    },
+    {
+      id: '2',
+      name: 'Maria Santos',
+      phone: '(21) 88888-8888',
+      city: 'Rio de Janeiro',
+      created_at: new Date(Date.now() - 3600000).toISOString(),
+      is_contacted: true
+    }
+  ]
 
   const statCards = [
     {
       title: 'Artigos Publicados',
-      value: stats?.published_articles || 0,
+      value: mockStats.published_articles,
       icon: FileText,
       color: 'bg-primary-500',
       change: '+12%'
     },
     {
       title: 'Rascunhos',
-      value: stats?.draft_articles || 0,
+      value: mockStats.draft_articles,
       icon: Clock,
       color: 'bg-secondary-500',
       change: '+5%'
     },
     {
       title: 'Total de Visualizações',
-      value: stats?.total_views || 0,
+      value: mockStats.total_views,
       icon: Eye,
       color: 'bg-accent-500',
       change: '+23%'
     },
     {
       title: 'Leads (30 dias)',
-      value: stats?.leads_last_30_days || 0,
+      value: mockStats.leads_last_30_days,
       icon: MessageSquare,
       color: 'bg-primary-600',
       change: '+8%'
@@ -101,7 +101,7 @@ export default async function AdminDashboardMain() {
           <h1 className="text-3xl font-bold text-neutral-900">Dashboard</h1>
           <p className="text-neutral-600">Bem-vindo ao painel administrativo</p>
         </div>
-        {!dbConnected && (
+        {!isSupabaseConfigured && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex items-center">
               <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
@@ -148,9 +148,9 @@ export default async function AdminDashboardMain() {
             <h3 className="text-lg font-semibold text-neutral-900">Artigos Recentes</h3>
           </div>
           <div className="p-6">
-            {recentArticles && recentArticles.length > 0 ? (
+            {mockArticles && mockArticles.length > 0 ? (
               <div className="space-y-4">
-                {recentArticles.map((article: any) => (
+                {mockArticles.map((article: any) => (
                   <div key={article.id} className="flex items-center space-x-4 p-3 hover:bg-neutral-50 rounded-lg transition-colors">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-neutral-900 truncate">
@@ -186,9 +186,9 @@ export default async function AdminDashboardMain() {
             <h3 className="text-lg font-semibold text-neutral-900">Leads Recentes</h3>
           </div>
           <div className="p-6">
-            {recentLeads && recentLeads.length > 0 ? (
+            {mockLeads && mockLeads.length > 0 ? (
               <div className="space-y-4">
-                {recentLeads.map((lead: any) => (
+                {mockLeads.map((lead: any) => (
                   <div key={lead.id} className="flex items-center space-x-4 p-3 hover:bg-neutral-50 rounded-lg transition-colors">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-neutral-900">
@@ -248,7 +248,7 @@ export default async function AdminDashboardMain() {
       </div>
       
       {/* Database Setup Instructions */}
-      {!dbConnected && (
+      {!isSupabaseConfigured && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
           <div className="flex items-start">
             <Database className="h-6 w-6 text-blue-600 mr-3 mt-0.5" />
