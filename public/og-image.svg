@@ -17,10 +17,10 @@
   
   <!-- Logo -->
   <circle cx="300" cy="315" r="80" fill="white" opacity="0.2"/>
-  <text x="300" y="340" font-family="Arial, sans-serif" font-weight="bold" font-size="64" text-anchor="middle" fill="white">PN</text>
+  <text x="300" y="340" font-family="Arial, sans-serif" font-weight="bold" font-size="64" text-anchor="middle" fill="white">RN</text>
   
   <!-- Title -->
-  <text x="500" y="280" font-family="Arial, sans-serif" font-weight="bold" font-size="56" fill="white">Portal de Notícias</text>
+  <text x="500" y="280" font-family="Arial, sans-serif" font-weight="bold" font-size="56" fill="white">Radar Noroeste PR</text>
   
   <!-- Subtitle -->
   <text x="500" y="340" font-family="Arial, sans-serif" font-weight="normal" font-size="32" fill="white" opacity="0.9">Sua fonte confiável de informação</text>

@@ -51,11 +51,11 @@ const Header = () => {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-gradient-to-br from-primary-900 to-secondary-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">PN</span>
+              <span className="text-white font-bold text-lg">RN</span>
             </div>
             <div className="hidden md:block">
               <h1 className="text-2xl font-bold text-gradient">
-                Portal de Notícias
+                Radar Noroeste PR
               </h1>
               <p className="text-sm text-neutral-600">Sua fonte confiável</p>
             </div>

@@ -1,6 +1,6 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="180" height="180" rx="30" fill="url(#gradient)"/>
-  <text x="90" y="110" font-family="Arial, sans-serif" font-weight="bold" font-size="64" text-anchor="middle" fill="white">PN</text>
+  <text x="90" y="110" font-family="Arial, sans-serif" font-weight="bold" font-size="64" text-anchor="middle" fill="white">RN</text>
   <circle cx="90" cy="50" r="4" fill="#FFFF00" opacity="0.8"/>
   <defs>
     <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">

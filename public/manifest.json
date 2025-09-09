@@ -1,7 +1,7 @@
 {
-  "name": "Portal de Notícias - Sua fonte confiável de informação",
-  "short_name": "Portal Notícias",
-  "description": "Fique por dentro das principais notícias de política, economia, esportes, cultura e cidades",
+  "name": "Radar Noroeste PR - Sua fonte confiável de informação",
+  "short_name": "Radar Noroeste",
+  "description": "Fique por dentro das principais notícias de política, economia, esportes, cultura e cidades do Noroeste do Paraná",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1E3A8A",

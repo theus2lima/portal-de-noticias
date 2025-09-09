@@ -17,7 +17,7 @@ export default function AdminLogin() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/admin/dashboard')
+      window.location.href = '/admin/dashboard'
     }
   }, [isAuthenticated, router])
 
@@ -30,7 +30,8 @@ export default function AdminLogin() {
       const success = await login(email, password)
       
       if (success) {
-        router.push('/admin/dashboard')
+        // Forçar redirecionamento para dashboard admin
+        window.location.href = '/admin/dashboard'
       } else {
         setError('Credenciais inválidas. Verifique seu email e senha.')
       }

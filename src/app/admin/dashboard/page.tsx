@@ -95,25 +95,30 @@ export default function AdminDashboardMain() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header - mais limpo */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-neutral-900">Dashboard</h1>
-          <p className="text-neutral-600">Bem-vindo ao painel administrativo</p>
+          <h1 className="text-2xl font-semibold text-neutral-900">Dashboard</h1>
+          <p className="text-sm text-neutral-600 mt-1">Visão geral do sistema</p>
         </div>
-        {!isSupabaseConfigured && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
-              <div>
-                <h3 className="text-sm font-medium text-yellow-800">Banco não configurado</h3>
-                <p className="text-sm text-yellow-700 mt-1">
-                  Execute o script SQL no Supabase para configurar as tabelas.
-                </p>
+        <div className="flex items-center space-x-3">
+          {!isSupabaseConfigured && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+              <div className="flex items-center">
+                <AlertCircle className="h-4 w-4 text-yellow-600 mr-2" />
+                <div>
+                  <p className="text-xs text-yellow-700">
+                    Banco de dados não configurado
+                  </p>
+                </div>
               </div>
             </div>
+          )}
+          <div className="text-right">
+            <p className="text-xs text-neutral-500">Atualizado há</p>
+            <p className="text-xs font-medium text-neutral-700">poucos minutos</p>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Stats Cards */}

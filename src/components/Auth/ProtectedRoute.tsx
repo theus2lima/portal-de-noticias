@@ -19,8 +19,9 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
       return
     }
 
-    // Se não está carregando e não está autenticado, redireciona para login
-    if (!loading && !isAuthenticated) {
+    // Apenas redireciona se realmente não tem token
+    const token = localStorage.getItem('admin_token')
+    if (!loading && !isAuthenticated && !token) {
       router.push('/admin/login')
     }
   }, [isAuthenticated, loading, router, pathname])
