@@ -10,30 +10,49 @@ import {
   ArrowDown,
   Clock
 } from 'lucide-react'
-import { createClient } from '@/utils/supabase/server'
 
-export default async function AnalyticsPage() {
-  const supabase = await createClient()
+export default function AnalyticsPage() {
+  // Dados mocados para demonstração (substituir quando Supabase estiver configurado)
+  const stats = {
+    total_views: 15420,
+    published_articles: 23,
+    leads_last_30_days: 47,
+  }
 
-  // Buscar estatísticas do dashboard
-  const { data: stats } = await supabase
-    .from('dashboard_stats')
-    .select('*')
-    .single()
+  const topArticles = [
+    {
+      id: 1,
+      title: "Nova política de saúde aprovada na câmara municipal",
+      author_name: "Redação",
+      category_name: "Política",
+      views_count: 2450,
+      published_at: "2024-01-15T10:00:00Z"
+    },
+    {
+      id: 2,
+      title: "Crescimento econômico da cidade surpreende especialistas",
+      author_name: "Redação",
+      category_name: "Economia",
+      views_count: 1890,
+      published_at: "2024-01-14T14:30:00Z"
+    },
+    {
+      id: 3,
+      title: "Time local conquista campeonato regional",
+      author_name: "Redação",
+      category_name: "Esportes",
+      views_count: 1650,
+      published_at: "2024-01-13T16:45:00Z"
+    }
+  ]
 
-  // Buscar artigos mais vistos
-  const { data: topArticles } = await supabase
-    .from('articles_with_details')
-    .select('*')
-    .eq('status', 'published')
-    .order('views_count', { ascending: false })
-    .limit(10)
-
-  // Buscar visualizações por categoria
-  const { data: categoryViews } = await supabase
-    .from('articles_with_details')
-    .select('category_name, views_count')
-    .eq('status', 'published')
+  const categoryViews = [
+    { category_name: "Política", views_count: 5420 },
+    { category_name: "Economia", views_count: 3890 },
+    { category_name: "Esportes", views_count: 2650 },
+    { category_name: "Cultura", views_count: 2100 },
+    { category_name: "Cidades", views_count: 1360 }
+  ]
 
   // Agrupar visualizações por categoria
   const categoryStats = categoryViews?.reduce((acc: any, article: any) => {
@@ -61,8 +80,8 @@ export default async function AnalyticsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-neutral-900">Analytics</h1>
-          <p className="text-neutral-600">Análise detalhada de desempenho do portal</p>
+          <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
+          <p className="text-gray-600">Análise detalhada de desempenho do portal</p>
         </div>
         <div className="flex items-center space-x-3">
           <button className="btn-outline flex items-center space-x-2">
@@ -78,30 +97,30 @@ export default async function AnalyticsPage() {
 
       {/* Main Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-neutral-600">Total de Visualizações</p>
-              <p className="text-2xl font-bold text-neutral-900">{totalViews.toLocaleString()}</p>
+              <p className="text-sm font-medium text-gray-600">Total de Visualizações</p>
+              <p className="text-2xl font-bold text-gray-900">{totalViews.toLocaleString()}</p>
             </div>
-            <div className="bg-primary-500 p-3 rounded-lg">
+            <div className="bg-blue-500 p-3 rounded-lg">
               <Eye className="h-6 w-6 text-white" />
             </div>
           </div>
           <div className="mt-4 flex items-center">
             <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
             <span className="text-sm font-medium text-green-500">+23%</span>
-            <span className="text-sm text-neutral-500 ml-1">vs mês anterior</span>
+            <span className="text-sm text-gray-500 ml-1">vs mês anterior</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-neutral-600">Artigos Publicados</p>
-              <p className="text-2xl font-bold text-neutral-900">{publishedArticles}</p>
+              <p className="text-sm font-medium text-gray-600">Artigos Publicados</p>
+              <p className="text-2xl font-bold text-gray-900">{publishedArticles}</p>
             </div>
-            <div className="bg-accent-500 p-3 rounded-lg">
+            <div className="bg-green-500 p-3 rounded-lg">
               <BarChart3 className="h-6 w-6 text-white" />
             </div>
           </div>
