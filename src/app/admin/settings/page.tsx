@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { 
   Settings, 
   Globe, 
@@ -15,9 +16,9 @@ import {
   Lock,
   Upload,
   Check,
-  Trash2,
-  Image
+  Trash2
 } from 'lucide-react'
+import TickerNewsManager from '@/components/admin/TickerNewsManager'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState({
@@ -262,9 +263,11 @@ export default function SettingsPage() {
                 <div className="flex items-center space-x-3">
                   <div className="w-16 h-16 bg-neutral-200 rounded-lg flex items-center justify-center overflow-hidden">
                     {settings.logo ? (
-                      <img 
+                      <Image 
                         src={settings.logo} 
                         alt="Logo" 
+                        width={64}
+                        height={64}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -578,6 +581,9 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Ticker News Manager */}
+      <TickerNewsManager />
 
       {/* Notification Settings */}
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">

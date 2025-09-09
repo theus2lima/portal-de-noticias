@@ -20,6 +20,10 @@ const Hero = () => {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [headlines, setHeadlines] = useState<Article[]>([])
   const [loading, setLoading] = useState(true)
+  const [tickerData, setTickerData] = useState({
+    enabled: true,
+    items: [] as string[]
+  })
 
   // Carregar artigos reais da API
   useEffect(() => {
@@ -61,6 +65,40 @@ const Hero = () => {
     }
 
     fetchHeadlines()
+  }, [])
+
+  // Carregar dados do ticker
+  useEffect(() => {
+    const fetchTickerData = async () => {
+      try {
+        const response = await fetch('/api/settings?category=ticker')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success) {
+            setTickerData({
+              enabled: data.data.tickerEnabled,
+              items: data.data.tickerItems
+                .filter((item: any) => item.active)
+                .map((item: any) => item.text)
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados do ticker:', error)
+        // Fallback com dados padrão
+        setTickerData({
+          enabled: true,
+          items: [
+            '🔴 Nova lei aprovada no Senado',
+            '🏆 Brasil conquista medalha de ouro', 
+            '💰 Bolsa de valores atinge recorde histórico',
+            '🌿 Projeto ambiental recebe investimento de R$ 50 milhões'
+          ]
+        })
+      }
+    }
+
+    fetchTickerData()
   }, [])
 
   // Auto-play do carrossel
@@ -224,20 +262,22 @@ const Hero = () => {
         </div>
 
         {/* Breaking News Ticker */}
-        <div className="mt-6 bg-secondary-600 rounded-lg p-4">
-          <div className="flex items-center">
-            <span className="bg-white text-secondary-600 px-3 py-1 rounded-full text-sm font-bold mr-4 animate-pulse">
-              ÚLTIMAS
-            </span>
-            <div className="flex-1 overflow-hidden">
-              <div className="animate-marquee whitespace-nowrap">
-                <span className="text-white font-medium">
-                  🔴 Nova lei aprovada no Senado • 🏆 Brasil conquista medalha de ouro • 💰 Bolsa de valores atinge recorde histórico • 🌿 Projeto ambiental recebe investimento de R$ 50 milhões
-                </span>
+        {tickerData.enabled && tickerData.items.length > 0 && (
+          <div className="mt-6 bg-secondary-600 rounded-lg p-4">
+            <div className="flex items-center">
+              <span className="bg-white text-secondary-600 px-3 py-1 rounded-full text-sm font-bold mr-4 animate-pulse">
+                ÚLTIMAS
+              </span>
+              <div className="flex-1 overflow-hidden">
+                <div className="animate-marquee whitespace-nowrap">
+                  <span className="text-white font-medium">
+                    {tickerData.items.join(' • ')}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   )
