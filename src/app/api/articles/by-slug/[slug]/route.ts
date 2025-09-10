@@ -35,10 +35,14 @@ export async function GET(
     }
 
     try {
-      // Tentar buscar do Supabase primeiro
+      // Tentar buscar do Supabase primeiro - buscar dados completos incluindo content
       const { data: article, error } = await supabase
-        .from('articles_with_details')
-        .select('*')
+        .from('articles')
+        .select(`
+          *,
+          categories:category_id(name, slug, color),
+          users:author_id(name, email)
+        `)
         .eq('slug', slug)
         .eq('status', 'published')
         .single()
@@ -50,7 +54,22 @@ export async function GET(
           .update({ views_count: (article.views_count || 0) + 1 })
           .eq('id', article.id)
 
-        return NextResponse.json({ data: article })
+        // Formatar dados para compatibilidade com a interface
+        const formattedArticle = {
+          ...article,
+          category_name: article.categories?.name || 'Geral',
+          category_slug: article.categories?.slug || 'geral',
+          category_color: article.categories?.color || 'primary',
+          author_name: article.users?.name || 'Admin',
+          author_email: article.users?.email || '',
+          keywords: article.keywords || []
+        }
+
+        // Remover objetos aninhados que não são necessários no frontend
+        delete formattedArticle.categories
+        delete formattedArticle.users
+
+        return NextResponse.json({ data: formattedArticle })
       }
       
       console.log('Supabase query error, using local fallback:', error)
