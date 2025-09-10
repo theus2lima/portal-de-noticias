@@ -1,4 +1,7 @@
+'use client'
+
 import Link from 'next/link'
+import { useEffect, useMemo, useState } from 'react'
 import { 
   Building2, 
   TrendingUp, 
@@ -8,49 +11,53 @@ import {
   ArrowRight 
 } from 'lucide-react'
 
+// Mapeamento de ícones por slug/nome
+const iconMap: Record<string, any> = {
+  politica: Building2,
+  economia: TrendingUp,
+  esportes: Trophy,
+  cultura: Palette,
+  cidades: MapPin,
+}
+
 const CategorySection = () => {
-  const categories = [
-    {
-      name: 'Política',
-      href: '/categoria/politica',
-      icon: Building2,
-      description: 'Últimas decisões do governo e análises políticas',
-      color: 'bg-primary-900 hover:bg-primary-800',
-      newsCount: 45
-    },
-    {
-      name: 'Economia',
-      href: '/categoria/economia',
-      icon: TrendingUp,
-      description: 'Mercado financeiro, negócios e economia nacional',
-      color: 'bg-secondary-600 hover:bg-secondary-700',
-      newsCount: 38
-    },
-    {
-      name: 'Esportes',
-      href: '/categoria/esportes',
-      icon: Trophy,
-      description: 'Resultados, análises e novidades do mundo esportivo',
-      color: 'bg-accent-500 hover:bg-accent-600',
-      newsCount: 52
-    },
-    {
-      name: 'Cultura',
-      href: '/categoria/cultura',
-      icon: Palette,
-      description: 'Arte, música, literatura e eventos culturais',
-      color: 'bg-primary-500 hover:bg-primary-600',
-      newsCount: 29
-    },
-    {
-      name: 'Cidades',
-      href: '/categoria/cidades',
-      icon: MapPin,
-      description: 'Notícias locais, infraestrutura e vida urbana',
-      color: 'bg-secondary-700 hover:bg-secondary-800',
-      newsCount: 67
+  const [categories, setCategories] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('/api/categories?include_articles=true')
+        const data = await res.json()
+        const cats = (data.data || []).filter((c: any) => c.is_active !== false)
+        setCategories(cats)
+      } catch (e) {
+        console.error('Erro ao carregar categorias:', e)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+    fetchCategories()
+  }, [])
+
+  const normalized = useMemo(() => {
+    if (!categories || categories.length === 0) return []
+    return categories.map((c: any) => {
+      const slug = (c.slug || c.name || '').toString().toLowerCase()
+      const Icon = iconMap[slug] || Building2
+      const count = (c.articles && c.articles[0]?.count) || c.articles_count || c.newsCount || 0
+      const href = `/categoria/${slug}`
+      const color = 'bg-primary-900 hover:bg-primary-800'
+      return {
+        name: c.name,
+        href,
+        icon: Icon,
+        description: c.description || 'Notícias desta categoria',
+        color,
+        newsCount: count
+      }
+    })
+  }, [categories])
 
   return (
     <section className="py-16 bg-white">
@@ -67,7 +74,7 @@ const CategorySection = () => {
 
         {/* Category Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          {categories.map((category, index) => (
+          {(loading ? [] : normalized).map((category, index) => (
             <Link 
               key={category.name}
               href={category.href}

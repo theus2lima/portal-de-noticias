@@ -8,6 +8,7 @@ const LeadForm = () => {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
+    email: '',
     city: ''
   })
   const [isSubmitted, setIsSubmitted] = useState(false)
@@ -47,6 +48,13 @@ const LeadForm = () => {
       newErrors.city = 'Cidade deve ter pelo menos 2 caracteres'
     }
 
+    if (formData.email && formData.email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.email.trim())) {
+        newErrors.email = 'Email inválido'
+      }
+    }
+
     return newErrors
   }
 
@@ -70,7 +78,10 @@ const LeadForm = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
+          name: formData.name,
+          phone: formData.phone,
+          city: formData.city,
+          email: formData.email || undefined,
           source: 'website'
         }),
       })
@@ -98,7 +109,7 @@ const LeadForm = () => {
         }
         
         setIsSubmitted(true)
-        setFormData({ name: '', phone: '', city: '' })
+        setFormData({ name: '', phone: '', email: '', city: '' })
         
         // Simular redirecionamento para WhatsApp após 2 segundos
         setTimeout(() => {
@@ -226,6 +237,32 @@ const LeadForm = () => {
                   </div>
                   {errors.name && (
                     <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                  )}
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Email (opcional)
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="seu@email.com"
+                      className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-colors duration-200 ${
+                        errors.email 
+                          ? 'border-red-500 focus:border-red-600' 
+                          : 'border-gray-300 focus:border-blue-500'
+                      }`}
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
                   )}
                 </div>
 
