@@ -259,13 +259,6 @@ export default function ArticlesPage() {
 
   const displayArticles = filteredArticles.length > 0 ? filteredArticles : articles
   
-  console.log('Current state:')
-  console.log('- loading:', loading)
-  console.log('- articles:', articles)
-  console.log('- filteredArticles:', filteredArticles) 
-  console.log('- displayArticles:', displayArticles)
-  console.log('- displayArticles.length:', displayArticles.length)
-  
   if (loading) {
     return (
       <div className="space-y-6">
@@ -284,11 +277,6 @@ export default function ArticlesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Debug Info */}
-      <div className="bg-yellow-100 border border-yellow-300 rounded p-4 text-sm">
-        <strong>Debug Info:</strong> articles={articles.length}, filteredArticles={filteredArticles.length}, displayArticles={displayArticles.length}
-      </div>
-      
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
