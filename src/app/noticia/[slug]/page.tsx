@@ -279,11 +279,11 @@ export default function ArticlePage({ params }: ArticlePageProps) {
 
             {/* Article content */}
             <div className="prose prose-lg max-w-none prose-headings:text-neutral-900 prose-p:text-neutral-700 prose-p:text-justify prose-a:text-primary-600 prose-strong:text-neutral-900 prose-blockquote:border-primary-600 prose-blockquote:bg-neutral-50 prose-blockquote:rounded-lg prose-blockquote:p-6">
-              {article.content.includes('<') ? (
+              {(article.content && article.content.includes('<')) ? (
                 <div dangerouslySetInnerHTML={{ __html: article.content }} />
               ) : (
                 <div className="whitespace-pre-wrap">
-                  {article.content.split('\n').map((paragraph, index) => (
+                  {(article.content || '').split('\n').map((paragraph, index) => (
                     paragraph.trim() ? (
                       <p key={index} className="mb-4">{paragraph}</p>
                     ) : null

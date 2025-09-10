@@ -406,5 +406,35 @@
     "created_at": "2024-01-07T11:15:00Z",
     "updated_at": "2024-01-07T11:15:00Z",
     "published_at": "2024-01-07T11:15:00Z"
+  },
+  {
+    "id": "economia-brasileira-recuperacao-2024",
+    "title": "Economia Brasileira Mostra Sinais de Recuperação",
+    "subtitle": "PIB cresce 2,1% no último trimestre e inflação mostra sinais de arrefecimento",
+    "slug": "economia-brasileira-recuperacao",
+    "content": "<h2>Crescimento do PIB</h2><p>A economia brasileira apresentou sinais positivos de recuperação no último trimestre, com o PIB registrando crescimento de 2,1% em relação ao período anterior. Este resultado superou as expectativas dos analistas, que projetavam alta de 1,8%.</p><h2>Inflação em Queda</h2><p>Paralelamente ao crescimento econômico, a inflação mostrou sinais de arrefecimento, com o IPCA acumulando 3,2% nos últimos 12 meses, dentro da meta estabelecida pelo Banco Central. Esta combinação de crescimento com inflação controlada é vista como um cenário favorável para a continuidade da recuperação.</p><h2>Setores em Destaque</h2><p>Os setores de serviços e indústria foram os principais responsáveis pelo bom desempenho da economia. O setor de serviços cresceu 1,8%, enquanto a indústria registrou alta de 2,5%. O agronegócio também contribuiu positivamente, com crescimento de 1,2%.</p><h2>Perspectivas Futuras</h2><p>Economistas são otimistas quanto à manutenção dessa trajetória de crescimento. As projeções indicam que o PIB pode crescer entre 2,8% e 3,2% no próximo ano, desde que sejam mantidas as políticas econômicas atuais e o cenário internacional permaneça favorável.</p>",
+    "excerpt": "PIB cresce 2,1% no último trimestre enquanto inflação mostra sinais de arrefecimento, indicando recuperação da economia brasileira.",
+    "featured_image": "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=800&h=600&fit=crop",
+    "image_alt": "Gráficos econômicos e dados financeiros do Brasil",
+    "category_id": "2",
+    "category_name": "Economia",
+    "author_id": "00000000-0000-0000-0000-000000000001",
+    "author_name": "Administrador",
+    "status": "published",
+    "is_featured": true,
+    "reading_time": 4,
+    "views_count": 1,
+    "meta_title": "Economia Brasileira Mostra Sinais de Recuperação",
+    "meta_description": "PIB cresce 2,1% no último trimestre enquanto inflação mostra sinais de arrefecimento, indicando recuperação da economia brasileira.",
+    "keywords": [
+      "economia",
+      "PIB",
+      "inflação",
+      "crescimento",
+      "brasil"
+    ],
+    "created_at": "2025-09-10T19:00:00Z",
+    "updated_at": "2025-09-10T19:00:00Z",
+    "published_at": "2025-09-10T19:00:00Z"
   }
 ]
