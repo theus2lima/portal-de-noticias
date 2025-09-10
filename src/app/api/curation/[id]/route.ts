@@ -109,15 +109,14 @@ export async function PUT(
       case 'reject':
         updateData.status = 'rejected'
         updateData.curator_notes = data.reason
-        updateData.rejected_at = new Date().toISOString()
         break
 
       case 'edit':
         updateData.manual_category_id = data.categoryId || null
         updateData.curator_notes = data.notes
-        updateData.edited_title = data.title
-        updateData.edited_summary = data.summary
-        updateData.edited_content = data.content
+        updateData.curated_title = data.title
+        updateData.curated_summary = data.summary
+        updateData.curated_content = data.content
         updateData.status = 'editing'
         break
 
@@ -125,9 +124,9 @@ export async function PUT(
         updateData.status = 'published'
         updateData.manual_category_id = data.categoryId || null
         updateData.published_at = new Date().toISOString()
-        updateData.edited_title = data.title
-        updateData.edited_summary = data.summary
-        updateData.edited_content = data.content
+        updateData.curated_title = data.title
+        updateData.curated_summary = data.summary
+        updateData.curated_content = data.content
         break
 
       default:
@@ -143,10 +142,15 @@ export async function PUT(
       .eq('id', params.id)
 
     if (updateError) {
-      console.error('Erro ao atualizar curadoria:', updateError)
+      console.error('Erro ao atualizar curadoria:', {
+        error: updateError,
+        updateData,
+        curationId: params.id,
+        action
+      })
       return NextResponse.json({
         success: false,
-        error: 'Erro ao atualizar notícia'
+        error: `Erro ao atualizar notícia: ${updateError.message || updateError.code || 'Erro desconhecido'}`
       }, { status: 500 })
     }
 
