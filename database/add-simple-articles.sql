@@ -2,8 +2,8 @@
 -- SCRIPT SIMPLES PARA ADICIONAR ARTIGOS
 -- ============================================
 
--- 1. Primeiro vamos verificar a estrutura da tabela
-\d articles
+-- 1. Verificar estrutura da tabela articles
+SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'articles' ORDER BY ordinal_position;
 
 -- 2. Verificar quais categorias existem
 SELECT id, name, slug FROM categories ORDER BY name;
@@ -103,6 +103,7 @@ BEGIN
     );
     
     RAISE NOTICE '5 artigos básicos criados com sucesso!';
+    RAISE NOTICE 'Dados básicos criados! Agora você pode adicionar views_count depois.';
     
 END $$;
 
@@ -124,5 +125,3 @@ SELECT
     'LEADS' as tipo,
     COUNT(*) as quantidade
 FROM leads;
-
-RAISE NOTICE 'Dados básicos criados! Agora você pode adicionar views_count depois.';

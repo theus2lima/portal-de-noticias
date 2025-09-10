@@ -101,8 +101,8 @@ BEGIN
         RAISE NOTICE 'Índice idx_articles_published_at criado';
     END IF;
     
+    RAISE NOTICE '============================================';
+    RAISE NOTICE 'ESTRUTURA DA TABELA ARTICLES VERIFICADA!';
+    RAISE NOTICE '============================================';
+    
 END $$;
-
-RAISE NOTICE '============================================';
-RAISE NOTICE 'ESTRUTURA DA TABELA ARTICLES VERIFICADA!';
-RAISE NOTICE '============================================';
