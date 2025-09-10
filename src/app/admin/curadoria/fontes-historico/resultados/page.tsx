@@ -21,8 +21,15 @@ type ScrapedNews = {
   }
 }
 
+type NewsSource = {
+  id: string
+  name: string
+  url: string
+}
+
 export default function HistoricalResultsPage() {
   const [news, setNews] = useState<ScrapedNews[]>([])
+  const [sources, setSources] = useState<NewsSource[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<string[]>([])
   const [filter, setFilter] = useState({
@@ -34,8 +41,26 @@ export default function HistoricalResultsPage() {
   const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
+    loadSources()
+  }, [])
+
+  useEffect(() => {
     loadNews()
   }, [filter])
+
+  const loadSources = async () => {
+    try {
+      const response = await fetchJSON<{ success: boolean; data: NewsSource[] }>(
+        '/api/news-sources'
+      )
+      
+      if (response.success) {
+        setSources(response.data)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar fontes:', error)
+    }
+  }
 
   const loadNews = async () => {
     try {
@@ -143,7 +168,7 @@ export default function HistoricalResultsPage() {
           <Filter size={18} />
           <h2 className="font-medium">Filtros</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">Período</label>
             <select value={filter.days} onChange={e => setFilter(prev => ({ ...prev, days: parseInt(e.target.value) }))} className="w-full px-3 py-2 border rounded-md text-sm">
@@ -151,6 +176,21 @@ export default function HistoricalResultsPage() {
               <option value={7}>Últimos 7 dias</option>
               <option value={30}>Últimos 30 dias</option>
               <option value={90}>Últimos 90 dias</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Fonte</label>
+            <select 
+              value={filter.source} 
+              onChange={e => setFilter(prev => ({ ...prev, source: e.target.value }))}
+              className="w-full px-3 py-2 border rounded-md text-sm"
+            >
+              <option value="">Todas as fontes</option>
+              {sources.map(source => (
+                <option key={source.id} value={source.id}>
+                  {source.name}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -162,6 +202,14 @@ export default function HistoricalResultsPage() {
               onChange={e => setFilter(prev => ({ ...prev, search: e.target.value }))}
               className="w-full px-3 py-2 border rounded-md text-sm"
             />
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={() => setFilter({ days: 7, source: '', search: '' })}
+              className="px-3 py-2 text-sm text-neutral-600 hover:text-neutral-800 border border-neutral-300 hover:border-neutral-400 rounded-md transition-colors"
+            >
+              Limpar Filtros
+            </button>
           </div>
         </div>
       </div>
