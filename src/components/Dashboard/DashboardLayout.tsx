@@ -17,11 +17,107 @@ import {
   X,
   LogOut,
   Bell,
-  Activity
+  Activity,
+  Rss,
+  Filter,
+  Bot,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  ExternalLink,
+  PieChart,
+  Shield,
+  Globe,
+  Layers,
+  TrendingUp
 } from 'lucide-react'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
+}
+
+const FontesSubmenu = ({ pathname, setSidebarOpen }: { pathname: string, setSidebarOpen: (open: boolean) => void }) => {
+  const [isOpen, setIsOpen] = useState(
+    pathname?.startsWith('/admin/curadoria/fontes') || pathname?.startsWith('/admin/curadoria/historico') || false
+  )
+
+  const isActive = pathname?.startsWith('/admin/curadoria/fontes') || pathname?.startsWith('/admin/curadoria/historico') || false
+  const subItems = [
+    {
+      name: 'Gerenciar Fontes',
+      href: '/admin/curadoria/fontes',
+      icon: Rss,
+      isActive: pathname === '/admin/curadoria/fontes'
+    },
+    {
+      name: 'Histórico (Fontes)',
+      href: '/admin/curadoria/fontes-historico',
+      icon: Clock,
+      isActive: pathname?.startsWith('/admin/curadoria/fontes-historico') || false
+    },
+    {
+      name: 'Histórico (Interna)',
+      href: '/admin/curadoria/historico',
+      icon: Activity,
+      isActive: pathname === '/admin/curadoria/historico'
+    }
+  ]
+
+  return (
+    <>
+      {/* Main Fontes Item */}
+      <div
+        className={`flex items-center justify-between px-3 py-2.5 mx-3 text-sm font-medium rounded-lg transition-all duration-200 cursor-pointer group ${
+          isActive
+            ? 'bg-secondary-600 text-white shadow-lg'
+            : 'text-primary-200 hover:text-white hover:bg-primary-800/70'
+        }`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div className="flex items-center">
+          <Rss className={`mr-3 h-5 w-5 transition-colors ${
+            isActive ? 'text-white' : 'text-primary-300 group-hover:text-secondary-400'
+          }`} />
+          <span className="truncate">Fontes</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          {isActive && (
+            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+          )}
+          {isOpen ? 
+            <ChevronDown className="w-4 h-4 text-primary-300" /> : 
+            <ChevronRight className="w-4 h-4 text-primary-300" />
+          }
+        </div>
+      </div>
+
+      {/* Submenu Items */}
+      {isOpen && (
+        <div className="ml-6 mt-1 space-y-1 border-l border-primary-800 pl-4">
+          {subItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center px-3 py-2 text-xs font-medium rounded-md transition-all duration-200 group ${
+                item.isActive
+                  ? 'bg-secondary-700 text-white shadow-sm'
+                  : 'text-primary-300 hover:text-white hover:bg-primary-800/50'
+              }`}
+              onClick={() => setSidebarOpen(false)}
+            >
+              <item.icon className={`mr-2 h-4 w-4 transition-colors ${
+                item.isActive ? 'text-white' : 'text-primary-400 group-hover:text-secondary-400'
+              }`} />
+              <span className="truncate">{item.name}</span>
+              {item.isActive && (
+                <div className="ml-auto w-1 h-1 bg-white rounded-full animate-pulse" />
+              )}
+            </Link>
+          ))}
+        </div>
+      )}
+    </>
+  )
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
@@ -29,51 +125,71 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const pathname = usePathname()
   const { user, logout } = useAuth()
 
-  const menuItems = [
+  const menuSections = [
     {
-      name: 'Dashboard',
-      href: '/admin/dashboard',
-      icon: Home
+      title: 'Dashboard',
+      items: [
+        {
+          name: 'Visão Geral',
+          href: '/admin/dashboard',
+          icon: Home
+        }
+      ]
     },
     {
-      name: 'Configuração',
-      href: '/admin/config',
-      icon: Database
+      title: 'Gestão de Conteúdo',
+      items: [
+        {
+          name: 'Artigos',
+          href: '/admin/articles',
+          icon: FileText
+        },
+        {
+          name: 'Categorias',
+          href: '/admin/categories',
+          icon: FolderOpen
+        },
+        {
+          name: 'Leads',
+          href: '/admin/leads',
+          icon: MessageSquare
+        }
+      ]
     },
     {
-      name: 'Artigos',
-      href: '/admin/articles',
-      icon: FileText
+      title: 'Analytics & Monitoramento',
+      items: [
+        {
+          name: 'Analytics',
+          href: '/admin/analytics',
+          icon: PieChart
+        },
+        {
+          name: 'Status do Sistema',
+          href: '/admin/status',
+          icon: TrendingUp
+        }
+      ]
     },
     {
-      name: 'Categorias',
-      href: '/admin/categories',
-      icon: FolderOpen
-    },
-    {
-      name: 'Leads',
-      href: '/admin/leads',
-      icon: MessageSquare
-    },
-    {
-      name: 'Usuários',
-      href: '/admin/users',
-      icon: Users
-    },
-    {
-      name: 'Analytics',
-      href: '/admin/analytics',
-      icon: BarChart3
-    },
-    {
-      name: 'Status',
-      href: '/admin/status',
-      icon: Activity
-    },
-    {
-      name: 'Configurações',
-      href: '/admin/settings',
-      icon: Settings
+      title: 'Administração',
+      items: [
+        {
+          name: 'Usuários',
+          href: '/admin/users',
+          icon: Users
+        },
+        {
+          name: 'Banco de Dados',
+          href: '/admin/config',
+          icon: Database
+        },
+        {
+          name: 'Configurações',
+          href: '/admin/settings',
+          icon: Settings
+        }
+      ]
     }
   ]
 
@@ -106,30 +222,96 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </button>
         </div>
 
-        <nav className="mt-8">
-          <div className="px-6 mb-4">
-            <h3 className="text-xs font-semibold text-primary-300 uppercase tracking-wider">
-              Menu Principal
-            </h3>
+        <nav className="flex-1 mt-2 overflow-y-auto admin-sidebar-scroll" style={{ height: 'calc(100vh - 64px - 140px)' }}>
+          <div className="px-3 pb-4">
+            {/* Menu Principal Sections */}
+            {menuSections.map((section, sectionIndex) => (
+              <div key={section.title} className="mb-6">
+                <div className="px-3 mb-3">
+                  <h3 className="text-xs font-semibold text-primary-300 uppercase tracking-wider">
+                    {section.title}
+                  </h3>
+                </div>
+                <div className="space-y-1">
+                  {section.items.map((item) => {
+                    const isActive = pathname === item.href
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex items-center px-3 py-2.5 mx-3 text-sm font-medium rounded-lg transition-all duration-200 group ${
+                          isActive
+                            ? 'bg-secondary-600 text-white shadow-lg'
+                            : 'text-primary-200 hover:text-white hover:bg-primary-800/70'
+                        }`}
+                        onClick={() => setSidebarOpen(false)}
+                      >
+                        <item.icon className={`mr-3 h-5 w-5 transition-colors ${
+                          isActive ? 'text-white' : 'text-primary-300 group-hover:text-secondary-400'
+                        }`} />
+                        <span className="truncate">{item.name}</span>
+                        {isActive && (
+                          <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                        )}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+            
+            {/* Separador */}
+            <div className="mx-6 my-6 h-px bg-primary-700" />
+            
+            {/* Curadoria Section */}
+            <div className="mb-6">
+              <div className="px-3 mb-3">
+                <h3 className="text-xs font-semibold text-primary-300 uppercase tracking-wider flex items-center">
+                  <Bot className="mr-1 h-3 w-3" />
+                  Curadoria
+                </h3>
+              </div>
+              <div className="space-y-1">
+                <Link
+                  href="/admin/curadoria"
+                  className={`flex items-center px-3 py-2.5 mx-3 text-sm font-medium rounded-lg transition-all duration-200 group ${
+                    pathname === '/admin/curadoria'
+                      ? 'bg-secondary-600 text-white shadow-lg'
+                      : 'text-primary-200 hover:text-white hover:bg-primary-800/70'
+                  }`}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <Filter className={`mr-3 h-5 w-5 transition-colors ${
+                    pathname === '/admin/curadoria' ? 'text-white' : 'text-primary-300 group-hover:text-secondary-400'
+                  }`} />
+                  <span className="truncate">Dashboard</span>
+                  {pathname === '/admin/curadoria' && (
+                    <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                  )}
+                </Link>
+                
+                <FontesSubmenu pathname={pathname} setSidebarOpen={setSidebarOpen} />
+                
+                <Link
+                  href="/admin/curadoria/configuracoes"
+                  className={`flex items-center px-3 py-2.5 mx-3 text-sm font-medium rounded-lg transition-all duration-200 group ${
+                    pathname === '/admin/curadoria/configuracoes'
+                      ? 'bg-secondary-600 text-white shadow-lg'
+                      : 'text-primary-200 hover:text-white hover:bg-primary-800/70'
+                  }`}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <Settings className={`mr-3 h-5 w-5 transition-colors ${
+                    pathname === '/admin/curadoria/configuracoes' ? 'text-white' : 'text-primary-300 group-hover:text-secondary-400'
+                  }`} />
+                  <span className="truncate">Configurações</span>
+                  {pathname === '/admin/curadoria/configuracoes' && (
+                    <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                  )}
+                </Link>
+              </div>
+            </div>
           </div>
-          {menuItems.map((item) => {
-            const isActive = pathname === item.href
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center px-6 py-3 text-sm font-medium transition-colors duration-200 ${
-                  isActive
-                    ? 'bg-primary-800 text-white border-r-3 border-secondary-500'
-                    : 'text-primary-200 hover:text-white hover:bg-primary-800'
-                }`}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <item.icon className="mr-3 h-5 w-5" />
-                {item.name}
-              </Link>
-            )
-          })}
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-6">
