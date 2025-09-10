@@ -12,7 +12,17 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-interface DatabaseStatus {
+interface SystemStatus {
+  supabaseUrl: boolean
+  supabaseKey: boolean
+  databaseConnection: boolean
+  tablesExist: boolean
+  environment: string
+  vercelDeploy: boolean
+  errors: string[]
+}
+
+interface DatabaseStats {
   database_connected: boolean
   published_articles: number
   total_categories: number
@@ -21,21 +31,37 @@ interface DatabaseStatus {
 }
 
 export default function StatusPage() {
-  const [databaseStatus, setDatabaseStatus] = useState<DatabaseStatus | null>(null)
+  const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null)
+  const [databaseStats, setDatabaseStats] = useState<DatabaseStats | null>(null)
   const [loading, setLoading] = useState(true)
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   
   useEffect(() => {
-    const checkDatabaseConnection = async () => {
+    const checkSystemStatus = async () => {
       try {
-        const response = await fetch('/api/dashboard/stats')
-        if (response.ok) {
-          const data = await response.json()
-          setDatabaseStatus(data)
+        // Verificar status do sistema
+        const systemResponse = await fetch('/api/system/status')
+        if (systemResponse.ok) {
+          const systemData = await systemResponse.json()
+          setSystemStatus(systemData.data)
         } else {
-          setDatabaseStatus({ 
+          setSystemStatus({
+            supabaseUrl: false,
+            supabaseKey: false,
+            databaseConnection: false,
+            tablesExist: false,
+            environment: 'unknown',
+            vercelDeploy: false,
+            errors: ['Falha ao verificar status do sistema']
+          })
+        }
+
+        // Verificar estatísticas do banco
+        const statsResponse = await fetch('/api/dashboard/stats')
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json()
+          setDatabaseStats(statsData)
+        } else {
+          setDatabaseStats({ 
             database_connected: false, 
             published_articles: 0,
             total_categories: 0,
@@ -45,7 +71,16 @@ export default function StatusPage() {
         }
       } catch (error) {
         console.error('Erro ao verificar status:', error)
-        setDatabaseStatus({ 
+        setSystemStatus({
+          supabaseUrl: false,
+          supabaseKey: false,
+          databaseConnection: false,
+          tablesExist: false,
+          environment: 'unknown',
+          vercelDeploy: false,
+          errors: ['Erro de rede']
+        })
+        setDatabaseStats({ 
           database_connected: false, 
           published_articles: 0,
           total_categories: 0,
@@ -57,27 +92,19 @@ export default function StatusPage() {
       }
     }
 
-    checkDatabaseConnection()
+    checkSystemStatus()
   }, [])
 
   const checks = {
-    supabaseUrl: !!supabaseUrl,
-    supabaseKey: !!supabaseKey,
-    databaseConnection: databaseStatus?.database_connected || false,
-    tablesExist: databaseStatus?.database_connected || false,
-    categoriesData: (databaseStatus?.total_categories || 0) > 0,
-    usersData: databaseStatus?.database_connected || false
+    supabaseUrl: systemStatus?.supabaseUrl || false,
+    supabaseKey: systemStatus?.supabaseKey || false,
+    databaseConnection: systemStatus?.databaseConnection || false,
+    tablesExist: systemStatus?.tablesExist || false,
+    categoriesData: (databaseStats?.total_categories || 0) > 0,
+    usersData: systemStatus?.databaseConnection || false
   }
 
-  let errorDetails: string[] = []
-  
-  // Verificar variáveis de ambiente
-  if (!checks.supabaseUrl) {
-    errorDetails.push('NEXT_PUBLIC_SUPABASE_URL não configurada')
-  }
-  if (!checks.supabaseKey) {
-    errorDetails.push('NEXT_PUBLIC_SUPABASE_ANON_KEY não configurada')
-  }
+  const errorDetails = systemStatus?.errors || []
 
   const getStatusIcon = (status: boolean) => {
     return status ? (
@@ -176,8 +203,8 @@ export default function StatusPage() {
           <div className="flex justify-between items-center py-2 border-b border-neutral-200">
             <span className="text-neutral-600">Supabase URL:</span>
             <span className="font-mono text-sm">
-              {process.env.NEXT_PUBLIC_SUPABASE_URL 
-                ? `${process.env.NEXT_PUBLIC_SUPABASE_URL.substring(0, 30)}...` 
+              {systemStatus?.supabaseUrl 
+                ? 'Configurada'
                 : 'Não configurada'}
             </span>
           </div>
@@ -185,8 +212,8 @@ export default function StatusPage() {
           <div className="flex justify-between items-center py-2 border-b border-neutral-200">
             <span className="text-neutral-600">Supabase Key:</span>
             <span className="font-mono text-sm">
-              {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY 
-                ? `${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.substring(0, 20)}...` 
+              {systemStatus?.supabaseKey 
+                ? 'Configurada'
                 : 'Não configurada'}
             </span>
           </div>
@@ -194,14 +221,14 @@ export default function StatusPage() {
           <div className="flex justify-between items-center py-2 border-b border-neutral-200">
             <span className="text-neutral-600">Ambiente:</span>
             <span className="font-mono text-sm">
-              {process.env.NODE_ENV || 'development'}
+              {systemStatus?.environment || 'production'}
             </span>
           </div>
 
           <div className="flex justify-between items-center py-2">
             <span className="text-neutral-600">Vercel Deploy:</span>
             <span className="font-mono text-sm">
-              {process.env.VERCEL ? 'Sim' : 'Local'}
+              {systemStatus?.vercelDeploy ? 'Sim' : 'Local'}
             </span>
           </div>
         </div>
