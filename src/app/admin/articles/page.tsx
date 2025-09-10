@@ -250,6 +250,37 @@ export default function ArticlesPage() {
     }
   }
 
+  // Função para alternar status do artigo
+  const handleStatusToggle = async (article: Article) => {
+    const newStatus = article.status === 'published' ? 'draft' : 'published'
+    
+    try {
+      const response = await fetch(`/api/articles/${article.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: newStatus
+        })
+      })
+      
+      if (response.ok) {
+        toast.success(
+          newStatus === 'published' 
+            ? 'Artigo publicado com sucesso!' 
+            : 'Artigo salvo como rascunho!'
+        )
+        fetchData(pagination.page, searchTerm, selectedCategory, selectedStatus)
+      } else {
+        toast.error('Erro ao alterar status do artigo')
+      }
+    } catch (error) {
+      console.error('Erro ao alterar status:', error)
+      toast.error('Erro ao alterar status do artigo')
+    }
+  }
+
   // Função para mudar página
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
@@ -348,6 +379,9 @@ export default function ArticlesPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                   Artigo
                 </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                  Ações
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                   Categoria
                 </th>
@@ -362,9 +396,6 @@ export default function ArticlesPage() {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                   Data
-                </th>
-                <th className="relative px-6 py-3">
-                  <span className="sr-only">Ações</span>
                 </th>
               </tr>
             </thead>
@@ -399,6 +430,60 @@ export default function ArticlesPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center justify-center space-x-1">
+                        {/* Ver artigo publicado */}
+                        {article.status === 'published' && (
+                          <Link
+                            href={`/noticia/${article.slug}`}
+                            className="inline-flex items-center justify-center w-8 h-8 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-full transition-all duration-200"
+                            title="Ver artigo"
+                            target="_blank"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        )}
+                        
+                        {/* Editar artigo */}
+                        <Link
+                          href={`/admin/articles/${article.id}/edit`}
+                          className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-all duration-200"
+                          title="Editar artigo"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Link>
+                        
+                        {/* Ação de status - Publicar/Arquivar */}
+                        <button
+                          onClick={() => handleStatusToggle(article)}
+                          className={`inline-flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 ${
+                            article.status === 'published'
+                              ? 'text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50'
+                              : 'text-green-600 hover:text-green-900 hover:bg-green-50'
+                          }`}
+                          title={article.status === 'published' ? 'Salvar como rascunho' : 'Publicar artigo'}
+                        >
+                          {article.status === 'published' ? (
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          ) : (
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                          )}
+                        </button>
+                        
+                        {/* Excluir artigo */}
+                        <button
+                          onClick={() => handleDeleteClick(article)}
+                          className="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-full transition-all duration-200"
+                          title="Excluir artigo"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                         {article.category_name}
                       </span>
@@ -423,40 +508,6 @@ export default function ArticlesPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
                       {new Date(article.created_at).toLocaleDateString('pt-BR')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
-                        {article.status === 'published' && (
-                          <Link
-                            href={`/noticia/${article.slug}`}
-                            className="text-neutral-600 hover:text-neutral-900 transition-colors"
-                            title="Ver artigo"
-                            target="_blank"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        )}
-                        <Link
-                          href={`/admin/articles/${article.id}/edit`}
-                          className="text-primary-600 hover:text-primary-900 transition-colors"
-                          title="Editar artigo"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Link>
-                        <button
-                          onClick={() => handleDeleteClick(article)}
-                          className="text-red-600 hover:text-red-900 transition-colors"
-                          title="Excluir artigo"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          className="text-neutral-600 hover:text-neutral-900 transition-colors"
-                          title="Mais opções"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))
