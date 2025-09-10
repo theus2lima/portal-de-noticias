@@ -30,9 +30,17 @@ interface DatabaseStats {
   error?: string
 }
 
+interface InitialData {
+  hasCategories: boolean
+  hasUsers: boolean
+  hasArticles: boolean
+  errors: string[]
+}
+
 export default function StatusPage() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null)
   const [databaseStats, setDatabaseStats] = useState<DatabaseStats | null>(null)
+  const [initialData, setInitialData] = useState<InitialData | null>(null)
   const [loading, setLoading] = useState(true)
   
   useEffect(() => {
@@ -69,6 +77,20 @@ export default function StatusPage() {
             error: 'Falha na conectividade' 
           })
         }
+
+        // Verificar dados iniciais
+        const dataResponse = await fetch('/api/system/check-data')
+        if (dataResponse.ok) {
+          const dataResult = await dataResponse.json()
+          setInitialData(dataResult.data)
+        } else {
+          setInitialData({
+            hasCategories: false,
+            hasUsers: false,
+            hasArticles: false,
+            errors: ['Falha ao verificar dados iniciais']
+          })
+        }
       } catch (error) {
         console.error('Erro ao verificar status:', error)
         setSystemStatus({
@@ -87,6 +109,12 @@ export default function StatusPage() {
           total_tags: 0,
           error: 'Erro de rede' 
         })
+        setInitialData({
+          hasCategories: false,
+          hasUsers: false,
+          hasArticles: false,
+          errors: ['Erro de rede']
+        })
       } finally {
         setLoading(false)
       }
@@ -100,11 +128,14 @@ export default function StatusPage() {
     supabaseKey: systemStatus?.supabaseKey || false,
     databaseConnection: systemStatus?.databaseConnection || false,
     tablesExist: systemStatus?.tablesExist || false,
-    categoriesData: (databaseStats?.total_categories || 0) > 0,
-    usersData: systemStatus?.databaseConnection || false
+    categoriesData: initialData?.hasCategories || false,
+    usersData: initialData?.hasUsers || false
   }
 
-  const errorDetails = systemStatus?.errors || []
+  const errorDetails = [
+    ...(systemStatus?.errors || []),
+    ...(initialData?.errors || [])
+  ]
 
   const getStatusIcon = (status: boolean) => {
     return status ? (

@@ -34,28 +34,45 @@ export async function GET(request: NextRequest) {
       try {
         const supabase = await createClient()
         
-        // Testar conexão básica
-        const { data: authData, error: authError } = await supabase.auth.getUser()
-        if (!authError || authError.message === 'JWT expired') {
-          databaseConnection = true
-        }
-
-        // Verificar se as tabelas existem
-        const { data: tablesData, error: tablesError } = await supabase
-          .from('articles')
-          .select('id')
-          .limit(1)
-        
-        if (!tablesError) {
-          tablesExist = true
-        } else {
-          errors.push('Tabelas do banco não encontradas')
+        // Primeiro teste: tentar uma query simples
+        try {
+          const { data, error } = await supabase
+            .from('articles')
+            .select('id')
+            .limit(1)
+          
+          if (!error) {
+            databaseConnection = true
+            tablesExist = true
+          } else {
+            // Se der erro, pode ser que não há dados ou a tabela não existe
+            console.log('Erro na query articles:', error.message)
+            
+            // Vamos tentar outras tabelas
+            const { data: catData, error: catError } = await supabase
+              .from('categories')
+              .select('id')
+              .limit(1)
+            
+            if (!catError) {
+              databaseConnection = true
+              tablesExist = true
+            } else {
+              console.log('Erro na query categories:', catError.message)
+              errors.push(`Erro ao acessar tabelas: ${error.message}`)
+            }
+          }
+        } catch (queryError) {
+          console.error('Erro nas queries:', queryError)
+          errors.push('Erro ao executar queries no banco')
         }
         
       } catch (error) {
-        console.error('Erro ao testar conexão:', error)
-        errors.push('Erro ao conectar com Supabase')
+        console.error('Erro ao criar cliente Supabase:', error)
+        errors.push(`Erro ao conectar com Supabase: ${error}`)
       }
+    } else {
+      errors.push('Variáveis de ambiente não configuradas')
     }
 
     const status: SystemStatus = {
