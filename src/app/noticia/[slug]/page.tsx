@@ -3,15 +3,13 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import ShareButtons from '@/components/ShareButtons'
 import { 
   ArrowLeft, 
   Clock, 
   User, 
   Eye, 
   Share2, 
-  Facebook, 
-  Twitter, 
-  MessageCircle,
   Calendar,
   FileText
 } from 'lucide-react'
@@ -226,38 +224,11 @@ export default function ArticlePage({ params }: ArticlePageProps) {
               </div>
 
               {/* Social sharing */}
-              <div className="flex items-center space-x-4 py-4 border-y border-neutral-200">
-                <span className="text-sm font-medium text-neutral-700">Compartilhar:</span>
-                <div className="flex items-center space-x-3">
-                  <a
-                    href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                    title="Compartilhar no Facebook"
-                  >
-                    <Facebook size={16} />
-                  </a>
-                  <a
-                    href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors duration-200"
-                    title="Compartilhar no Twitter"
-                  >
-                    <Twitter size={16} />
-                  </a>
-                  <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-                    title="Compartilhar no WhatsApp"
-                  >
-                    <MessageCircle size={16} />
-                  </a>
-                </div>
-              </div>
+              <ShareButtons 
+                url={shareUrl}
+                title={article.title}
+                articleId={article.id}
+              />
             </header>
 
             {/* Featured image */}

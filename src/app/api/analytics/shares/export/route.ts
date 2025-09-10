@@ -1,0 +1,150 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/utils/supabase/server'
+
+// GET - Exportar estatísticas de compartilhamento em CSV
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { searchParams } = new URL(request.url)
+    
+    const period = searchParams.get('period') || '30' // dias
+    const format = searchParams.get('format') || 'csv'
+
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(endDate.getDate() - parseInt(period))
+
+    try {
+      const { data: shares, error } = await supabase
+        .from('article_shares')
+        .select(`
+          id,
+          platform,
+          shared_at,
+          article_id,
+          articles!inner(title, category_name, author_name)
+        `)
+        .gte('shared_at', startDate.toISOString())
+        .lte('shared_at', endDate.toISOString())
+        .order('shared_at', { ascending: false })
+
+      if (error) {
+        console.log('Erro ao buscar compartilhamentos no Supabase:', error)
+        throw error
+      }
+
+      if (format === 'csv') {
+        // Criar CSV
+        const csvHeaders = [
+          'ID',
+          'Plataforma', 
+          'Título do Artigo',
+          'Categoria',
+          'Autor',
+          'Data/Hora do Compartilhamento'
+        ].join(',')
+
+        const csvRows = shares?.map((share: any) => [
+          share.id,
+          share.platform,
+          `"${share.articles?.title || 'N/A'}"`,
+          `"${share.articles?.category_name || 'N/A'}"`,
+          `"${share.articles?.author_name || 'N/A'}"`,
+          new Date(share.shared_at).toLocaleString('pt-BR')
+        ].join(',')) || []
+
+        const csvContent = [csvHeaders, ...csvRows].join('\n')
+
+        return new NextResponse(csvContent, {
+          headers: {
+            'Content-Type': 'text/csv; charset=utf-8',
+            'Content-Disposition': `attachment; filename="compartilhamentos-${new Date().toISOString().split('T')[0]}.csv"`
+          }
+        })
+      } else if (format === 'json') {
+        // Retornar JSON
+        return NextResponse.json({
+          data: shares,
+          metadata: {
+            period: parseInt(period),
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            totalRecords: shares?.length || 0,
+            exportDate: new Date().toISOString()
+          }
+        })
+      }
+
+    } catch (supabaseError) {
+      console.log('Erro de Supabase, retornando dados mock:', supabaseError)
+      
+      // Fallback com dados mock para demonstração
+      const mockData = [
+        {
+          id: 'mock-1',
+          platform: 'whatsapp',
+          title: 'Artigo de Exemplo 1',
+          category: 'Política',
+          author: 'Admin',
+          shared_at: new Date().toISOString()
+        },
+        {
+          id: 'mock-2', 
+          platform: 'x',
+          title: 'Artigo de Exemplo 2',
+          category: 'Economia',
+          author: 'Admin',
+          shared_at: new Date(Date.now() - 86400000).toISOString()
+        }
+      ]
+
+      if (format === 'csv') {
+        const csvHeaders = [
+          'ID',
+          'Plataforma',
+          'Título do Artigo', 
+          'Categoria',
+          'Autor',
+          'Data/Hora do Compartilhamento'
+        ].join(',')
+
+        const csvRows = mockData.map(share => [
+          share.id,
+          share.platform,
+          `"${share.title}"`,
+          `"${share.category}"`,
+          `"${share.author}"`,
+          new Date(share.shared_at).toLocaleString('pt-BR')
+        ].join(','))
+
+        const csvContent = [csvHeaders, ...csvRows].join('\n')
+
+        return new NextResponse(csvContent, {
+          headers: {
+            'Content-Type': 'text/csv; charset=utf-8',
+            'Content-Disposition': `attachment; filename="compartilhamentos-mock-${new Date().toISOString().split('T')[0]}.csv"`
+          }
+        })
+      } else {
+        return NextResponse.json({
+          data: mockData,
+          metadata: {
+            period: parseInt(period),
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            totalRecords: mockData.length,
+            exportDate: new Date().toISOString(),
+            note: 'Dados de demonstração'
+          }
+        })
+      }
+    }
+
+  } catch (error) {
+    console.error('Erro ao exportar estatísticas de compartilhamento:', error)
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+}

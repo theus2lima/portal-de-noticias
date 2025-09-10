@@ -30,7 +30,8 @@ import {
   Globe,
   Layers,
   TrendingUp,
-  MessageCircle
+  MessageCircle,
+  Share
 } from 'lucide-react'
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon'
 
@@ -165,6 +166,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           name: 'Analytics',
           href: '/admin/analytics',
           icon: PieChart
+        },
+        {
+          name: 'Compartilhamentos',
+          href: '/admin/insights/compartilhamentos',
+          icon: Share
         },
         {
           name: 'Status do Sistema',
