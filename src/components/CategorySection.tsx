@@ -40,6 +40,24 @@ const CategorySection = () => {
     fetchCategories()
   }, [])
 
+  // Função para converter cor hex para classes CSS
+  const getColorClasses = (hexColor: string) => {
+    const colorMap: Record<string, string> = {
+      '#DC2626': 'bg-red-600 hover:bg-red-700',
+      '#059669': 'bg-emerald-600 hover:bg-emerald-700', 
+      '#7C3AED': 'bg-violet-600 hover:bg-violet-700',
+      '#0EA5E9': 'bg-sky-600 hover:bg-sky-700',
+      '#3B82F6': 'bg-blue-600 hover:bg-blue-700',
+      '#D97706': 'bg-amber-600 hover:bg-amber-700',
+      '#16A34A': 'bg-green-600 hover:bg-green-700',
+      '#BE185D': 'bg-pink-600 hover:bg-pink-700',
+      '#7C2D12': 'bg-amber-800 hover:bg-amber-900',
+      '#374151': 'bg-gray-600 hover:bg-gray-700',
+      '#1F2937': 'bg-gray-800 hover:bg-gray-900'
+    }
+    return colorMap[hexColor] || 'bg-primary-600 hover:bg-primary-700'
+  }
+
   const normalized = useMemo(() => {
     if (!categories || categories.length === 0) return []
     return categories.map((c: any) => {
@@ -47,7 +65,7 @@ const CategorySection = () => {
       const Icon = iconMap[slug] || Building2
       const count = (c.articles && c.articles[0]?.count) || c.articles_count || c.newsCount || 0
       const href = `/categoria/${slug}`
-      const color = 'bg-primary-900 hover:bg-primary-800'
+      const color = getColorClasses(c.color || '#3B82F6')
       return {
         name: c.name,
         href,
