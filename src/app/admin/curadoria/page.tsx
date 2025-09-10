@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { fetchJSON } from "@/utils/http"
 import { CurationItem, Pagination } from "@/types/curation"
-import { Bot, Check, ExternalLink, Loader2, ThumbsDown, Activity, Send } from "lucide-react"
+import { Bot, Check, ExternalLink, Loader2, ThumbsDown, Activity, Send, Trash2 } from "lucide-react"
 
 export default function CurationDashboardPage() {
   const [loading, setLoading] = useState(true)
@@ -69,6 +69,30 @@ export default function CurationDashboardPage() {
       fetchData(pagination.page)
     } catch (error) {
       console.error('Erro ao publicar:', error)
+    }
+  }
+
+  const onDelete = async (curationId: string, item: CurationItem) => {
+    // Não permitir deletar itens publicados
+    if (item.status === 'published') {
+      alert('Não é possível excluir notícias já publicadas')
+      return
+    }
+
+    const confirmed = window.confirm(
+      `Tem certeza que deseja excluir a notícia "${item.scraped_news.title}"?\n\nEsta ação não pode ser desfeita.`
+    )
+
+    if (!confirmed) return
+
+    try {
+      await fetchJSON(`/api/curation/${curationId}`, {
+        method: "DELETE"
+      })
+      fetchData(pagination.page)
+    } catch (error: any) {
+      console.error('Erro ao excluir:', error)
+      alert(`Erro ao excluir notícia: ${error.message || 'Erro desconhecido'}`)
     }
   }
 
@@ -167,6 +191,16 @@ export default function CurationDashboardPage() {
                 <Link href={`/admin/curadoria/${item.id}`} className="inline-flex items-center px-2.5 py-1.5 text-sm bg-neutral-200 text-neutral-800 rounded hover:bg-neutral-300">
                   {status === 'published' ? 'Ver Detalhes' : 'Editar'}
                 </Link>
+                {/* Botão de excluir - só exibir se não for publicado */}
+                {item.status !== 'published' && (
+                  <button 
+                    onClick={() => onDelete(item.id, item)} 
+                    className="inline-flex items-center px-2.5 py-1.5 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 border border-red-200"
+                    title="Excluir notícia"
+                  >
+                    <Trash2 size={16} className="mr-1" /> Excluir
+                  </button>
+                )}
               </div>
             </div>
           ))}

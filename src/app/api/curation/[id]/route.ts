@@ -229,3 +229,83 @@ export async function PUT(
     }, { status: 500 })
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const supabase = await createClient()
+    
+    // Verificar se o item existe
+    const { data: existingItem, error: fetchError } = await supabase
+      .from('news_curation')
+      .select('id, status')
+      .eq('id', params.id)
+      .single()
+    
+    if (fetchError) {
+      if (fetchError.code === 'PGRST116') {
+        return NextResponse.json({
+          success: false,
+          error: 'Notícia não encontrada'
+        }, { status: 404 })
+      }
+      
+      console.error('Erro ao buscar item para deletar:', fetchError)
+      return NextResponse.json({
+        success: false,
+        error: 'Erro ao buscar notícia'
+      }, { status: 500 })
+    }
+    
+    // Não permitir deletar itens publicados
+    if (existingItem.status === 'published') {
+      return NextResponse.json({
+        success: false,
+        error: 'Não é possível excluir notícias já publicadas'
+      }, { status: 400 })
+    }
+    
+    // Deletar o item da curadoria
+    const { error: deleteError } = await supabase
+      .from('news_curation')
+      .delete()
+      .eq('id', params.id)
+    
+    if (deleteError) {
+      console.error('Erro ao excluir item de curadoria:', deleteError)
+      return NextResponse.json({
+        success: false,
+        error: 'Erro ao excluir notícia'
+      }, { status: 500 })
+    }
+    
+    // Log da ação (opcional - só se a tabela curation_logs existir)
+    try {
+      await supabase
+        .from('curation_logs')
+        .insert({
+          curation_id: params.id,
+          user_id: '00000000-0000-0000-0000-000000000001', // TODO: Pegar do usuário logado
+          action: 'deleted',
+          details: { deleted_at: new Date().toISOString() }
+        })
+    } catch (logError) {
+      // Ignorar erros de log - não deve impedir a operação principal
+      console.warn('Erro ao registrar log de exclusão:', logError)
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Notícia excluída com sucesso'
+    })
+    
+  } catch (error) {
+    console.error('Erro ao excluir curadoria:', error)
+    return NextResponse.json({
+      success: false,
+      error: 'Erro interno do servidor'
+    }, { status: 500 })
+  }
+}

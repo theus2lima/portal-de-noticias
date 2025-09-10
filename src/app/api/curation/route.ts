@@ -123,6 +123,8 @@ export async function POST(request: NextRequest) {
         return await handleEdit(supabase, curationId, user.id, data)
       case 'publish':
         return await handlePublish(supabase, curationId, user.id, data)
+      case 'delete':
+        return await handleDelete(supabase, curationId, user.id)
       default:
         return NextResponse.json({
           success: false,
@@ -331,6 +333,74 @@ async function handlePublish(supabase: any, curationId: string, userId: string, 
 
   } catch (error) {
     console.error('Erro ao publicar:', error)
+    return NextResponse.json({
+      success: false,
+      error: 'Erro interno do servidor'
+    }, { status: 500 })
+  }
+}
+
+// Função para excluir notícia
+async function handleDelete(supabase: any, curationId: string, userId: string) {
+  try {
+    // Verificar se o item existe e seu status
+    const { data: existingItem, error: fetchError } = await supabase
+      .from('news_curation')
+      .select('id, status')
+      .eq('id', curationId)
+      .single()
+    
+    if (fetchError) {
+      return NextResponse.json({
+        success: false,
+        error: 'Notícia não encontrada'
+      }, { status: 404 })
+    }
+    
+    // Não permitir deletar itens publicados
+    if (existingItem.status === 'published') {
+      return NextResponse.json({
+        success: false,
+        error: 'Não é possível excluir notícias já publicadas'
+      }, { status: 400 })
+    }
+    
+    // Deletar o item da curadoria
+    const { error: deleteError } = await supabase
+      .from('news_curation')
+      .delete()
+      .eq('id', curationId)
+    
+    if (deleteError) {
+      console.error('Erro ao excluir:', deleteError)
+      return NextResponse.json({
+        success: false,
+        error: 'Erro ao excluir notícia'
+      }, { status: 500 })
+    }
+    
+    // Log da ação
+    try {
+      await supabase
+        .from('curation_logs')
+        .insert({
+          curation_id: curationId,
+          user_id: userId,
+          action: 'deleted',
+          details: { deleted_at: new Date().toISOString() }
+        })
+    } catch (logError) {
+      // Ignorar erros de log
+      console.warn('Erro ao registrar log de exclusão:', logError)
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Notícia excluída com sucesso'
+    })
+    
+  } catch (error) {
+    console.error('Erro ao excluir notícia:', error)
     return NextResponse.json({
       success: false,
       error: 'Erro interno do servidor'
