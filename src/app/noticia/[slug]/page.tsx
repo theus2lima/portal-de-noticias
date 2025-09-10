@@ -31,6 +31,7 @@ interface Article {
   excerpt: string
   featured_image?: string
   image_alt?: string
+  category_id?: string
   category_name: string
   author_name: string
   created_at: string
@@ -63,10 +64,12 @@ export default function ArticlePage({ params }: ArticlePageProps) {
         setArticle(data.data)
         
         // Buscar artigos relacionados da mesma categoria
-        const relatedResponse = await fetch(`/api/articles?status=published&category=${data.data.category_id}&limit=3`)
-        if (relatedResponse.ok) {
-          const relatedData = await relatedResponse.json()
-          setRelatedArticles(relatedData.data?.filter((a: Article) => a.id !== data.data.id) || [])
+        if (data.data.category_id) {
+          const relatedResponse = await fetch(`/api/articles?status=published&category=${data.data.category_id}&limit=3`)
+          if (relatedResponse.ok) {
+            const relatedData = await relatedResponse.json()
+            setRelatedArticles(relatedData.data?.filter((a: Article) => a.id !== data.data.id) || [])
+          }
         }
       } catch (err) {
         setError('Erro ao carregar artigo')
