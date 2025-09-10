@@ -9,27 +9,118 @@ import {
   Search,
   Filter,
   MoreHorizontal,
-  FileText
+  FileText,
+  X,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { toast } from 'react-hot-toast'
+
+interface Article {
+  id: string
+  title: string
+  slug: string
+  excerpt: string
+  content: string
+  featured_image?: string
+  image_alt?: string
+  category_id: string
+  category_name: string
+  author_name: string
+  status: 'published' | 'draft'
+  views_count: number
+  created_at: string
+  updated_at?: string
+}
+
+interface Category {
+  id: string
+  name: string
+  slug: string
+}
+
+interface PaginationInfo {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
 
 export default function ArticlesPage() {
-  const [articles, setArticles] = useState<any[]>([])
-  const [categories, setCategories] = useState<any[]>([])
+  const [articles, setArticles] = useState<Article[]>([])
+  const [filteredArticles, setFilteredArticles] = useState<Article[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
-  
-  useEffect(() => {
-    const fetchData = async () => {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
+  const [selectedStatus, setSelectedStatus] = useState('')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [articleToDelete, setArticleToDelete] = useState<Article | null>(null)
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  })
+  const [deleting, setDeleting] = useState(false)
+
+  // Função para buscar dados
+  const fetchData = async (page?: number, search?: string, category?: string, status?: string) => {
+    setLoading(true)
+    try {
+      // Usar valores dos parâmetros ou fallback para o estado atual
+      const currentPage = page || pagination.page
+      const currentSearch = search !== undefined ? search : searchTerm
+      const currentCategory = category !== undefined ? category : selectedCategory
+      const currentStatus = status !== undefined ? status : selectedStatus
+      
+      // Construir query string para filtros
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: pagination.limit.toString(),
+        ...(currentSearch && { search: currentSearch }),
+        ...(currentCategory && { category: currentCategory }),
+        ...(currentStatus && { status: currentStatus })
+      })
+
+      const response = await fetch(`/api/articles?${params}`)
+      if (response.ok) {
+        const data = await response.json()
+        console.log('API Response:', data)
+        console.log('Articles data:', data.data)
+        setArticles(data.data || [])
+        setPagination({
+          page: data.pagination?.page || 1,
+          limit: data.pagination?.limit || 10,
+          total: data.pagination?.total || 0,
+          totalPages: data.pagination?.totalPages || 1
+        })
+      } else {
+        // Fallback para dados mockados se a API falhar
+        console.log('API response failed, status:', response.status)
+        const mockData = await generateMockData()
+        console.log('Using mock data:', mockData)
+        setArticles(mockData)
+        setPagination({
+          page: 1,
+          limit: 10,
+          total: mockData.length,
+          totalPages: Math.ceil(mockData.length / 10)
+        })
+      }
+      
+      // Buscar categorias da API
       try {
-        // Tentar buscar dados via API
-        const articlesResponse = await fetch('/api/articles')
-        if (articlesResponse.ok) {
-          const articlesData = await articlesResponse.json()
-          setArticles(articlesData.data || [])
+        const categoriesResponse = await fetch('/api/categories')
+        if (categoriesResponse.ok) {
+          const categoriesData = await categoriesResponse.json()
+          setCategories(categoriesData.data || [])
         }
-        
-        // Buscar categorias (usar dados mockados por enquanto)
+      } catch (error) {
+        console.log('Erro ao buscar categorias, usando fallback')
         const mockCategories = [
           { id: '1', name: 'Política', slug: 'politica' },
           { id: '2', name: 'Economia', slug: 'economia' },
@@ -38,15 +129,142 @@ export default function ArticlesPage() {
           { id: '5', name: 'Cidades', slug: 'cidades' }
         ]
         setCategories(mockCategories)
-      } catch (error) {
-        console.log('Erro ao buscar dados:', error)
-      } finally {
-        setLoading(false)
       }
+      
+    } catch (error) {
+      console.log('Erro ao buscar dados:', error)
+      toast.error('Erro ao carregar artigos')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Função para gerar dados mockados
+  const generateMockData = async () => {
+    return [
+      {
+        id: '1',
+        title: 'Nova Lei de Orçamento Aprovada no Congresso',
+        slug: 'nova-lei-orcamento-aprovada-congresso',
+        excerpt: 'O Congresso Nacional aprovou por unanimidade a nova lei que estabelece diretrizes para o orçamento público...',
+        content: 'Conteúdo completo do artigo...',
+        featured_image: 'https://picsum.photos/400/300?random=1',
+        image_alt: 'Congresso Nacional',
+        category_id: '1',
+        category_name: 'Política',
+        author_name: 'João Silva',
+        status: 'published' as const,
+        views_count: 1248,
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: '2',
+        title: 'Mercado Financeiro em Alta',
+        slug: 'mercado-financeiro-alta',
+        excerpt: 'Os principais indicadores do mercado financeiro apresentaram crescimento significativo neste trimestre...',
+        content: 'Conteúdo completo do artigo...',
+        featured_image: 'https://picsum.photos/400/300?random=2',
+        image_alt: 'Gráfico do mercado financeiro',
+        category_id: '2',
+        category_name: 'Economia',
+        author_name: 'Maria Santos',
+        status: 'published' as const,
+        views_count: 892,
+        created_at: new Date(Date.now() - 86400000).toISOString(),
+      },
+      {
+        id: '3',
+        title: 'Campeonato Regional de Futebol',
+        slug: 'campeonato-regional-futebol',
+        excerpt: 'O campeonato regional de futebol promete grandes emoções nesta temporada com times renovados...',
+        content: 'Conteúdo completo do artigo...',
+        category_id: '3',
+        category_name: 'Esportes',
+        author_name: 'Carlos Oliveira',
+        status: 'draft' as const,
+        views_count: 0,
+        created_at: new Date(Date.now() - 172800000).toISOString(),
+      }
+    ]
+  }
+
+  // Aplicar filtros localmente quando a busca não funcionar via API
+  useEffect(() => {
+    let filtered = [...articles]
+    
+    if (searchTerm) {
+      filtered = filtered.filter(article => 
+        article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        article.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     }
     
+    if (selectedCategory) {
+      filtered = filtered.filter(article => article.category_id === selectedCategory)
+    }
+    
+    if (selectedStatus) {
+      filtered = filtered.filter(article => article.status === selectedStatus)
+    }
+    
+    setFilteredArticles(filtered)
+  }, [articles, searchTerm, selectedCategory, selectedStatus])
+  
+  useEffect(() => {
     fetchData()
   }, [])
+
+  // Função para lidar com mudanças de filtro
+  const handleFilterChange = () => {
+    fetchData(1, searchTerm, selectedCategory, selectedStatus)
+  }
+
+  // Função para deletar artigo
+  const handleDeleteClick = (article: Article) => {
+    setArticleToDelete(article)
+    setShowDeleteModal(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!articleToDelete) return
+    
+    setDeleting(true)
+    try {
+      const response = await fetch(`/api/articles/${articleToDelete.id}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        toast.success('Artigo excluído com sucesso!')
+        fetchData(pagination.page, searchTerm, selectedCategory, selectedStatus)
+        setShowDeleteModal(false)
+        setArticleToDelete(null)
+      } else {
+        toast.error('Erro ao excluir artigo')
+      }
+    } catch (error) {
+      console.error('Erro ao deletar:', error)
+      toast.error('Erro ao excluir artigo')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  // Função para mudar página
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      fetchData(newPage, searchTerm, selectedCategory, selectedStatus)
+    }
+  }
+
+  const displayArticles = filteredArticles.length > 0 ? filteredArticles : articles
+  
+  console.log('Current state:')
+  console.log('- loading:', loading)
+  console.log('- articles:', articles)
+  console.log('- filteredArticles:', filteredArticles) 
+  console.log('- displayArticles:', displayArticles)
+  console.log('- displayArticles.length:', displayArticles.length)
   
   if (loading) {
     return (
@@ -66,6 +284,11 @@ export default function ArticlesPage() {
 
   return (
     <div className="space-y-6">
+      {/* Debug Info */}
+      <div className="bg-yellow-100 border border-yellow-300 rounded p-4 text-sm">
+        <strong>Debug Info:</strong> articles={articles.length}, filteredArticles={filteredArticles.length}, displayArticles={displayArticles.length}
+      </div>
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -90,14 +313,20 @@ export default function ArticlesPage() {
             <input
               type="text"
               placeholder="Buscar artigos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
           
           {/* Category Filter */}
-          <select className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+          <select 
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
             <option value="">Todas as categorias</option>
-            {categories?.map((category: any) => (
+            {categories?.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
               </option>
@@ -105,7 +334,11 @@ export default function ArticlesPage() {
           </select>
 
           {/* Status Filter */}
-          <select className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+          <select 
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
             <option value="">Todos os status</option>
             <option value="published">Publicado</option>
             <option value="draft">Rascunho</option>
@@ -148,8 +381,8 @@ export default function ArticlesPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-neutral-200">
-              {articles && articles.length > 0 ? (
-                articles.map((article: any) => (
+              {displayArticles && displayArticles.length > 0 ? (
+                displayArticles.map((article: any) => (
                   <tr key={article.id} className="hover:bg-neutral-50">
                     <td className="px-6 py-4">
                       <div className="flex items-center">
@@ -223,6 +456,7 @@ export default function ArticlesPage() {
                           <Edit className="h-4 w-4" />
                         </Link>
                         <button
+                          onClick={() => handleDeleteClick(article)}
                           className="text-red-600 hover:text-red-900 transition-colors"
                           title="Excluir artigo"
                         >
@@ -298,6 +532,60 @@ export default function ArticlesPage() {
                   </svg>
                 </button>
               </nav>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <div className="flex items-center mb-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mr-3">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-neutral-900">
+                Confirmar Exclusão
+              </h3>
+            </div>
+            
+            <p className="text-neutral-600 mb-6">
+              Tem certeza que deseja excluir o artigo{' '}
+              <span className="font-medium text-neutral-900">
+                &quot;{articleToDelete?.title}&quot;
+              </span>
+              ? Esta ação não pode ser desfeita.
+            </p>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setArticleToDelete(null)
+                }}
+                className="btn-outline"
+                disabled={deleting}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="btn-danger flex items-center space-x-2"
+              >
+                {deleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Excluindo...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" />
+                    <span>Excluir</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

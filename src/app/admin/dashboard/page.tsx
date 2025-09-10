@@ -1,95 +1,132 @@
+'use client'
+
 import { 
   FileText, 
   Users, 
   Eye, 
   MessageSquare, 
   TrendingUp,
+  TrendingDown,
   Calendar,
   Clock,
   BarChart3,
   Database,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+
+interface DashboardStats {
+  published_articles: number
+  draft_articles: number
+  total_views: number
+  leads_last_30_days: number
+  total_categories: number
+  total_tags: number
+  database_connected: boolean
+  error?: string
+  changes?: {
+    published_articles: string
+    draft_articles: string
+    total_views: string
+    leads_last_30_days: string
+  }
+}
+
+interface Article {
+  id: string
+  title: string
+  category_name: string
+  author_name: string
+  created_at: string
+  status: string
+}
+
+interface Lead {
+  id: string
+  name: string
+  phone: string
+  city: string
+  created_at: string
+  is_contacted: boolean
+}
 
 export default function AdminDashboardMain() {
-  // Simulação de dados para funcionar sem Supabase
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [articles, setArticles] = useState<Article[]>([])
+  const [leads, setLeads] = useState<Lead[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   const isSupabaseConfigured = !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  
-  // Dados mockados para demonstração
-  const mockStats = {
-    published_articles: 42,
-    draft_articles: 8,
-    total_views: 15234,
-    leads_last_30_days: 156
-  }
-  
-  const mockArticles = [
-    {
-      id: '1',
-      title: 'Exemplo: Nova política da cidade',
-      category_name: 'Política',
-      author_name: 'Editor',
-      created_at: new Date().toISOString(),
-      status: 'published'
-    },
-    {
-      id: '2', 
-      title: 'Exemplo: Festival de cultura local',
-      category_name: 'Cultura',
-      author_name: 'Jornalista',
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-      status: 'draft'
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true)
+        
+        // Buscar estatísticas
+        const [statsResponse, articlesResponse, leadsResponse] = await Promise.all([
+          fetch('/api/dashboard/stats'),
+          fetch('/api/articles?limit=5'),
+          fetch('/api/leads?limit=5')
+        ])
+
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json()
+          setStats(statsData)
+        }
+
+        if (articlesResponse.ok) {
+          const articlesData = await articlesResponse.json()
+          setArticles(Array.isArray(articlesData) ? articlesData : articlesData.data || [])
+        }
+
+        if (leadsResponse.ok) {
+          const leadsData = await leadsResponse.json()
+          setLeads(Array.isArray(leadsData) ? leadsData : leadsData.data || [])
+        }
+
+      } catch (err) {
+        console.error('Erro ao carregar dashboard:', err)
+        setError('Erro ao carregar dados do dashboard')
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
-  
-  const mockLeads = [
-    {
-      id: '1',
-      name: 'João Silva',
-      phone: '(11) 99999-9999',
-      city: 'São Paulo',
-      created_at: new Date().toISOString(),
-      is_contacted: false
-    },
-    {
-      id: '2',
-      name: 'Maria Santos',
-      phone: '(21) 88888-8888',
-      city: 'Rio de Janeiro',
-      created_at: new Date(Date.now() - 3600000).toISOString(),
-      is_contacted: true
-    }
-  ]
+
+    fetchDashboardData()
+  }, [])
 
   const statCards = [
     {
       title: 'Artigos Publicados',
-      value: mockStats.published_articles,
+      value: stats?.published_articles || 0,
       icon: FileText,
       color: 'bg-primary-500',
-      change: '+12%'
+      change: stats?.changes?.published_articles || '0%'
     },
     {
       title: 'Rascunhos',
-      value: mockStats.draft_articles,
+      value: stats?.draft_articles || 0,
       icon: Clock,
       color: 'bg-secondary-500',
-      change: '+5%'
+      change: stats?.changes?.draft_articles || '0%'
     },
     {
       title: 'Total de Visualizações',
-      value: mockStats.total_views,
+      value: stats?.total_views || 0,
       icon: Eye,
       color: 'bg-accent-500',
-      change: '+23%'
+      change: stats?.changes?.total_views || '0%'
     },
     {
       title: 'Leads (30 dias)',
-      value: mockStats.leads_last_30_days,
+      value: stats?.leads_last_30_days || 0,
       icon: MessageSquare,
       color: 'bg-primary-600',
-      change: '+8%'
+      change: stats?.changes?.leads_last_30_days || '0%'
     }
   ]
 
@@ -123,26 +160,37 @@ export default function AdminDashboardMain() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-neutral-600">{stat.title}</p>
-                <p className="text-2xl font-bold text-neutral-900 mt-2">
-                  {stat.value.toLocaleString()}
-                </p>
+        {statCards.map((stat, index) => {
+          const isPositive = stat.change.startsWith('+')
+          const isNegative = stat.change.startsWith('-')
+          const TrendIcon = isNegative ? TrendingDown : TrendingUp
+          const changeColor = isNegative 
+            ? 'text-red-500' 
+            : isPositive 
+            ? 'text-green-500' 
+            : 'text-neutral-500'
+
+          return (
+            <div key={index} className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-neutral-600">{stat.title}</p>
+                  <p className="text-2xl font-bold text-neutral-900 mt-2">
+                    {stat.value.toLocaleString()}
+                  </p>
+                </div>
+                <div className={`${stat.color} p-3 rounded-lg`}>
+                  <stat.icon className="h-6 w-6 text-white" />
+                </div>
               </div>
-              <div className={`${stat.color} p-3 rounded-lg`}>
-                <stat.icon className="h-6 w-6 text-white" />
+              <div className="mt-4 flex items-center">
+                <TrendIcon className={`h-4 w-4 ${changeColor} mr-1`} />
+                <span className={`text-sm font-medium ${changeColor}`}>{stat.change}</span>
+                <span className="text-sm text-neutral-500 ml-1">vs período anterior</span>
               </div>
             </div>
-            <div className="mt-4 flex items-center">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-sm font-medium text-green-500">{stat.change}</span>
-              <span className="text-sm text-neutral-500 ml-1">vs mês anterior</span>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Recent Content */}
@@ -153,18 +201,23 @@ export default function AdminDashboardMain() {
             <h3 className="text-lg font-semibold text-neutral-900">Artigos Recentes</h3>
           </div>
           <div className="p-6">
-            {mockArticles && mockArticles.length > 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+                <span className="ml-2 text-neutral-500">Carregando...</span>
+              </div>
+            ) : articles && articles.length > 0 ? (
               <div className="space-y-4">
-                {mockArticles.map((article: any) => (
+                {articles.map((article: Article) => (
                   <div key={article.id} className="flex items-center space-x-4 p-3 hover:bg-neutral-50 rounded-lg transition-colors">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-neutral-900 truncate">
                         {article.title}
                       </p>
                       <div className="flex items-center mt-1 space-x-2 text-xs text-neutral-500">
-                        <span>{article.category_name}</span>
+                        <span>{article.category_name || 'Sem categoria'}</span>
                         <span>•</span>
-                        <span>{article.author_name}</span>
+                        <span>{article.author_name || 'Autor'}</span>
                         <span>•</span>
                         <span>{new Date(article.created_at).toLocaleDateString('pt-BR')}</span>
                       </div>
@@ -191,9 +244,14 @@ export default function AdminDashboardMain() {
             <h3 className="text-lg font-semibold text-neutral-900">Leads Recentes</h3>
           </div>
           <div className="p-6">
-            {mockLeads && mockLeads.length > 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+                <span className="ml-2 text-neutral-500">Carregando...</span>
+              </div>
+            ) : leads && leads.length > 0 ? (
               <div className="space-y-4">
-                {mockLeads.map((lead: any) => (
+                {leads.map((lead: Lead) => (
                   <div key={lead.id} className="flex items-center space-x-4 p-3 hover:bg-neutral-50 rounded-lg transition-colors">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-neutral-900">

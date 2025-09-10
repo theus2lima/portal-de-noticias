@@ -344,11 +344,12 @@ export default function NewArticlePage() {
                   required
                 >
                   <option value="">Selecione uma categoria</option>
-                  <option value="1">Política</option>
-                  <option value="2">Economia</option>
-                  <option value="3">Esportes</option>
-                  <option value="4">Cultura</option>
-                  <option value="5">Cidades</option>
+                  <option value="11111111-1111-1111-1111-111111111111">Política</option>
+                  <option value="22222222-2222-2222-2222-222222222222">Economia</option>
+                  <option value="33333333-3333-3333-3333-333333333333">Esportes</option>
+                  <option value="44444444-4444-4444-4444-444444444444">Cultura</option>
+                  <option value="55555555-5555-5555-5555-555555555555">Cidades</option>
+                  <option value="66666666-6666-6666-6666-666666666666">Tecnologia</option>
                 </select>
               </div>
 
@@ -492,11 +493,12 @@ export default function NewArticlePage() {
                   <span>{new Date().toLocaleDateString('pt-BR')}</span>
                   {formData.category_id && (
                     <span>
-                      • {formData.category_id === '1' ? 'Política' :
-                          formData.category_id === '2' ? 'Economia' :
-                          formData.category_id === '3' ? 'Esportes' :
-                          formData.category_id === '4' ? 'Cultura' :
-                          formData.category_id === '5' ? 'Cidades' : 'Geral'}
+                      • {formData.category_id === '11111111-1111-1111-1111-111111111111' ? 'Política' :
+                          formData.category_id === '22222222-2222-2222-2222-222222222222' ? 'Economia' :
+                          formData.category_id === '33333333-3333-3333-3333-333333333333' ? 'Esportes' :
+                          formData.category_id === '44444444-4444-4444-4444-444444444444' ? 'Cultura' :
+                          formData.category_id === '55555555-5555-5555-5555-555555555555' ? 'Cidades' :
+                          formData.category_id === '66666666-6666-6666-6666-666666666666' ? 'Tecnologia' : 'Geral'}
                     </span>
                   )}
                 </div>

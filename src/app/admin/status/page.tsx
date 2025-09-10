@@ -1,3 +1,5 @@
+'use client'
+
 import { 
   CheckCircle, 
   XCircle, 
@@ -5,21 +7,66 @@ import {
   Database,
   Globe,
   Server,
-  Settings
+  Settings,
+  Loader2
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
-export default async function StatusPage() {
-  // Modo demonstração - simular verificações do sistema
+interface DatabaseStatus {
+  database_connected: boolean
+  published_articles: number
+  total_categories: number
+  total_tags: number
+  error?: string
+}
+
+export default function StatusPage() {
+  const [databaseStatus, setDatabaseStatus] = useState<DatabaseStatus | null>(null)
+  const [loading, setLoading] = useState(true)
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   
+  useEffect(() => {
+    const checkDatabaseConnection = async () => {
+      try {
+        const response = await fetch('/api/dashboard/stats')
+        if (response.ok) {
+          const data = await response.json()
+          setDatabaseStatus(data)
+        } else {
+          setDatabaseStatus({ 
+            database_connected: false, 
+            published_articles: 0,
+            total_categories: 0,
+            total_tags: 0,
+            error: 'Falha na conectividade' 
+          })
+        }
+      } catch (error) {
+        console.error('Erro ao verificar status:', error)
+        setDatabaseStatus({ 
+          database_connected: false, 
+          published_articles: 0,
+          total_categories: 0,
+          total_tags: 0,
+          error: 'Erro de rede' 
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkDatabaseConnection()
+  }, [])
+
   const checks = {
     supabaseUrl: !!supabaseUrl,
     supabaseKey: !!supabaseKey,
-    databaseConnection: true, // Simulado para demonstração
-    tablesExist: true, // Simulado para demonstração
-    categoriesData: true, // Simulado para demonstração
-    usersData: true // Simulado para demonstração
+    databaseConnection: databaseStatus?.database_connected || false,
+    tablesExist: databaseStatus?.database_connected || false,
+    categoriesData: (databaseStatus?.total_categories || 0) > 0,
+    usersData: databaseStatus?.database_connected || false
   }
 
   let errorDetails: string[] = []
@@ -47,12 +94,17 @@ export default async function StatusPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-neutral-900">Status do Sistema</h1>
-        <p className="text-neutral-600">Diagnóstico de configuração e conectividade</p>
-        <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-          🎓 Modo Demonstração - Status simulado para teste
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-neutral-900">Status do Sistema</h1>
+          <p className="text-neutral-600">Diagnóstico de configuração e conectividade em tempo real</p>
         </div>
+        {loading && (
+          <div className="flex items-center text-neutral-500">
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <span className="text-sm">Verificando...</span>
+          </div>
+        )}
       </div>
 
       {/* Status Geral */}

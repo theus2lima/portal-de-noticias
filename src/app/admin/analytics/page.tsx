@@ -1,6 +1,9 @@
+'use client'
+
 import { 
   BarChart3, 
   TrendingUp, 
+  TrendingDown,
   Eye, 
   Users,
   Calendar,
@@ -8,72 +11,138 @@ import {
   RefreshCw,
   ArrowUp,
   ArrowDown,
-  Clock
+  Clock,
+  Loader2,
+  AlertCircle
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+
+interface AnalyticsData {
+  stats: {
+    total_views: number
+    published_articles: number
+    leads_last_30_days: number
+    avg_views_per_article: number
+  }
+  changes: {
+    total_views: string
+    published_articles: string
+    leads_last_30_days: string
+    avg_views_per_article: string
+  }
+  top_articles: Array<{
+    id: string
+    title: string
+    author_name: string
+    category_name: string
+    views_count: number
+    published_at: string
+    created_at: string
+  }>
+  top_categories: Array<{
+    name: string
+    views: number
+    articles: number
+  }>
+  hourly_traffic: Array<{
+    time: string
+    percentage: number
+    views: string
+  }>
+  conversion_funnel: Array<{
+    stage: string
+    count: number
+    percentage: number
+  }>
+  period_days: number
+  last_updated: string
+  database_connected: boolean
+  error?: string
+}
 
 export default function AnalyticsPage() {
-  // Dados mocados para demonstração (substituir quando Supabase estiver configurado)
-  const stats = {
-    total_views: 15420,
-    published_articles: 23,
-    leads_last_30_days: 47,
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [period, setPeriod] = useState('30')
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+
+  const fetchAnalyticsData = async (showLoader = true) => {
+    try {
+      if (showLoader) setLoading(true)
+      setError(null)
+      
+      const response = await fetch(`/api/analytics?period=${period}`)
+      if (!response.ok) {
+        throw new Error('Erro ao carregar dados de analytics')
+      }
+      
+      const data = await response.json()
+      setAnalyticsData(data)
+    } catch (err) {
+      console.error('Erro ao carregar analytics:', err)
+      setError('Erro ao carregar dados de analytics')
+    } finally {
+      setLoading(false)
+      setIsRefreshing(false)
+    }
   }
 
-  const topArticles = [
-    {
-      id: 1,
-      title: "Nova política de saúde aprovada na câmara municipal",
-      author_name: "Redação",
-      category_name: "Política",
-      views_count: 2450,
-      published_at: "2024-01-15T10:00:00Z"
-    },
-    {
-      id: 2,
-      title: "Crescimento econômico da cidade surpreende especialistas",
-      author_name: "Redação",
-      category_name: "Economia",
-      views_count: 1890,
-      published_at: "2024-01-14T14:30:00Z"
-    },
-    {
-      id: 3,
-      title: "Time local conquista campeonato regional",
-      author_name: "Redação",
-      category_name: "Esportes",
-      views_count: 1650,
-      published_at: "2024-01-13T16:45:00Z"
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await fetchAnalyticsData(false)
+  }
+
+  const handleExport = async (format: 'csv' | 'json' = 'csv') => {
+    try {
+      setIsExporting(true)
+      const response = await fetch(`/api/analytics/export?format=${format}&period=${period}`)
+      
+      if (!response.ok) {
+        throw new Error('Erro ao exportar relatório')
+      }
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `relatorio-analytics-${new Date().toISOString().split('T')[0]}.${format}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Erro ao exportar:', err)
+      alert('Erro ao exportar relatório. Tente novamente.')
+    } finally {
+      setIsExporting(false)
     }
-  ]
+  }
 
-  const categoryViews = [
-    { category_name: "Política", views_count: 5420 },
-    { category_name: "Economia", views_count: 3890 },
-    { category_name: "Esportes", views_count: 2650 },
-    { category_name: "Cultura", views_count: 2100 },
-    { category_name: "Cidades", views_count: 1360 }
-  ]
+  useEffect(() => {
+    fetchAnalyticsData()
+  }, [period])
 
-  // Agrupar visualizações por categoria
-  const categoryStats = categoryViews?.reduce((acc: any, article: any) => {
-    const category = article.category_name
-    if (!acc[category]) {
-      acc[category] = { name: category, views: 0, articles: 0 }
-    }
-    acc[category].views += article.views_count || 0
-    acc[category].articles += 1
-    return acc
-  }, {})
-
-  const topCategories = Object.values(categoryStats || {})
-    .sort((a: any, b: any) => b.views - a.views)
-    .slice(0, 5)
-
-  // Estatísticas calculadas
-  const totalViews = stats?.total_views || 0
-  const publishedArticles = stats?.published_articles || 0
-  const totalLeads = stats?.leads_last_30_days || 0
-  const avgViewsPerArticle = publishedArticles > 0 ? Math.round(totalViews / publishedArticles) : 0
+  // Extract data with fallbacks
+  const stats = analyticsData?.stats || {
+    total_views: 0,
+    published_articles: 0,
+    leads_last_30_days: 0,
+    avg_views_per_article: 0
+  }
+  
+  const changes = analyticsData?.changes || {
+    total_views: '0%',
+    published_articles: '0%',
+    leads_last_30_days: '0%',
+    avg_views_per_article: '0%'
+  }
+  
+  const topArticles = analyticsData?.top_articles || []
+  const topCategories = analyticsData?.top_categories || []
+  const hourlyTraffic = analyticsData?.hourly_traffic || []
+  const conversionFunnel = analyticsData?.conversion_funnel || []
 
   return (
     <div className="space-y-6">
@@ -84,87 +153,103 @@ export default function AnalyticsPage() {
           <p className="text-gray-600">Análise detalhada de desempenho do portal</p>
         </div>
         <div className="flex items-center space-x-3">
-          <button className="btn-outline flex items-center space-x-2">
-            <RefreshCw className="h-4 w-4" />
-            <span>Atualizar</span>
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <div className="flex items-center">
+                <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+                <p className="text-xs text-red-700">{error}</p>
+              </div>
+            </div>
+          )}
+          <button 
+            onClick={handleRefresh}
+            disabled={isRefreshing || loading}
+            className="btn-outline flex items-center space-x-2 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Atualizando...' : 'Atualizar'}</span>
           </button>
-          <button className="btn-primary flex items-center space-x-2">
-            <Download className="h-5 w-5" />
-            <span>Exportar Relatório</span>
+          <button 
+            onClick={() => handleExport('csv')}
+            disabled={isExporting || loading}
+            className="btn-primary flex items-center space-x-2 disabled:opacity-50"
+          >
+            {isExporting ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Download className="h-5 w-5" />
+            )}
+            <span>{isExporting ? 'Exportando...' : 'Exportar Relatório'}</span>
           </button>
         </div>
       </div>
 
-      {/* Main Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total de Visualizações</p>
-              <p className="text-2xl font-bold text-gray-900">{totalViews.toLocaleString()}</p>
-            </div>
-            <div className="bg-blue-500 p-3 rounded-lg">
-              <Eye className="h-6 w-6 text-white" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center">
-            <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
-            <span className="text-sm font-medium text-green-500">+23%</span>
-            <span className="text-sm text-gray-500 ml-1">vs mês anterior</span>
-          </div>
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-500 mr-3" />
+          <span className="text-lg text-neutral-600">Carregando dados de analytics...</span>
         </div>
+      ) : (
+        <>
+          {/* Main Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[{
+              title: 'Total de Visualizações',
+              value: stats.total_views,
+              icon: Eye,
+              color: 'bg-blue-500',
+              change: changes.total_views
+            }, {
+              title: 'Artigos Publicados',
+              value: stats.published_articles,
+              icon: BarChart3,
+              color: 'bg-green-500',
+              change: changes.published_articles
+            }, {
+              title: 'Leads Captados',
+              value: stats.leads_last_30_days,
+              icon: Users,
+              color: 'bg-secondary-500',
+              change: changes.leads_last_30_days
+            }, {
+              title: 'Média de Views',
+              value: stats.avg_views_per_article,
+              icon: TrendingUp,
+              color: 'bg-primary-600',
+              change: changes.avg_views_per_article
+            }].map((stat, index) => {
+              const isPositive = stat.change.startsWith('+')
+              const isNegative = stat.change.startsWith('-')
+              const TrendIcon = isNegative ? TrendingDown : TrendingUp
+              const changeColor = isNegative 
+                ? 'text-red-500' 
+                : isPositive 
+                ? 'text-green-500' 
+                : 'text-neutral-500'
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Artigos Publicados</p>
-              <p className="text-2xl font-bold text-gray-900">{publishedArticles}</p>
-            </div>
-            <div className="bg-green-500 p-3 rounded-lg">
-              <BarChart3 className="h-6 w-6 text-white" />
-            </div>
+              return (
+                <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
+                      </p>
+                    </div>
+                    <div className={`${stat.color} p-3 rounded-lg`}>
+                      <stat.icon className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center">
+                    <TrendIcon className={`h-4 w-4 ${changeColor} mr-1`} />
+                    <span className={`text-sm font-medium ${changeColor}`}>{stat.change}</span>
+                    <span className="text-sm text-gray-500 ml-1">vs período anterior</span>
+                  </div>
+                </div>
+              )
+            })}
           </div>
-          <div className="mt-4 flex items-center">
-            <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
-            <span className="text-sm font-medium text-green-500">+12%</span>
-            <span className="text-sm text-neutral-500 ml-1">vs mês anterior</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-neutral-600">Leads Captados</p>
-              <p className="text-2xl font-bold text-neutral-900">{totalLeads}</p>
-            </div>
-            <div className="bg-secondary-500 p-3 rounded-lg">
-              <Users className="h-6 w-6 text-white" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center">
-            <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
-            <span className="text-sm font-medium text-green-500">+8%</span>
-            <span className="text-sm text-neutral-500 ml-1">vs mês anterior</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-neutral-600">Média de Views</p>
-              <p className="text-2xl font-bold text-neutral-900">{avgViewsPerArticle}</p>
-            </div>
-            <div className="bg-primary-600 p-3 rounded-lg">
-              <TrendingUp className="h-6 w-6 text-white" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center">
-            <ArrowDown className="h-4 w-4 text-red-500 mr-1" />
-            <span className="text-sm font-medium text-red-500">-2%</span>
-            <span className="text-sm text-neutral-500 ml-1">vs mês anterior</span>
-          </div>
-        </div>
-      </div>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -172,10 +257,14 @@ export default function AnalyticsPage() {
         <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-neutral-900">Tráfego do Portal</h3>
-            <select className="px-3 py-1 border border-neutral-300 rounded-md text-sm">
-              <option>Últimos 30 dias</option>
-              <option>Últimos 7 dias</option>
-              <option>Último mês</option>
+            <select 
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              className="px-3 py-1 border border-neutral-300 rounded-md text-sm"
+            >
+              <option value="7">Últimos 7 dias</option>
+              <option value="30">Últimos 30 dias</option>
+              <option value="90">Últimos 90 dias</option>
             </select>
           </div>
           <div className="h-64 bg-neutral-50 rounded-lg flex items-center justify-center">
@@ -190,7 +279,7 @@ export default function AnalyticsPage() {
         <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
           <h3 className="text-lg font-semibold text-neutral-900 mb-6">Performance por Categoria</h3>
           <div className="space-y-4">
-            {topCategories.map((category: any, index: number) => (
+            {topCategories.length > 0 ? topCategories.map((category: any, index: number) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
@@ -206,7 +295,12 @@ export default function AnalyticsPage() {
                   <div className="text-xs text-neutral-500 mt-1">{category.articles} artigos</div>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-4">
+                <BarChart3 className="h-8 w-8 text-neutral-300 mx-auto mb-2" />
+                <p className="text-sm text-neutral-500">Performance por categoria será exibida com mais artigos</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -304,12 +398,7 @@ export default function AnalyticsPage() {
         <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
           <h3 className="text-lg font-semibold text-neutral-900 mb-6">Horários de Maior Tráfego</h3>
           <div className="space-y-3">
-            {[
-              { time: '08:00 - 10:00', percentage: 85, views: '2.3k' },
-              { time: '12:00 - 14:00', percentage: 92, views: '2.8k' },
-              { time: '18:00 - 20:00', percentage: 78, views: '2.1k' },
-              { time: '20:00 - 22:00', percentage: 65, views: '1.8k' },
-            ].map((timeSlot, index) => (
+            {hourlyTraffic.length > 0 ? hourlyTraffic.map((timeSlot, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Clock className="h-4 w-4 text-neutral-400" />
@@ -325,7 +414,12 @@ export default function AnalyticsPage() {
                   <span className="text-sm text-neutral-600 w-12 text-right">{timeSlot.views}</span>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-4">
+                <Clock className="h-8 w-8 text-neutral-300 mx-auto mb-2" />
+                <p className="text-sm text-neutral-500">Dados de horários serão exibidos quando houver tráfego suficiente</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -333,12 +427,7 @@ export default function AnalyticsPage() {
         <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
           <h3 className="text-lg font-semibold text-neutral-900 mb-6">Funil de Conversão</h3>
           <div className="space-y-4">
-            {[
-              { stage: 'Visitantes', count: totalViews, percentage: 100 },
-              { stage: 'Leitores de Artigos', count: Math.round(totalViews * 0.65), percentage: 65 },
-              { stage: 'Engajamento', count: Math.round(totalViews * 0.25), percentage: 25 },
-              { stage: 'Leads Gerados', count: totalLeads, percentage: Math.round((totalLeads / totalViews) * 100) || 0 },
-            ].map((stage, index) => (
+            {conversionFunnel.length > 0 ? conversionFunnel.map((stage, index) => (
               <div key={index} className="relative">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-neutral-900">{stage.stage}</span>
@@ -359,10 +448,17 @@ export default function AnalyticsPage() {
                   />
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-4">
+                <TrendingUp className="h-8 w-8 text-neutral-300 mx-auto mb-2" />
+                <p className="text-sm text-neutral-500">Funil de conversão será exibido com mais dados</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }

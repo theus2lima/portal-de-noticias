@@ -36,6 +36,7 @@ function saveLocalArticles(articles: any[]) {
 
 // GET - Buscar artigos
 export async function GET(request: NextRequest) {
+  console.log('=== GET /api/articles called ===')
   try {
     const supabase = await createClient()
     const { searchParams } = new URL(request.url)
@@ -45,6 +46,8 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const category = searchParams.get('category')
     const search = searchParams.get('search')
+    
+    console.log('Query params:', { page, limit, status, category, search })
     
     // Primeiro tentar buscar do Supabase
     try {
@@ -93,6 +96,8 @@ export async function GET(request: NextRequest) {
     // Fallback: usar artigos locais
     console.log('Using local articles fallback')
     let articles = readLocalArticles()
+    console.log('Local articles read:', articles.length, 'articles found')
+    console.log('First article sample:', articles[0] ? articles[0].title : 'No articles')
     
     // Aplicar filtros localmente
     if (status) {
@@ -120,7 +125,12 @@ export async function GET(request: NextRequest) {
     const to = from + limit
     const paginatedArticles = articles.slice(from, to)
     
-    return NextResponse.json({
+    console.log('Final response:')
+    console.log('- Total articles after filters:', total)
+    console.log('- Paginated articles count:', paginatedArticles.length)
+    console.log('- Pagination info:', { page, limit, total, totalPages: Math.ceil(total / limit) })
+    
+    const response = {
       data: paginatedArticles,
       pagination: {
         page,
@@ -128,7 +138,10 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit)
       }
-    })
+    }
+    
+    console.log('Returning response:', response)
+    return NextResponse.json(response)
   } catch (error) {
     console.error('Error in GET /api/articles:', error)
     return NextResponse.json(
@@ -247,7 +260,13 @@ export async function POST(request: NextRequest) {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         author_name: 'Admin',
-        category_name: body.category_id === '1' ? 'Política' :
+        category_name: body.category_id === '11111111-1111-1111-1111-111111111111' ? 'Política' :
+                      body.category_id === '22222222-2222-2222-2222-222222222222' ? 'Economia' :
+                      body.category_id === '33333333-3333-3333-3333-333333333333' ? 'Esportes' :
+                      body.category_id === '44444444-4444-4444-4444-444444444444' ? 'Cultura' :
+                      body.category_id === '55555555-5555-5555-5555-555555555555' ? 'Cidades' :
+                      body.category_id === '66666666-6666-6666-6666-666666666666' ? 'Tecnologia' :
+                      body.category_id === '1' ? 'Política' :
                       body.category_id === '2' ? 'Economia' :
                       body.category_id === '3' ? 'Esportes' :
                       body.category_id === '4' ? 'Cultura' :

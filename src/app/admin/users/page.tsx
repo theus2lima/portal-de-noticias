@@ -289,9 +289,6 @@ export default function UsersPage() {
         <div>
           <h1 className="text-3xl font-bold text-neutral-900">Usuários</h1>
           <p className="text-neutral-600">Gerencie usuários e suas permissões</p>
-          <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-            🎓 Modo Demonstração - Dados ficcionais para teste
-          </div>
         </div>
         <button 
           onClick={() => setShowAddModal(true)}

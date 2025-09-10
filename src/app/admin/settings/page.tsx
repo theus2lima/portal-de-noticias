@@ -172,9 +172,6 @@ export default function SettingsPage() {
         <div>
           <h1 className="text-3xl font-bold text-neutral-900">Configurações</h1>
           <p className="text-neutral-600">Gerencie as configurações do portal</p>
-          <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-            🎓 Modo Demonstração - Configurações simuladas
-          </div>
         </div>
         <button 
           onClick={handleSave}
@@ -665,7 +662,7 @@ export default function SettingsPage() {
             <span>Restaurar Padrões</span>
           </button>
           <button 
-            onClick={() => alert('Pré-visualização indisponível no modo demonstração')}
+            onClick={() => alert('Pré-visualização em desenvolvimento')}
             className="btn-outline flex items-center space-x-2"
           >
             <Eye className="h-4 w-4" />

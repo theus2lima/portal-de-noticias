@@ -1,5 +1,5 @@
 -- ============================================
--- PORTAL DE NOTÍCIAS - DATABASE SCHEMA
+-- PORTAL DE NOTÍCIAS - DATABASE SCHEMA (CORRIGIDO)
 -- Execute este SQL no Supabase SQL Editor
 -- ============================================
 
@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS categories (
     description TEXT,
     color VARCHAR(20) DEFAULT '#1E3A8A',
     icon VARCHAR(50),
-    is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -48,10 +47,10 @@ CREATE TABLE IF NOT EXISTS articles (
     status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'archived')),
     is_featured BOOLEAN DEFAULT false,
     views_count INTEGER DEFAULT 0,
-    reading_time INTEGER DEFAULT 0, -- em minutos
+    reading_time INTEGER DEFAULT 0,
     meta_title VARCHAR(300),
     meta_description VARCHAR(500),
-    keywords TEXT[], -- array de keywords
+    keywords TEXT[],
     published_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -113,7 +112,7 @@ CREATE TABLE IF NOT EXISTS article_views (
 -- 9. Tabela de Configurações do Sistema
 CREATE TABLE IF NOT EXISTS system_settings (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    category VARCHAR(100) NOT NULL, -- 'ticker', 'general', 'email', etc.
+    category VARCHAR(100) NOT NULL,
     key VARCHAR(100) NOT NULL,
     value JSONB NOT NULL,
     description TEXT,
@@ -136,7 +135,6 @@ CREATE TABLE IF NOT EXISTS ticker_items (
 -- ÍNDICES PARA PERFORMANCE
 -- ============================================
 
--- Índices para melhor performance
 CREATE INDEX IF NOT EXISTS idx_articles_status ON articles(status);
 CREATE INDEX IF NOT EXISTS idx_articles_published_at ON articles(published_at DESC);
 CREATE INDEX IF NOT EXISTS idx_articles_category ON articles(category_id);
@@ -147,7 +145,7 @@ CREATE INDEX IF NOT EXISTS idx_article_views_article ON article_views(article_id
 CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads(created_at DESC);
 
 -- ============================================
--- TRIGGERS PARA AUTO-UPDATE
+-- TRIGGERS PARA AUTO-UPDATE (CORRIGIDO)
 -- ============================================
 
 -- Função para atualizar updated_at
@@ -159,7 +157,13 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Triggers para updated_at
+-- Remover triggers existentes se houver conflito e recriar
+DROP TRIGGER IF EXISTS update_categories_updated_at ON categories;
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+DROP TRIGGER IF EXISTS update_articles_updated_at ON articles;
+DROP TRIGGER IF EXISTS update_leads_updated_at ON leads;
+
+-- Criar triggers novamente
 CREATE TRIGGER update_categories_updated_at BEFORE UPDATE ON categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_articles_updated_at BEFORE UPDATE ON articles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -169,7 +173,6 @@ CREATE TRIGGER update_leads_updated_at BEFORE UPDATE ON leads FOR EACH ROW EXECU
 -- DADOS INICIAIS (SEED)
 -- ============================================
 
--- Inserir categorias padrão
 INSERT INTO categories (name, slug, description, color, icon) VALUES 
     ('Política', 'politica', 'Últimas decisões do governo, análises políticas e principais acontecimentos do cenário político nacional', '#1E3A8A', 'Building2'),
     ('Economia', 'economia', 'Mercado financeiro, negócios, indicadores econômicos e análises sobre a economia nacional', '#16A34A', 'TrendingUp'),
@@ -178,13 +181,10 @@ INSERT INTO categories (name, slug, description, color, icon) VALUES
     ('Cidades', 'cidades', 'Notícias locais, infraestrutura urbana e qualidade de vida nas cidades brasileiras', '#059669', 'MapPin')
 ON CONFLICT (slug) DO NOTHING;
 
--- Inserir usuário administrador padrão
--- IMPORTANTE: Altere a senha após o primeiro login
 INSERT INTO users (email, password_hash, name, role, bio) VALUES 
-    ('admin@portalnoticias.com.br', '$2b$10$rQJ8vQKzBqJ9QJ9QJ9QJ9OJ9QJ9QJ9QJ9QJ9QJ9QJ9QJ9QJ9QJ9QJ', 'Administrador', 'admin', 'Administrador do Portal de Notícias')
+    ('admin@portalnoticias.com.br', '$2b$10$FPPO8yXqVzaa4lx77XN1t.0AZEYp/7cvNcjkOFKAQoOlCZsN1qk1.', 'Administrador', 'admin', 'Administrador do Portal de Notícias')
 ON CONFLICT (email) DO NOTHING;
 
--- Inserir tags comuns
 INSERT INTO tags (name, slug) VALUES 
     ('Brasil', 'brasil'),
     ('Governo', 'governo'),
@@ -208,7 +208,6 @@ INSERT INTO tags (name, slug) VALUES
     ('Saúde', 'saude')
 ON CONFLICT (slug) DO NOTHING;
 
--- Inserir configurações iniciais do sistema
 INSERT INTO system_settings (category, key, value, description) VALUES 
     ('ticker', 'enabled', 'true', 'Habilitar/desabilitar o ticker de notícias'),
     ('ticker', 'speed', '30', 'Velocidade da animação do ticker em segundos'),
@@ -217,18 +216,15 @@ INSERT INTO system_settings (category, key, value, description) VALUES
     ('site', 'logo', 'null', 'Logo do site')
 ON CONFLICT (category, key) DO NOTHING;
 
--- Inserir itens iniciais do ticker
 INSERT INTO ticker_items (text, priority, active) VALUES 
     ('🔴 Portal de Notícias - Fique sempre informado com as últimas notícias', 10, true),
     ('📢 Bem-vindo ao nosso portal! Acompanhe as principais notícias do dia', 8, true),
-    ('⚡ Breaking News: Configure seu ticker de notícias no painel admin', 5, true)
-ON CONFLICT DO NOTHING;
+    ('⚡ Breaking News: Configure seu ticker de notícias no painel admin', 5, true);
 
 -- ============================================
 -- VIEWS ÚTEIS PARA O DASHBOARD
 -- ============================================
 
--- View para artigos com informações completas
 CREATE OR REPLACE VIEW articles_with_details AS
 SELECT 
     a.id,
@@ -257,7 +253,6 @@ LEFT JOIN article_tags at ON a.id = at.article_id
 LEFT JOIN tags t ON at.tag_id = t.id
 GROUP BY a.id, c.name, c.slug, c.color, u.name, u.email;
 
--- View para estatísticas do dashboard
 CREATE OR REPLACE VIEW dashboard_stats AS
 SELECT 
     (SELECT COUNT(*) FROM articles WHERE status = 'published') as published_articles,
@@ -269,28 +264,11 @@ SELECT
     (SELECT COUNT(*) FROM tags) as total_tags;
 
 -- ============================================
--- RLS (ROW LEVEL SECURITY) - OPCIONAL
+-- COMENTÁRIOS DAS TABELAS
 -- ============================================
 
--- Habilitar RLS (descomente se necessário)
--- ALTER TABLE articles ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
-
--- Políticas de exemplo (descomente e ajuste conforme necessário)
--- CREATE POLICY "Public can view published articles" ON articles FOR SELECT USING (status = 'published');
--- CREATE POLICY "Authenticated users can manage articles" ON articles FOR ALL USING (auth.role() = 'authenticated');
-
--- ============================================
--- FINALIZAÇÃO
--- ============================================
-
--- Comentários finais
 COMMENT ON TABLE articles IS 'Tabela principal de artigos/notícias';
 COMMENT ON TABLE categories IS 'Categorias para organização das notícias';
 COMMENT ON TABLE leads IS 'Leads capturados pelo formulário de contato';
 COMMENT ON TABLE users IS 'Usuários do sistema (admin, editores, autores)';
 COMMENT ON TABLE tags IS 'Tags para categorização adicional dos artigos';
-
--- Finalizado!
--- Execute este script no Supabase SQL Editor para criar toda a estrutura do banco
