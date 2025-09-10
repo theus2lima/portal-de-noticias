@@ -7,6 +7,16 @@ import * as cheerio from 'cheerio'
 const rssParser = new Parser({
   customFields: {
     item: ['media:content', 'enclosure', 'description', 'content:encoded']
+  },
+  requestOptions: {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, text/html',
+      'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
+    }
   }
 })
 
@@ -280,8 +290,37 @@ function extractImageFromRSS(item: any): string | null {
 
 // Função para coletar via scraping
 async function collectFromScraping(source: any) {
-  const response = await fetch(source.url)
+  // Headers mais robustos para contornar proteções anti-bot
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+    'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache',
+    'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+    'Sec-Ch-Ua-Mobile': '?0',
+    'Sec-Ch-Ua-Platform': '"Windows"',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Upgrade-Insecure-Requests': '1'
+  }
+
+  const response = await fetch(source.url, { headers })
+  
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}. Site pode estar protegido por Cloudflare ou similar.`)
+  }
+  
   const html = await response.text()
+  
+  // Verificar se foi bloqueado por Cloudflare
+  if (html.includes('cloudflare') && (html.includes('challenge') || html.includes('cf-mitigated'))) {
+    throw new Error('Site protegido por Cloudflare. Acesso bloqueado para bots.')
+  }
+  
   const $ = cheerio.load(html)
   
   const newsItems: any[] = []
