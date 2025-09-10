@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { fetchJSON } from "@/utils/http"
 import { CurationItem, Pagination } from "@/types/curation"
-import { Bot, Check, ExternalLink, Loader2, ThumbsDown, Activity } from "lucide-react"
+import { Bot, Check, ExternalLink, Loader2, ThumbsDown, Activity, Send } from "lucide-react"
 
 export default function CurationDashboardPage() {
   const [loading, setLoading] = useState(true)
@@ -50,6 +50,26 @@ export default function CurationDashboardPage() {
       body: JSON.stringify({ action: "reject", curationId, data: { reason: "Rejeitado pelo curador" } })
     })
     fetchData(pagination.page)
+  }
+
+  const onPublish = async (curationId: string, item: CurationItem) => {
+    try {
+      await fetchJSON(`/api/curation/${curationId}`, {
+        method: "PUT",
+        body: JSON.stringify({ 
+          action: "publish", 
+          data: {
+            title: item.scraped_news.title,
+            summary: item.scraped_news.summary || "",
+            content: item.scraped_news.content || "",
+            categoryId: item.suggested_category?.id || null
+          }
+        })
+      })
+      fetchData(pagination.page)
+    } catch (error) {
+      console.error('Erro ao publicar:', error)
+    }
   }
 
   const statusTabs = useMemo(() => [
@@ -125,15 +145,27 @@ export default function CurationDashboardPage() {
                 )}
               </div>
 
-              <div className="flex gap-2">
-                <button onClick={() => onApprove(item.id)} className="inline-flex items-center px-2.5 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700">
-                  <Check size={16} className="mr-1" /> Aprovar
-                </button>
-                <button onClick={() => onReject(item.id)} className="inline-flex items-center px-2.5 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700">
-                  <ThumbsDown size={16} className="mr-1" /> Rejeitar
-                </button>
+              <div className="flex gap-2 flex-wrap">
+                {status === 'pending' && (
+                  <>
+                    <button onClick={() => onApprove(item.id)} className="inline-flex items-center px-2.5 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700">
+                      <Check size={16} className="mr-1" /> Aprovar
+                    </button>
+                    <button onClick={() => onReject(item.id)} className="inline-flex items-center px-2.5 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700">
+                      <ThumbsDown size={16} className="mr-1" /> Rejeitar
+                    </button>
+                    <button onClick={() => onPublish(item.id, item)} className="inline-flex items-center px-2.5 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
+                      <Send size={16} className="mr-1" /> Publicar
+                    </button>
+                  </>
+                )}
+                {(status === 'approved' || status === 'editing') && (
+                  <button onClick={() => onPublish(item.id, item)} className="inline-flex items-center px-2.5 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
+                    <Send size={16} className="mr-1" /> Publicar
+                  </button>
+                )}
                 <Link href={`/admin/curadoria/${item.id}`} className="inline-flex items-center px-2.5 py-1.5 text-sm bg-neutral-200 text-neutral-800 rounded hover:bg-neutral-300">
-                  Editar
+                  {status === 'published' ? 'Ver Detalhes' : 'Editar'}
                 </Link>
               </div>
             </div>

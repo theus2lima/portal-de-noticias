@@ -83,7 +83,16 @@ export async function PUT(
     // Buscar o item atual
     const { data: currentItem, error: fetchError } = await supabase
       .from('news_curation')
-      .select('*')
+      .select(`
+        *,
+        scraped_news:scraped_news_id (
+          id,
+          title,
+          summary,
+          content,
+          image_url
+        )
+      `)
       .eq('id', params.id)
       .single()
 
@@ -127,6 +136,52 @@ export async function PUT(
         updateData.curated_title = data.title
         updateData.curated_summary = data.summary
         updateData.curated_content = data.content
+        
+        // Criar artigo quando publicar
+        try {
+          // Gerar slug a partir do título
+          const slug = data.title
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+            .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
+            .trim()
+            .replace(/\s+/g, '-') // Substitui espaços por hífens
+            .replace(/-+/g, '-') // Remove hífens duplicados
+          
+          // Calcular tempo de leitura (média de 200 palavras por minuto)
+          const wordCount = (data.content || '').split(' ').filter((word: string) => word.length > 0).length
+          const readingTime = Math.max(1, Math.ceil(wordCount / 200))
+          
+          const articleData = {
+            title: data.title,
+            slug: `${slug}-${Date.now()}`, // Adiciona timestamp para garantir unicidade
+            content: data.content || '',
+            excerpt: data.summary || (data.content || '').substring(0, 200) + '...',
+            featured_image: currentItem.scraped_news?.image_url || null,
+            category_id: data.categoryId || currentItem.suggested_category_id,
+            author_id: '00000000-0000-0000-0000-000000000001', // TODO: Pegar do usuário logado
+            status: 'published',
+            is_featured: false,
+            reading_time: readingTime,
+            meta_title: data.title,
+            meta_description: data.summary || (data.content || '').substring(0, 160),
+            published_at: new Date().toISOString()
+          }
+          
+          const { data: article, error: articleError } = await supabase
+            .from('articles')
+            .insert([articleData])
+            .select()
+            .single()
+          
+          if (!articleError && article) {
+            updateData.published_article_id = article.id
+          }
+        } catch (articleError) {
+          console.error('Erro ao criar artigo:', articleError)
+          // Continuar com a publicação mesmo se der erro no artigo
+        }
         break
 
       default:
