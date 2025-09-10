@@ -4,19 +4,15 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Search, Menu, X, Facebook, Twitter, Instagram, MessageCircle } from 'lucide-react'
+import { useCategoriesContext } from '@/contexts/CategoriesContext'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
-
-  const categories = [
-    { name: 'Política', href: '/categoria/politica' },
-    { name: 'Economia', href: '/categoria/economia' },
-    { name: 'Esportes', href: '/categoria/esportes' },
-    { name: 'Cultura', href: '/categoria/cultura' },
-    { name: 'Cidades', href: '/categoria/cidades' },
-  ]
+  
+  // Usar contexto de categorias
+  const { categories, loading } = useCategoriesContext()
 
   const socialLinks = [
     { icon: Facebook, href: '#', color: 'hover:text-blue-600' },
@@ -115,8 +111,8 @@ const Header = () => {
             </Link>
             {categories.map((category) => (
               <Link
-                key={category.name}
-                href={category.href}
+                key={category.id}
+                href={`/categoria/${category.slug}`}
                 className="text-white hover:text-secondary-200 font-medium transition-colors duration-200"
               >
                 {category.name}
@@ -156,8 +152,8 @@ const Header = () => {
               </Link>
               {categories.map((category) => (
                 <Link
-                  key={category.name}
-                  href={category.href}
+                  key={category.id}
+                  href={`/categoria/${category.slug}`}
                   className="block py-2 text-neutral-800 hover:text-primary-600 font-medium transition-colors duration-200"
                   onClick={() => setIsMenuOpen(false)}
                 >

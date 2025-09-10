@@ -1,0 +1,10 @@
+{
+  "id": "whatsapp-config",
+  "isActive": true,
+  "groupLink": "https://chat.whatsapp.com/IgDgvCJdgy38nFMQCyhy0L",
+  "popupText": "Entre no nosso grupo do WhatsApp para receber notícias em primeira mão!",
+  "triggerType": "scroll",
+  "delaySeconds": 2,
+  "scrollPercentage": 10,
+  "updatedAt": "2025-09-10T18:23:24.874Z"
+}

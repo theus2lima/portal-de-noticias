@@ -29,8 +29,10 @@ import {
   Shield,
   Globe,
   Layers,
-  TrendingUp
+  TrendingUp,
+  MessageCircle
 } from 'lucide-react'
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -178,6 +180,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           name: 'Usuários',
           href: '/admin/users',
           icon: Users
+        },
+        {
+          name: 'WhatsApp',
+          href: '/admin/whatsapp',
+          icon: ({ className }: { className?: string }) => (
+            <WhatsAppIcon size={20} className={className} />
+          )
         },
         {
           name: 'Banco de Dados',

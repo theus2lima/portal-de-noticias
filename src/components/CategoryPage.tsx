@@ -42,16 +42,21 @@ const CategoryPage = ({ category, categoryColor, description, categoryId, catego
           const data = await response.json()
           let articles = data.data || []
           
-          // Filtrar artigos por categoria se categoryId estiver disponível
-          if (categoryId) {
-            articles = articles.filter((article: any) => article.category_id === categoryId)
-          } else if (categorySlug) {
-            // Fallback: filtrar por nome da categoria se não tiver ID
-            articles = articles.filter((article: any) => 
-              article.category?.toLowerCase() === category.toLowerCase() ||
-              article.category_name?.toLowerCase() === category.toLowerCase()
-            )
-          }
+          // Filtrar artigos por categoria com lógica robusta
+          articles = articles.filter((article: any) => {
+            // Primeiro tenta filtrar por ID da categoria (mais preciso)
+            if (categoryId && article.category_id) {
+              const idMatch = String(article.category_id) === String(categoryId)
+              return idMatch
+            }
+            
+            // Se não tiver ID ou não der match, tenta por nome da categoria
+            const categoryLower = category.toLowerCase()
+            const categoryNameMatch = article.category_name?.toLowerCase() === categoryLower
+            const categoryMatch = article.category?.toLowerCase() === categoryLower
+            
+            return categoryNameMatch || categoryMatch
+          })
           
           setAllArticles(articles)
         }
@@ -269,14 +274,19 @@ const CategoryPage = ({ category, categoryColor, description, categoryId, catego
                   Nenhum resultado encontrado
                 </h3>
                 <p className="text-neutral-600 mb-6">
-                  Não encontramos artigos que correspondem à sua busca &quot;{searchQuery}&quot;.
+                  {searchQuery 
+                    ? `Não encontramos artigos que correspondem à sua busca "${searchQuery}".`
+                    : 'Não encontramos artigos que correspondem à sua busca.'
+                  }
                 </p>
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="btn-primary"
-                >
-                  Limpar busca
-                </button>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="btn-primary"
+                  >
+                    Limpar busca
+                  </button>
+                )}
               </div>
             </div>
           )}

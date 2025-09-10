@@ -119,7 +119,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
     
-    return NextResponse.json({ data: category }, { status: 201 })
+    // Notificar mudança nas categorias (para sincronização entre abas)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('categories-updated', Date.now().toString())
+    }
+    
+    const response = NextResponse.json({ data: category }, { status: 201 })
+    // Adicionar header para indicar que as categorias foram atualizadas
+    response.headers.set('X-Categories-Updated', 'true')
+    
+    return response
   } catch (error) {
     return NextResponse.json(
       { error: 'Erro interno do servidor' },

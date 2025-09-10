@@ -17,6 +17,7 @@ import {
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
+import { notifyCategoriesUpdated } from '@/lib/categoriesNotifier'
 
 interface Category {
   id: string
@@ -162,6 +163,8 @@ export default function CategoriesPage() {
           is_active: true
         })
         fetchCategories()
+        // Notificar mudança nas categorias para o site público
+        notifyCategoriesUpdated()
       } else {
         const error = await response.json()
         toast.error(error.error || 'Erro ao criar categoria')
@@ -203,6 +206,8 @@ export default function CategoriesPage() {
           is_active: true
         })
         fetchCategories()
+        // Notificar mudança nas categorias para o site público
+        notifyCategoriesUpdated()
       } else {
         const error = await response.json()
         toast.error(error.error || 'Erro ao atualizar categoria')
@@ -227,6 +232,8 @@ export default function CategoriesPage() {
         setShowDeleteModal(false)
         setSelectedCategory(null)
         fetchCategories()
+        // Notificar mudança nas categorias para o site público
+        notifyCategoriesUpdated()
       } else {
         const error = await response.json()
         toast.error(error.error || 'Erro ao excluir categoria')
