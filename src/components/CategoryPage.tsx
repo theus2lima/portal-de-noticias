@@ -21,9 +21,10 @@ interface CategoryPageProps {
   categoryColor: string
   description: string
   categoryId?: string
+  categorySlug?: string
 }
 
-const CategoryPage = ({ category, categoryColor, description, categoryId }: CategoryPageProps) => {
+const CategoryPage = ({ category, categoryColor, description, categoryId, categorySlug }: CategoryPageProps) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [allArticles, setAllArticles] = useState<Article[]>([])
@@ -34,15 +35,25 @@ const CategoryPage = ({ category, categoryColor, description, categoryId }: Cate
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        let url = '/api/articles?status=published&limit=50'
-        if (categoryId) {
-          url += `&category=${categoryId}`
-        }
+        let url = '/api/articles?status=published&limit=100'
         
         const response = await fetch(url)
         if (response.ok) {
           const data = await response.json()
-          setAllArticles(data.data || [])
+          let articles = data.data || []
+          
+          // Filtrar artigos por categoria se categoryId estiver disponível
+          if (categoryId) {
+            articles = articles.filter((article: any) => article.category_id === categoryId)
+          } else if (categorySlug) {
+            // Fallback: filtrar por nome da categoria se não tiver ID
+            articles = articles.filter((article: any) => 
+              article.category?.toLowerCase() === category.toLowerCase() ||
+              article.category_name?.toLowerCase() === category.toLowerCase()
+            )
+          }
+          
+          setAllArticles(articles)
         }
       } catch (error) {
         console.error('Erro ao buscar artigos da categoria:', error)
@@ -52,7 +63,7 @@ const CategoryPage = ({ category, categoryColor, description, categoryId }: Cate
     }
 
     fetchArticles()
-  }, [categoryId])
+  }, [categoryId, categorySlug, category])
 
   // Filtrar artigos baseado na busca
   const filteredArticles = allArticles.filter(article =>
