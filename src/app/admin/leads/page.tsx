@@ -148,10 +148,16 @@ function getLeadsData() {
 
 function LeadsPageContent() {
   const [leads, setLeads] = useState<Lead[]>([])
+  const [filteredLeads, setFilteredLeads] = useState<Lead[]>([])
   const [useLocalStorage, setUseLocalStorage] = useState(false)
   const [selectedLeads, setSelectedLeads] = useState<number[]>([])
   const [mounted, setMounted] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  
+  // Estados para filtros
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [dateFilter, setDateFilter] = useState('')
   
   // Notification helpers
   const {
@@ -181,6 +187,58 @@ function LeadsPageContent() {
     // Carregar configurações do WhatsApp
     fetchWhatsAppLink()
   }, [refreshKey]) // Recarregar quando refreshKey mudar
+  
+  // Filtrar leads quando qualquer filtro mudar
+  useEffect(() => {
+    let filtered = [...leads]
+    
+    // Filtro de busca
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      filtered = filtered.filter(lead => 
+        lead.name.toLowerCase().includes(query) ||
+        lead.phone.includes(query) ||
+        lead.city.toLowerCase().includes(query) ||
+        (lead.email && lead.email.toLowerCase().includes(query)) ||
+        (lead.message && lead.message.toLowerCase().includes(query))
+      )
+    }
+    
+    // Filtro de status
+    if (statusFilter) {
+      if (statusFilter === 'contacted') {
+        filtered = filtered.filter(lead => lead.is_contacted)
+      } else if (statusFilter === 'pending') {
+        filtered = filtered.filter(lead => !lead.is_contacted)
+      }
+    }
+    
+    // Filtro de data
+    if (dateFilter) {
+      const now = new Date()
+      let startDate: Date
+      
+      switch (dateFilter) {
+        case 'today':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+          break
+        case 'week':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+          break
+        case 'month':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+          break
+        default:
+          startDate = new Date(0)
+      }
+      
+      filtered = filtered.filter(lead => 
+        new Date(lead.created_at) >= startDate
+      )
+    }
+    
+    setFilteredLeads(filtered)
+  }, [leads, searchQuery, statusFilter, dateFilter])
   
   // Carregar link do WhatsApp
   const fetchWhatsAppLink = async () => {
@@ -273,6 +331,13 @@ function LeadsPageContent() {
     setRefreshKey(prev => prev + 1)
     // Limpar seleção
     setSelectedLeads([])
+  }
+  
+  // Função para limpar todos os filtros
+  const handleClearFilters = () => {
+    setSearchQuery('')
+    setStatusFilter('')
+    setDateFilter('')
   }
 
   if (!mounted) {
@@ -392,35 +457,77 @@ function LeadsPageContent() {
             <input
               type="text"
               placeholder="Buscar leads por nome, telefone ou cidade..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
           
           {/* Status Filter */}
-          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <select 
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
             <option value="">Todos os status</option>
             <option value="contacted">Contatado</option>
             <option value="pending">Pendente</option>
           </select>
 
           {/* Date Filter */}
-          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <select 
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
             <option value="">Todos os períodos</option>
             <option value="today">Hoje</option>
             <option value="week">Última semana</option>
             <option value="month">Último mês</option>
           </select>
 
-          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2">
+          <button 
+            onClick={handleClearFilters}
+            disabled={!searchQuery && !statusFilter && !dateFilter}
+            className={`px-4 py-2 border border-gray-300 rounded-lg flex items-center space-x-2 transition-colors ${
+              (!searchQuery && !statusFilter && !dateFilter) 
+                ? 'text-gray-400 cursor-not-allowed bg-gray-50' 
+                : 'hover:bg-gray-50 text-gray-700'
+            }`}
+          >
             <Filter className="h-4 w-4" />
-            <span>Filtros</span>
+            <span>Limpar Filtros</span>
           </button>
         </div>
+        
+        {/* Indicador de filtros ativos */}
+        {(searchQuery || statusFilter || dateFilter) && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {searchQuery && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                Busca: &quot;{searchQuery}&quot;
+              </span>
+            )}
+            {statusFilter && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                Status: {statusFilter === 'contacted' ? 'Contatado' : 'Pendente'}
+              </span>
+            )}
+            {dateFilter && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                Período: {dateFilter === 'today' ? 'Hoje' : dateFilter === 'week' ? 'Última semana' : 'Último mês'}
+              </span>
+            )}
+            <span className="text-sm text-gray-500">
+              {filteredLeads.length} de {leads.length} leads encontrados
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Client-side Leads Display with selection support */}
       <LeadsClient 
-        initialLeads={leads} 
+        initialLeads={filteredLeads.length > 0 || searchQuery || statusFilter || dateFilter ? filteredLeads : leads} 
         shouldUseLocalStorage={useLocalStorage}
         selectedLeads={selectedLeads}
         onSelectLead={handleSelectLead}

@@ -14,7 +14,8 @@ import {
   Check,
   AlertCircle,
   FileText,
-  Table
+  Table,
+  Trash2
 } from 'lucide-react'
 import { Lead, LeadsStorage } from '@/utils/localStorage'
 import * as XLSX from 'xlsx'
@@ -150,6 +151,61 @@ const LeadsActions = ({
   const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
     setNotification({ type, message })
     setTimeout(() => setNotification(null), 5000) // Remove após 5 segundos
+  }
+
+  // Função para excluir leads selecionados
+  const deleteSelectedLeads = async () => {
+    if (selectedLeads.length === 0) {
+      showNotification('error', 'Nenhum lead selecionado!')
+      return
+    }
+    
+    if (!confirm(`Tem certeza que deseja excluir ${selectedLeads.length} lead(s)? Esta ação não pode ser desfeita.`)) {
+      return
+    }
+    
+    setLoading(true)
+    
+    try {
+      if (useLocalStorage) {
+        // Excluir do localStorage
+        const deletedCount = LeadsStorage.deleteLeads(selectedLeads)
+        
+        if (deletedCount > 0) {
+          showNotification('success', `${deletedCount} lead(s) excluído(s) com sucesso!`)
+          onLeadsUpdate?.() // Atualizar a lista de leads
+          onDeselectAll()
+        } else {
+          showNotification('error', 'Erro ao excluir leads do armazenamento local')
+        }
+      } else {
+        // Fazer requisição para a API
+        const response = await fetch('/api/leads', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ids: selectedLeads
+          })
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          showNotification('success', result.message || `${selectedLeads.length} lead(s) excluído(s) com sucesso!`)
+          onLeadsUpdate?.() // Atualizar a lista de leads
+          onDeselectAll()
+        } else {
+          const error = await response.json()
+          showNotification('error', error.error || 'Erro ao excluir leads')
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao excluir leads:', error)
+      showNotification('error', 'Erro interno do servidor')
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Função para marcar leads selecionados como contatados
@@ -296,6 +352,18 @@ const LeadsActions = ({
                 )}
                 <span>{loading ? 'Processando...' : 'Marcar como Contatados'}</span>
               </button>
+              <button 
+                onClick={deleteSelectedLeads}
+                disabled={loading}
+                className={`${loading ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'} text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2 text-sm`}
+              >
+                {loading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                <span>{loading ? 'Processando...' : 'Excluir Selecionados'}</span>
+              </button>
             </>
           )}
           
@@ -349,7 +417,7 @@ const LeadsActions = ({
       {/* Quick Actions */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <button 
             onClick={() => openExportModal('all')}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors duration-200"
@@ -366,23 +434,39 @@ const LeadsActions = ({
             } px-4 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors duration-200`}
           >
             <MessageSquare className="h-5 w-5" />
-            <span>Campanhas de Follow-up</span>
+            <span>Follow-up</span>
           </button>
           <button 
             onClick={someSelected ? markSelectedAsContacted : () => showNotification('error', 'Selecione pelo menos um lead primeiro')}
             disabled={loading || !someSelected}
             className={`${
               someSelected && !loading
-                ? 'border border-gray-300 hover:bg-gray-50 text-gray-700' 
-                : 'border border-gray-200 text-gray-400 cursor-not-allowed'
+                ? 'bg-orange-600 hover:bg-orange-700 text-white' 
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             } px-4 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors duration-200`}
           >
             {loading ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-400 border-t-transparent"></div>
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
             ) : (
               <CheckCircle className="h-5 w-5" />
             )}
             <span>{loading ? 'Processando...' : 'Marcar Selecionados'}</span>
+          </button>
+          <button 
+            onClick={someSelected ? deleteSelectedLeads : () => showNotification('error', 'Selecione pelo menos um lead primeiro')}
+            disabled={loading || !someSelected}
+            className={`${
+              someSelected && !loading
+                ? 'bg-red-600 hover:bg-red-700 text-white' 
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            } px-4 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors duration-200`}
+          >
+            {loading ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+            ) : (
+              <Trash2 className="h-5 w-5" />
+            )}
+            <span>{loading ? 'Processando...' : 'Excluir Selecionados'}</span>
           </button>
         </div>
       </div>

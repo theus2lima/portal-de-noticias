@@ -8,7 +8,8 @@ import {
   Calendar,
   CheckCircle,
   User,
-  MessageSquare
+  MessageSquare,
+  Trash2
 } from 'lucide-react'
 import { LeadsStorage, Lead } from '@/utils/localStorage'
 
@@ -59,6 +60,42 @@ const LeadsClient = ({
       }
     }
   }, [initialLeads, shouldUseLocalStorage])
+
+  // Função para excluir um lead individual
+  const handleDeleteLead = async (leadId: number) => {
+    if (!confirm('Tem certeza que deseja excluir este lead? Esta ação não pode ser desfeita.')) {
+      return
+    }
+
+    try {
+      if (shouldUseLocalStorage) {
+        // Excluir do localStorage
+        const success = LeadsStorage.deleteLead(leadId)
+        if (success) {
+          setLeads(prevLeads => prevLeads.filter(lead => lead.id !== leadId))
+        }
+      } else {
+        // Excluir via API
+        const response = await fetch('/api/leads', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ids: [leadId] }),
+        })
+
+        if (response.ok) {
+          setLeads(prevLeads => prevLeads.filter(lead => lead.id !== leadId))
+        } else {
+          const result = await response.json()
+          alert(`Erro ao excluir lead: ${result.error || 'Erro desconhecido'}`)
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao excluir lead:', error)
+      alert('Erro ao excluir lead. Tente novamente.')
+    }
+  }
 
   // Estatísticas dos leads
   const totalLeads = leads?.length || 0
@@ -294,6 +331,13 @@ const LeadsClient = ({
                           title="Ver detalhes"
                         >
                           <MessageSquare className="h-4 w-4" />
+                        </button>
+                        <button
+                          className="text-red-600 hover:text-red-900 transition-colors"
+                          title="Excluir lead"
+                          onClick={() => handleDeleteLead(lead.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </td>
