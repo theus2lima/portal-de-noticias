@@ -12,6 +12,8 @@ export default function CurationDashboardPage() {
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 20, total: 0, pages: 0 })
   const [status, setStatus] = useState("pending")
   const [error, setError] = useState<string | null>(null)
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const fetchData = async (page = 1, statusFilter = status) => {
     setLoading(true)
@@ -89,12 +91,83 @@ export default function CurationDashboardPage() {
       await fetchJSON(`/api/curation/${curationId}`, {
         method: "DELETE"
       })
+      // Remover da seleção se estiver selecionado
+      setSelectedItems(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(curationId)
+        return newSet
+      })
       fetchData(pagination.page)
     } catch (error: any) {
       console.error('Erro ao excluir:', error)
       alert(`Erro ao excluir notícia: ${error.message || 'Erro desconhecido'}`)
     }
   }
+
+  const handleSelectItem = (itemId: string, checked: boolean) => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev)
+      if (checked) {
+        newSet.add(itemId)
+      } else {
+        newSet.delete(itemId)
+      }
+      return newSet
+    })
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      // Selecionar apenas itens que podem ser excluídos (não publicados)
+      const selectableItems = items.filter(item => item.status !== 'published')
+      setSelectedItems(new Set(selectableItems.map(item => item.id)))
+    } else {
+      setSelectedItems(new Set())
+    }
+  }
+
+  const onBulkDelete = async () => {
+    if (selectedItems.size === 0) return
+
+    const selectedItemsData = items.filter(item => selectedItems.has(item.id))
+    const publishedItems = selectedItemsData.filter(item => item.status === 'published')
+    
+    if (publishedItems.length > 0) {
+      alert(`${publishedItems.length} item(ns) não pode(m) ser excluído(s) pois já foi(ram) publicado(s).`)
+      return
+    }
+
+    const confirmed = window.confirm(
+      `Tem certeza que deseja excluir ${selectedItems.size} notícia(s) selecionada(s)?\n\nEsta ação não pode ser desfeita.`
+    )
+
+    if (!confirmed) return
+
+    setIsDeleting(true)
+    try {
+      // Excluir todos os itens selecionados
+      const deletePromises = Array.from(selectedItems).map(itemId => 
+        fetchJSON(`/api/curation/${itemId}`, { method: "DELETE" })
+      )
+      
+      await Promise.all(deletePromises)
+      setSelectedItems(new Set())
+      fetchData(pagination.page)
+    } catch (error: any) {
+      console.error('Erro na exclusão em lote:', error)
+      alert(`Erro ao excluir notícias: ${error.message || 'Erro desconhecido'}`)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  // Limpar seleções quando mudar de status
+  useEffect(() => {
+    setSelectedItems(new Set())
+  }, [status])
+
+  const selectableItems = items.filter(item => item.status !== 'published')
+  const allSelectableSelected = selectableItems.length > 0 && selectableItems.every(item => selectedItems.has(item.id))
 
   const statusTabs = useMemo(() => [
     { key: "pending", label: "Pendentes" },
@@ -136,6 +209,48 @@ export default function CurationDashboardPage() {
         ))}
       </div>
 
+      {/* Barra de ações em lote */}
+      {selectableItems.length > 0 && (
+        <div className="bg-white border rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allSelectableSelected}
+                onChange={(e) => handleSelectAll(e.target.checked)}
+                className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm font-medium text-neutral-700">
+                {selectedItems.size > 0 
+                  ? `${selectedItems.size} de ${selectableItems.length} selecionado(s)` 
+                  : `Selecionar todos (${selectableItems.length})`
+                }
+              </span>
+            </label>
+          </div>
+          
+          {selectedItems.size > 0 && (
+            <button
+              onClick={onBulkDelete}
+              disabled={isDeleting}
+              className="inline-flex items-center px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                <>
+                  <Trash2 size={16} className="mr-2" />
+                  Excluir Selecionados ({selectedItems.size})
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center gap-2 text-neutral-600"><Loader2 className="animate-spin" size={18} /> Carregando...</div>
       ) : error ? (
@@ -144,8 +259,29 @@ export default function CurationDashboardPage() {
         <div className="text-neutral-600 text-sm">Nenhuma notícia encontrada.</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {items.map(item => (
-            <div key={item.id} className="bg-white border rounded-lg p-4 space-y-3">
+          {items.map(item => {
+            const canSelect = item.status !== 'published'
+            const isSelected = selectedItems.has(item.id)
+            
+            return (
+            <div key={item.id} className={`bg-white border rounded-lg p-4 space-y-3 transition-all ${
+              isSelected ? 'ring-2 ring-primary-500 border-primary-300' : ''
+            }`}>
+              {/* Checkbox de seleção */}
+              {canSelect && (
+                <div className="flex justify-end">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => handleSelectItem(item.id, e.target.checked)}
+                      className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
+                    />
+                    <span className="text-xs text-neutral-500">Selecionar</span>
+                  </label>
+                </div>
+              )}
+              
               <div className="flex gap-3">
                 {item.scraped_news.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -203,7 +339,8 @@ export default function CurationDashboardPage() {
                 )}
               </div>
             </div>
-          ))}
+          )}
+          )}
         </div>
       )}
     </div>
