@@ -12,7 +12,46 @@ import {
   AlertTriangle,
   CheckCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  Building2,
+  TrendingUp,
+  Trophy,
+  Palette,
+  MapPin,
+  Laptop,
+  Heart,
+  Star,
+  Globe,
+  Users,
+  Camera,
+  Music,
+  Car,
+  Home,
+  Briefcase,
+  ShoppingBag,
+  Coffee,
+  Gamepad2,
+  BookOpen,
+  Plane,
+  Shield,
+  Zap,
+  Activity,
+  Target,
+  Gift,
+  Clock,
+  Settings,
+  Phone,
+  Mail,
+  Image,
+  Film,
+  Headphones,
+  Mic,
+  Video,
+  Calendar,
+  Bell,
+  Lock,
+  Key,
+  Wifi
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
@@ -42,8 +81,46 @@ interface CategoryFormData {
 }
 
 const ICON_OPTIONS = [
-  'Folder', 'Building2', 'TrendingUp', 'Trophy', 'Palette', 'MapPin', 
-  'Laptop', 'Heart', 'Star', 'Globe', 'Users', 'Camera', 'Music', 'Car'
+  { value: 'Folder', label: 'Pasta', component: Folder },
+  { value: 'Building2', label: 'Empresa', component: Building2 },
+  { value: 'TrendingUp', label: 'Tendências', component: TrendingUp },
+  { value: 'Trophy', label: 'Troféu', component: Trophy },
+  { value: 'Palette', label: 'Paleta', component: Palette },
+  { value: 'MapPin', label: 'Localização', component: MapPin },
+  { value: 'Laptop', label: 'Tecnologia', component: Laptop },
+  { value: 'Heart', label: 'Saúde', component: Heart },
+  { value: 'Star', label: 'Estrela', component: Star },
+  { value: 'Globe', label: 'Mundial', component: Globe },
+  { value: 'Users', label: 'Pessoas', component: Users },
+  { value: 'Camera', label: 'Fotografia', component: Camera },
+  { value: 'Music', label: 'Música', component: Music },
+  { value: 'Car', label: 'Automóveis', component: Car },
+  { value: 'Home', label: 'Casa', component: Home },
+  { value: 'Briefcase', label: 'Negócios', component: Briefcase },
+  { value: 'ShoppingBag', label: 'Compras', component: ShoppingBag },
+  { value: 'Coffee', label: 'Café', component: Coffee },
+  { value: 'Gamepad2', label: 'Jogos', component: Gamepad2 },
+  { value: 'BookOpen', label: 'Educação', component: BookOpen },
+  { value: 'Plane', label: 'Viagens', component: Plane },
+  { value: 'Shield', label: 'Segurança', component: Shield },
+  { value: 'Zap', label: 'Energia', component: Zap },
+  { value: 'Activity', label: 'Atividade', component: Activity },
+  { value: 'Target', label: 'Objetivos', component: Target },
+  { value: 'Gift', label: 'Presentes', component: Gift },
+  { value: 'Clock', label: 'Tempo', component: Clock },
+  { value: 'Settings', label: 'Configurações', component: Settings },
+  { value: 'Phone', label: 'Telefone', component: Phone },
+  { value: 'Mail', label: 'E-mail', component: Mail },
+  { value: 'Image', label: 'Imagens', component: Image },
+  { value: 'Film', label: 'Cinema', component: Film },
+  { value: 'Headphones', label: 'Áudio', component: Headphones },
+  { value: 'Mic', label: 'Microfone', component: Mic },
+  { value: 'Video', label: 'Vídeo', component: Video },
+  { value: 'Calendar', label: 'Calendário', component: Calendar },
+  { value: 'Bell', label: 'Notificações', component: Bell },
+  { value: 'Lock', label: 'Privacidade', component: Lock },
+  { value: 'Key', label: 'Acesso', component: Key },
+  { value: 'Wifi', label: 'Internet', component: Wifi }
 ]
 
 const COLOR_OPTIONS = [
@@ -342,7 +419,11 @@ export default function CategoriesPage() {
                   className="w-12 h-12 rounded-lg flex items-center justify-center"
                   style={{ backgroundColor: category.color || '#3B82F6' }}
                 >
-                  <Folder className="h-6 w-6 text-white" />
+                  {(() => {
+                    const iconOption = ICON_OPTIONS.find(opt => opt.value === category.icon)
+                    const IconComponent = iconOption?.component || Folder
+                    return <IconComponent className="h-6 w-6 text-white" />
+                  })()}
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
@@ -481,7 +562,11 @@ export default function CategoriesPage() {
                           className="w-8 h-8 rounded-lg flex items-center justify-center mr-3"
                           style={{ backgroundColor: category.color || '#3B82F6' }}
                         >
-                          <Tag className="h-4 w-4 text-white" />
+                          {(() => {
+                            const iconOption = ICON_OPTIONS.find(opt => opt.value === category.icon)
+                            const IconComponent = iconOption?.component || Tag
+                            return <IconComponent className="h-4 w-4 text-white" />
+                          })()}
                         </div>
                         <div>
                           <div className="text-sm font-medium text-neutral-900">
@@ -656,15 +741,55 @@ export default function CategoriesPage() {
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Ícone
                   </label>
-                  <select
-                    value={formData.icon}
-                    onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  >
-                    {ICON_OPTIONS.map(icon => (
-                      <option key={icon} value={icon}>{icon}</option>
-                    ))}
-                  </select>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3 p-3 border border-neutral-300 rounded-lg bg-neutral-50">
+                      {(() => {
+                        const selectedIconOption = ICON_OPTIONS.find(opt => opt.value === formData.icon)
+                        const IconComponent = selectedIconOption?.component || Folder
+                        return (
+                          <>
+                            <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center">
+                              <IconComponent className="h-5 w-5 text-primary-600" />
+                            </div>
+                            <span className="text-sm font-medium text-neutral-700">
+                              {selectedIconOption?.label || 'Pasta'}
+                            </span>
+                          </>
+                        )
+                      })()}
+                    </div>
+                    <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto p-2 border border-neutral-200 rounded-lg">
+                      {ICON_OPTIONS.map(iconOption => {
+                        const IconComponent = iconOption.component
+                        return (
+                          <button
+                            key={iconOption.value}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, icon: iconOption.value })}
+                            className={`p-3 rounded-lg border-2 transition-all hover:scale-105 flex flex-col items-center space-y-1 ${
+                              formData.icon === iconOption.value
+                                ? 'border-primary-500 bg-primary-50'
+                                : 'border-neutral-200 hover:border-primary-300 hover:bg-primary-25'
+                            }`}
+                            title={iconOption.label}
+                          >
+                            <IconComponent className={`h-5 w-5 ${
+                              formData.icon === iconOption.value
+                                ? 'text-primary-600'
+                                : 'text-neutral-600'
+                            }`} />
+                            <span className={`text-xs font-medium truncate max-w-full ${
+                              formData.icon === iconOption.value
+                                ? 'text-primary-700'
+                                : 'text-neutral-500'
+                            }`}>
+                              {iconOption.label}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="md:col-span-2">
@@ -791,15 +916,55 @@ export default function CategoriesPage() {
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Ícone
                   </label>
-                  <select
-                    value={formData.icon}
-                    onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  >
-                    {ICON_OPTIONS.map(icon => (
-                      <option key={icon} value={icon}>{icon}</option>
-                    ))}
-                  </select>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3 p-3 border border-neutral-300 rounded-lg bg-neutral-50">
+                      {(() => {
+                        const selectedIconOption = ICON_OPTIONS.find(opt => opt.value === formData.icon)
+                        const IconComponent = selectedIconOption?.component || Folder
+                        return (
+                          <>
+                            <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center">
+                              <IconComponent className="h-5 w-5 text-primary-600" />
+                            </div>
+                            <span className="text-sm font-medium text-neutral-700">
+                              {selectedIconOption?.label || 'Pasta'}
+                            </span>
+                          </>
+                        )
+                      })()}
+                    </div>
+                    <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto p-2 border border-neutral-200 rounded-lg">
+                      {ICON_OPTIONS.map(iconOption => {
+                        const IconComponent = iconOption.component
+                        return (
+                          <button
+                            key={iconOption.value}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, icon: iconOption.value })}
+                            className={`p-3 rounded-lg border-2 transition-all hover:scale-105 flex flex-col items-center space-y-1 ${
+                              formData.icon === iconOption.value
+                                ? 'border-primary-500 bg-primary-50'
+                                : 'border-neutral-200 hover:border-primary-300 hover:bg-primary-25'
+                            }`}
+                            title={iconOption.label}
+                          >
+                            <IconComponent className={`h-5 w-5 ${
+                              formData.icon === iconOption.value
+                                ? 'text-primary-600'
+                                : 'text-neutral-600'
+                            }`} />
+                            <span className={`text-xs font-medium truncate max-w-full ${
+                              formData.icon === iconOption.value
+                                ? 'text-primary-700'
+                                : 'text-neutral-500'
+                            }`}>
+                              {iconOption.label}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="md:col-span-2">

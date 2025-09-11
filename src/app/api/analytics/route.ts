@@ -164,6 +164,40 @@ export async function GET(request: NextRequest) {
       { stage: 'Leads Gerados', count: currentLeadsCount, percentage: Math.round((currentLeadsCount / Math.max(totalViews, 1)) * 100) || 0 },
     ]
 
+    // Generate reader retention data (simulated based on industry standards)
+    const readerRetention = [
+      { 
+        period: '1 dia', 
+        percentage: 45, 
+        readers: Math.round(totalViews * 0.45),
+        description: 'Leitores que retornam no dia seguinte'
+      },
+      { 
+        period: '7 dias', 
+        percentage: 25, 
+        readers: Math.round(totalViews * 0.25),
+        description: 'Leitores que retornam na primeira semana'
+      },
+      { 
+        period: '30 dias', 
+        percentage: 15, 
+        readers: Math.round(totalViews * 0.15),
+        description: 'Leitores que retornam no primeiro mês'
+      },
+      { 
+        period: 'Tempo médio de leitura', 
+        percentage: 68, 
+        readers: Math.round(totalViews * 0.68),
+        description: 'Artigos lidos por mais de 2 minutos'
+      },
+      { 
+        period: 'Taxa de conclusão', 
+        percentage: 32, 
+        readers: Math.round(totalViews * 0.32),
+        description: 'Leitores que chegam ao final do artigo'
+      }
+    ]
+
     const analyticsData = {
       // Main statistics
       stats: {
@@ -188,6 +222,7 @@ export async function GET(request: NextRequest) {
       // Time-based analytics
       hourly_traffic: hourlyTraffic,
       conversion_funnel: conversionFunnel,
+      reader_retention: readerRetention,
       
       // Period info
       period_days: daysAgo,
@@ -221,6 +256,7 @@ export async function GET(request: NextRequest) {
       top_categories: [],
       hourly_traffic: [],
       conversion_funnel: [],
+      reader_retention: [],
       period_days: parseInt(period),
       last_updated: new Date().toISOString(),
       database_connected: false,

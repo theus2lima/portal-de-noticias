@@ -34,6 +34,7 @@ import {
   Share
 } from 'lucide-react'
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon'
+import NotificationDropdown from '@/components/NotificationDropdown'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -203,6 +204,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           name: 'Configurações',
           href: '/admin/settings',
           icon: Settings
+        },
+        {
+          name: 'Config do Site',
+          href: '/admin/site-config',
+          icon: Globe
         }
       ]
     }
@@ -407,10 +413,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </div>
               
               {/* Notifications */}
-              <button className="relative p-2 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors">
-                <Bell size={18} />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
+              <NotificationDropdown />
               
               {/* View Site */}
               <Link

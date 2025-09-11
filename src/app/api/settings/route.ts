@@ -201,6 +201,36 @@ export async function POST(request: NextRequest) {
           }
           break
           
+        case 'reorder_items':
+          // Reordenar itens do ticker
+          const items = data.items
+          if (!Array.isArray(items)) {
+            return NextResponse.json({
+              success: false,
+              error: 'Dados de itens inválidos para reordenação'
+            }, { status: 400 })
+          }
+          
+          // Atualizar a prioridade de cada item baseado na nova posição
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i]
+            const newPriority = items.length - i // Prioridade maior para itens no topo
+            
+            const { error: reorderError } = await supabase
+              .from('ticker_items')
+              .update({ priority: newPriority })
+              .eq('id', item.id)
+            
+            if (reorderError) {
+              console.error(`Erro ao reordenar item ${item.id}:`, reorderError)
+              return NextResponse.json({
+                success: false,
+                error: `Erro ao reordenar item: ${item.text.substring(0, 30)}...`
+              }, { status: 500 })
+            }
+          }
+          break
+          
         default:
           return NextResponse.json({
             success: false,

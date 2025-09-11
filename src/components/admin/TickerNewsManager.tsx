@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { 
   Plus, 
   Edit3, 
@@ -236,6 +237,52 @@ export default function TickerNewsManager() {
     }
   }
   
+  const handleDragEnd = async (result: any) => {
+    if (!result.destination) {
+      return
+    }
+    
+    const items = Array.from(settings.tickerItems)
+    const [reorderedItem] = items.splice(result.source.index, 1)
+    items.splice(result.destination.index, 0, reorderedItem)
+    
+    // Atualizar o estado local imediatamente para feedback visual
+    setSettings(prev => ({
+      ...prev,
+      tickerItems: items
+    }))
+    
+    // Salvar nova ordem no backend
+    setSaving(true)
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: 'ticker',
+          action: 'reorder_items',
+          data: { items }
+        })
+      })
+      
+      const responseResult = await response.json()
+      
+      if (responseResult.success) {
+        showMessage('Ordem dos itens atualizada com sucesso!', 'success')
+      } else {
+        // Reverter o estado local se o backend falhou
+        fetchTickerSettings()
+        showMessage(responseResult.error || 'Erro ao reordenar itens', 'error')
+      }
+    } catch (err) {
+      // Reverter o estado local se houve erro de conexão
+      fetchTickerSettings()
+      showMessage('Erro de conexão ao reordenar itens', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+  
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
@@ -373,9 +420,16 @@ export default function TickerNewsManager() {
           
           {/* Ticker Items List */}
           <div className="space-y-3">
-            <h4 className="font-medium text-neutral-900 mb-3">
-              Itens do Ticker ({settings.tickerItems.length})
-            </h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-neutral-900">
+                Itens do Ticker ({settings.tickerItems.length})
+              </h4>
+              {settings.tickerItems.length > 1 && (
+                <p className="text-xs text-neutral-500">
+                  Arraste os itens para reorganizar a ordem
+                </p>
+              )}
+            </div>
             
             {settings.tickerItems.length === 0 ? (
               <div className="text-center py-8 text-neutral-500">
@@ -384,107 +438,150 @@ export default function TickerNewsManager() {
                 <p className="text-sm">Clique em &quot;Adicionar Notícia&quot; para começar.</p>
               </div>
             ) : (
-              settings.tickerItems.map((item) => (
-                <div
-                  key={item.id}
-                  className={`p-4 border rounded-lg ${
-                    item.active 
-                      ? 'border-neutral-200 bg-white' 
-                      : 'border-neutral-200 bg-neutral-50 opacity-60'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-2">
-                      <GripVertical className="h-4 w-4 text-neutral-400 cursor-move" />
-                      <button
-                        onClick={() => handleToggleItemStatus(item.id, !item.active)}
-                        className={`p-1 rounded ${
-                          item.active 
-                            ? 'text-green-600 hover:bg-green-100' 
-                            : 'text-neutral-400 hover:bg-neutral-200'
-                        }`}
-                        disabled={saving}
-                        title={item.active ? 'Desativar item' : 'Ativar item'}
-                      >
-                        {item.active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    
-                    <div className="flex-1">
-                      {editingItem === item.id ? (
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="text"
-                            defaultValue={item.text}
-                            className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                            disabled={saving}
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                const target = e.target as HTMLInputElement
-                                handleUpdateItem(item.id, target.value)
-                              }
-                            }}
-                            autoFocus
-                          />
-                          <button
-                            onClick={(e) => {
-                              const input = e.currentTarget.previousElementSibling as HTMLInputElement
-                              handleUpdateItem(item.id, input.value)
-                            }}
-                            disabled={saving}
-                            className="btn-primary text-sm flex items-center space-x-1"
-                          >
-                            {saving ? (
-                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                            ) : (
-                              <Save className="h-3 w-3" />
-                            )}
-                            <span>{saving ? 'Salvando...' : 'Salvar'}</span>
-                          </button>
-                          <button
-                            onClick={() => setEditingItem(null)}
-                            disabled={saving}
-                            className="btn-outline text-sm"
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      ) : (
-                        <div>
-                          <p className={`${item.active ? 'text-neutral-900' : 'text-neutral-500'}`}>
-                            {item.text}
-                          </p>
-                          <p className="text-xs text-neutral-400 mt-1">
-                            Criado em: {new Date(item.createdAt).toLocaleString('pt-BR')}
-                            {item.updatedAt && ` • Editado em: ${new Date(item.updatedAt).toLocaleString('pt-BR')}`}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {editingItem !== item.id && (
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => setEditingItem(item.id)}
-                          disabled={saving}
-                          className="p-2 text-neutral-500 hover:text-primary-600 hover:bg-primary-100 rounded-lg transition-colors"
-                          title="Editar item"
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="ticker-items">
+                  {(provided, snapshot) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className={`space-y-3 transition-colors ${
+                        snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2' : ''
+                      }`}
+                    >
+                      {settings.tickerItems.map((item, index) => (
+                        <Draggable
+                          key={item.id}
+                          draggableId={item.id}
+                          index={index}
+                          isDragDisabled={saving || editingItem === item.id}
                         >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteItem(item.id)}
-                          disabled={saving}
-                          className="p-2 text-neutral-500 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                          title="Excluir item"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`p-4 border rounded-lg transition-all ${
+                                item.active 
+                                  ? 'border-neutral-200 bg-white' 
+                                  : 'border-neutral-200 bg-neutral-50 opacity-60'
+                              } ${
+                                snapshot.isDragging 
+                                  ? 'shadow-lg rotate-1 bg-white border-primary-300' 
+                                  : 'shadow-sm'
+                              }`}
+                            >
+                              <div className="flex items-center space-x-3">
+                                <div className="flex items-center space-x-2">
+                                  <div
+                                    {...provided.dragHandleProps}
+                                    className={`p-1 rounded cursor-grab active:cursor-grabbing ${
+                                      saving || editingItem === item.id 
+                                        ? 'cursor-not-allowed opacity-50' 
+                                        : 'hover:bg-neutral-200'
+                                    }`}
+                                    title="Arraste para reordenar"
+                                  >
+                                    <GripVertical className="h-4 w-4 text-neutral-400" />
+                                  </div>
+                                  <button
+                                    onClick={() => handleToggleItemStatus(item.id, !item.active)}
+                                    className={`p-1 rounded ${
+                                      item.active 
+                                        ? 'text-green-600 hover:bg-green-100' 
+                                        : 'text-neutral-400 hover:bg-neutral-200'
+                                    }`}
+                                    disabled={saving}
+                                    title={item.active ? 'Desativar item' : 'Ativar item'}
+                                  >
+                                    {item.active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                                  </button>
+                                  {/* Indicador de posição */}
+                                  <span className="text-xs text-neutral-400 bg-neutral-100 px-2 py-1 rounded">
+                                    #{index + 1}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex-1">
+                                  {editingItem === item.id ? (
+                                    <div className="flex items-center space-x-2">
+                                      <input
+                                        type="text"
+                                        defaultValue={item.text}
+                                        className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                        disabled={saving}
+                                        onKeyPress={(e) => {
+                                          if (e.key === 'Enter') {
+                                            const target = e.target as HTMLInputElement
+                                            handleUpdateItem(item.id, target.value)
+                                          }
+                                        }}
+                                        autoFocus
+                                      />
+                                      <button
+                                        onClick={(e) => {
+                                          const input = e.currentTarget.previousElementSibling as HTMLInputElement
+                                          handleUpdateItem(item.id, input.value)
+                                        }}
+                                        disabled={saving}
+                                        className="btn-primary text-sm flex items-center space-x-1"
+                                      >
+                                        {saving ? (
+                                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                        ) : (
+                                          <Save className="h-3 w-3" />
+                                        )}
+                                        <span>{saving ? 'Salvando...' : 'Salvar'}</span>
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingItem(null)}
+                                        disabled={saving}
+                                        className="btn-outline text-sm"
+                                      >
+                                        Cancelar
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div>
+                                      <p className={`${item.active ? 'text-neutral-900' : 'text-neutral-500'}`}>
+                                        {item.text}
+                                      </p>
+                                      <p className="text-xs text-neutral-400 mt-1">
+                                        Criado em: {new Date(item.createdAt).toLocaleString('pt-BR')}
+                                        {item.updatedAt && ` • Editado em: ${new Date(item.updatedAt).toLocaleString('pt-BR')}`}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {editingItem !== item.id && (
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={() => setEditingItem(item.id)}
+                                      disabled={saving}
+                                      className="p-2 text-neutral-500 hover:text-primary-600 hover:bg-primary-100 rounded-lg transition-colors"
+                                      title="Editar item"
+                                    >
+                                      <Edit3 className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteItem(item.id)}
+                                      disabled={saving}
+                                      className="p-2 text-neutral-500 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                      title="Excluir item"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             )}
           </div>
           

@@ -1,7 +1,5 @@
 import { Metadata } from 'next'
-import { AuthProvider } from '@/contexts/AuthContext'
-import ProtectedRoute from '@/components/Auth/ProtectedRoute'
-import DashboardLayout from '@/components/Dashboard/DashboardLayout'
+import AdminLayoutWrapper from '@/components/Layout/AdminLayoutWrapper'
 
 export const metadata: Metadata = {
   title: 'Dashboard - Portal de Notícias',
@@ -15,12 +13,8 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   return (
-    <AuthProvider>
-      <ProtectedRoute>
-        <DashboardLayout>
-          {children}
-        </DashboardLayout>
-      </ProtectedRoute>
-    </AuthProvider>
+    <AdminLayoutWrapper>
+      {children}
+    </AdminLayoutWrapper>
   )
 }

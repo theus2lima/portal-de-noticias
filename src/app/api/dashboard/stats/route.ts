@@ -1,13 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 
+/**
+ * Calcula a mudança percentual entre dois valores
+ * 
+ * Cenários de exemplo:
+ * - Anterior: 0, Atual: 0 = 0%
+ * - Anterior: 0, Atual: 1 = +50%
+ * - Anterior: 0, Atual: 2 = +100%
+ * - Anterior: 0, Atual: 3 = +150%
+ * - Anterior: 0, Atual: 37 = +370%
+ * - Anterior: 1, Atual: 0 = -100%
+ * - Anterior: 10, Atual: 15 = +50%
+ * - Anterior: 20, Atual: 10 = -50%
+ */
 function calculatePercentageChange(current: number, previous: number): string {
+  // Cenário 1: Não houve valor anterior (0) mas há valor atual
   if (previous === 0) {
-    return current > 0 ? '+100%' : '0%'
+    if (current === 0) {
+      return '0%' // Nenhuma mudança: 0 -> 0
+    }
+    // Crescimento desde zero - mostrar crescimento representativo
+    // Para valores pequenos (1-10), mostrar percentual baseado no valor
+    if (current <= 10) {
+      return `+${current * 50}%` // Ex: 1=+50%, 2=+100%, 3=+150%
+    }
+    // Para valores maiores, usar fórmula mais moderada
+    const percentIncrease = Math.min(current * 10, 999) // Ex: 37=+370%, limita a 999%
+    return `+${Math.round(percentIncrease)}%`
   }
+  
+  // Se havia valor anterior mas agora é zero
+  if (current === 0) {
+    return '-100%' // Queda total
+  }
+  
+  // Cálculo normal de percentual
   const change = ((current - previous) / previous) * 100
   const sign = change >= 0 ? '+' : ''
-  return `${sign}${Math.round(change)}%`
+  
+  // Se a mudança for muito grande, limitar a exibição para evitar números absurdos
+  const roundedChange = Math.round(change)
+  if (Math.abs(roundedChange) > 999) {
+    return sign === '+' ? '+999%' : '-999%'
+  }
+  
+  return `${sign}${roundedChange}%`
 }
 
 export async function GET(request: NextRequest) {

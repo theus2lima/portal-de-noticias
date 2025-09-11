@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import ConditionalLayout from '@/components/ConditionalLayout'
+import ThemeProvider from '@/components/ThemeProvider'
 import { generateSEO, generateOrganizationSchema } from '@/lib/seo'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -53,9 +54,11 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
       </head>
       <body className={`${inter.className} bg-neutral-50`}>
-        <ConditionalLayout>
-          {children}
-        </ConditionalLayout>
+        <ThemeProvider>
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
+        </ThemeProvider>
       </body>
     </html>
   )

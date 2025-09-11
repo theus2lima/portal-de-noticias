@@ -13,7 +13,8 @@ import {
   ArrowDown,
   Clock,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  BookOpen
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -53,6 +54,12 @@ interface AnalyticsData {
     stage: string
     count: number
     percentage: number
+  }>
+  reader_retention: Array<{
+    period: string
+    percentage: number
+    readers: number
+    description: string
   }>
   period_days: number
   last_updated: string
@@ -143,6 +150,7 @@ export default function AnalyticsPage() {
   const topCategories = analyticsData?.top_categories || []
   const hourlyTraffic = analyticsData?.hourly_traffic || []
   const conversionFunnel = analyticsData?.conversion_funnel || []
+  const readerRetention = analyticsData?.reader_retention || []
 
   return (
     <div className="space-y-6">
@@ -456,6 +464,65 @@ export default function AnalyticsPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Reader Retention Chart */}
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+        <div className="flex items-center mb-6">
+          <BookOpen className="h-5 w-5 text-primary-600 mr-2" />
+          <h3 className="text-lg font-semibold text-neutral-900">Retenção de Leitores</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {readerRetention.length > 0 ? readerRetention.map((retention, index) => {
+            const maxPercentage = Math.max(...readerRetention.map(r => r.percentage))
+            const barHeight = Math.max((retention.percentage / maxPercentage) * 100, 5) // Mínimo de 5% para visibilidade
+            
+            return (
+              <div key={index} className="text-center">
+                <div className="mb-3">
+                  <div className="h-32 flex items-end justify-center">
+                    <div 
+                      className="w-12 bg-gradient-to-t from-primary-600 to-primary-400 rounded-t-md transition-all duration-500 hover:from-primary-700 hover:to-primary-500 cursor-pointer relative group"
+                      style={{ height: `${barHeight}%` }}
+                    >
+                      {/* Tooltip on hover */}
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                        <div className="bg-neutral-800 text-white text-xs rounded-lg py-1 px-2 whitespace-nowrap">
+                          {retention.readers.toLocaleString()} leitores
+                        </div>
+                        <div className="w-2 h-2 bg-neutral-800 transform rotate-45 absolute top-full left-1/2 -translate-x-1/2 -mt-1"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-neutral-900 mt-2">
+                    {retention.percentage}%
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-neutral-700">{retention.period}</p>
+                  <p className="text-xs text-neutral-500">{retention.description}</p>
+                  <p className="text-xs text-primary-600 font-medium">
+                    {retention.readers.toLocaleString()} leitores
+                  </p>
+                </div>
+              </div>
+            )
+          }) : (
+            <div className="col-span-full text-center py-8">
+              <BookOpen className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
+              <h4 className="text-sm font-medium text-neutral-900 mb-1">Dados de Retenção Indisponíveis</h4>
+              <p className="text-xs text-neutral-500">Os dados de retenção aparecerão quando houver histórico suficiente de leitores.</p>
+            </div>
+          )}
+        </div>
+        {readerRetention.length > 0 && (
+          <div className="mt-6 pt-4 border-t border-neutral-200">
+            <div className="flex items-center justify-between text-sm text-neutral-600">
+              <span>Taxa de retenção baseada nos últimos {analyticsData?.period_days || 30} dias</span>
+              <span>Atualizado em: {analyticsData?.last_updated ? new Date(analyticsData.last_updated).toLocaleString('pt-BR') : 'N/A'}</span>
+            </div>
+          </div>
+        )}
       </div>
         </>
       )}

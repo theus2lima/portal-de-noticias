@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Search, Menu, X, Facebook, Twitter, Instagram, MessageCircle } from 'lucide-react'
+import { Search, Menu, X, Facebook, Twitter, Instagram, MessageCircle, LinkIcon } from 'lucide-react'
 import { useCategoriesContext } from '@/contexts/CategoriesContext'
+import { useSiteConfig } from '@/hooks/useSiteConfig'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -13,13 +14,23 @@ const Header = () => {
   
   // Usar contexto de categorias
   const { categories, loading } = useCategoriesContext()
-
-  const socialLinks = [
-    { icon: Facebook, href: '#', color: 'hover:text-blue-600' },
-    { icon: Twitter, href: '#', color: 'hover:text-blue-400' },
-    { icon: Instagram, href: '#', color: 'hover:text-pink-600' },
-    { icon: MessageCircle, href: '#', color: 'hover:text-green-500' },
-  ]
+  
+  // Usar configurações do site
+  const { config, loading: configLoading } = useSiteConfig()
+  
+  // Mapear ícones para componentes
+  const iconMap = {
+    Facebook,
+    Twitter,
+    Instagram,
+    MessageCircle,
+    LinkIcon
+  }
+  
+  // Filtrar apenas os links de redes sociais habilitados para o header
+  const headerSocialLinks = config.socialLinks
+    .filter(link => link.enabled)
+    .slice(0, 4) // Máximo 4 redes sociais no header para não ficar sobrecarregado
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,18 +53,24 @@ const Header = () => {
       <div className="bg-primary-900 text-white">
         <div className="container mx-auto px-4 py-2 flex justify-between items-center">
           <div className="text-sm">
-            📍 Últimas notícias em tempo real
+            {config.headerText || '📍 Últimas notícias em tempo real'}
           </div>
           <div className="flex items-center space-x-3">
-            {socialLinks.map((social, index) => (
-              <Link 
-                key={index}
-                href={social.href}
-                className={`text-white ${social.color} transition-colors duration-200`}
-              >
-                <social.icon size={16} />
-              </Link>
-            ))}
+            {headerSocialLinks.map((social) => {
+              const Icon = iconMap[social.icon as keyof typeof iconMap] || LinkIcon
+              return (
+                <Link 
+                  key={social.id}
+                  href={social.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`text-white ${social.color} transition-colors duration-200`}
+                  title={social.platform}
+                >
+                  <Icon size={16} />
+                </Link>
+              )
+            })}
           </div>
         </div>
       </div>

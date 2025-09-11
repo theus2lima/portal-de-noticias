@@ -14,7 +14,9 @@ import {
 } from 'lucide-react'
 import LeadsClient from '@/components/LeadsClient'
 import LeadsActions from '@/components/LeadsActions'
+import LeadConversionChart from '@/components/LeadConversionChart'
 import { Lead } from '@/utils/localStorage'
+import { useNotificationHelpers } from '@/hooks/useNotificationHelpers'
 
 // Dados simulados - no client-side, usaremos apenas dados mock por enquanto
 function getLeadsData() {
@@ -54,6 +56,90 @@ function getLeadsData() {
       is_contacted: false,
       notes: null,
       created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: 4,
+      name: "Maria José da Silva",
+      phone: "11999887766",
+      city: "Campinas",
+      email: "maria@exemplo.com",
+      source: "website",
+      message: "Interessada em notícias de economia",
+      is_contacted: true,
+      notes: "Contatado por email",
+      created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: 5,
+      name: "João Pedro Costa",
+      phone: "47988776655",
+      city: "Blumenau",
+      email: null,
+      source: "website",
+      message: null,
+      is_contacted: false,
+      notes: null,
+      created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: 6,
+      name: "Fernanda Lima",
+      phone: "85987654321",
+      city: "Fortaleza",
+      email: "fernanda@teste.com",
+      source: "website",
+      message: "Gostaria de receber notícias de esportes",
+      is_contacted: true,
+      notes: "Lead qualificado",
+      created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: 7,
+      name: "Roberto Santos",
+      phone: "62999888777",
+      city: "Goiânia",
+      email: null,
+      source: "website",
+      message: null,
+      is_contacted: false,
+      notes: null,
+      created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: 8,
+      name: "Carla Mendes",
+      phone: "31987654321",
+      city: "Belo Horizonte",
+      email: "carla@exemplo.com",
+      source: "website",
+      message: "Interessada em política local",
+      is_contacted: true,
+      notes: "Follow-up agendado",
+      created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: 9,
+      name: "Pedro Alves",
+      phone: "41988776644",
+      city: "Curitiba",
+      email: null,
+      source: "website",
+      message: null,
+      is_contacted: false,
+      notes: null,
+      created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: 10,
+      name: "Luciana Costa",
+      phone: "51999887755",
+      city: "Porto Alegre",
+      email: "luciana@email.com",
+      source: "website",
+      message: "Quero receber resumos diários",
+      is_contacted: false,
+      notes: null,
+      created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     }
   ]
 
@@ -66,6 +152,19 @@ function LeadsPageContent() {
   const [selectedLeads, setSelectedLeads] = useState<number[]>([])
   const [mounted, setMounted] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  
+  // Notification helpers
+  const {
+    notifyNewLead,
+    notifyNewArticle,
+    notifySystemUpdate,
+    notifyBackupComplete,
+    notifyHighTraffic,
+    notifySuccess,
+    notifyError,
+    notifyWarning,
+    notifyInfo
+  } = useNotificationHelpers()
   
   // Estados para configuração do WhatsApp
   const [whatsappLink, setWhatsappLink] = useState('https://chat.whatsapp.com/IgDgvCJdgy38nFMQCyhy0L')
@@ -327,14 +426,76 @@ function LeadsPageContent() {
         onSelectLead={handleSelectLead}
       />
 
-      {/* Conversion Chart Placeholder */}
+      {/* Conversion Chart */}
+      <LeadConversionChart leads={leads} />
+      
+      {/* Demo Notification Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Conversão de Leads</h3>
-        <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-          <div className="text-center">
-            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-500">Gráfico de conversão será exibido aqui</p>
+        <div className="flex items-center mb-6">
+          <div className="bg-purple-100 p-2 rounded-lg mr-3">
+            <AlertCircle className="h-5 w-5 text-purple-600" />
           </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900">Teste de Notificações</h3>
+            <p className="text-sm text-gray-600">Clique nos botões abaixo para testar diferentes tipos de notificações no sininho</p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <button
+            onClick={() => notifyNewLead('João Silva')}
+            className="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-800 rounded-lg transition-colors text-sm font-medium"
+          >
+            Novo Lead
+          </button>
+          <button
+            onClick={() => notifyNewArticle('Economia Brasileira em Alta')}
+            className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg transition-colors text-sm font-medium"
+          >
+            Novo Artigo
+          </button>
+          <button
+            onClick={() => notifySystemUpdate('2.1.5')}
+            className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-lg transition-colors text-sm font-medium"
+          >
+            Sistema Atualizado
+          </button>
+          <button
+            onClick={() => notifyBackupComplete()}
+            className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-lg transition-colors text-sm font-medium"
+          >
+            Backup Completo
+          </button>
+          <button
+            onClick={() => notifyHighTraffic(250)}
+            className="px-4 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-lg transition-colors text-sm font-medium"
+          >
+            Tráfego Alto
+          </button>
+          <button
+            onClick={() => notifyError('Erro no Sistema', 'Falha ao conectar com o banco de dados')}
+            className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg transition-colors text-sm font-medium"
+          >
+            Erro
+          </button>
+          <button
+            onClick={() => notifyWarning('Memória Alta', 'Uso de memória acima de 80%', 'Ver Status', '/admin/status')}
+            className="px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-800 rounded-lg transition-colors text-sm font-medium"
+          >
+            Aviso
+          </button>
+          <button
+            onClick={() => notifyInfo('Manutenção Programada', 'Sistema entrará em manutenção às 02:00')}
+            className="px-4 py-2 bg-cyan-100 hover:bg-cyan-200 text-cyan-800 rounded-lg transition-colors text-sm font-medium"
+          >
+            Informação
+          </button>
+        </div>
+        
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <strong>Dica:</strong> As notificações aparecerão no sininho do cabeçalho. Clique no sininho para ver todas as notificações e testeis as funcionalidades como marcar como lida, limpar todas, etc.
+          </p>
         </div>
       </div>
     </div>

@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 :root {
   /* Cores baseadas no site do Governo do Paraná */
@@ -93,6 +96,22 @@ a {
   .text-gradient {
     @apply bg-gradient-to-r from-primary-900 to-secondary-600 bg-clip-text text-transparent;
   }
+}
+
+/* Tema escuro */
+.dark {
+  --neutral-50: 15 23 42;
+  --neutral-900: 248 250 252;
+  background: rgb(var(--neutral-50));
+  color: rgb(var(--neutral-900));
+}
+
+/* Desabilitar animações */
+.no-animations *,
+.no-animations *::before,
+.no-animations *::after {
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
 }
 
 /* Animações personalizadas */
