@@ -288,7 +288,7 @@ export default function ShareInsightsPage() {
                         <div
                           className="bg-primary-500 h-2 rounded-full"
                           style={{ 
-                            width: `${shareData?.last7Days ? (day.shares / Math.max(...shareData.last7Days.map(d => d.shares))) * 100 : 0}%` 
+                            width: `${shareData?.last7Days && shareData.last7Days.length > 0 ? (day.shares / Math.max(...shareData.last7Days.map(d => d.shares), 1)) * 100 : 0}%` 
                           }}
                         />
                       </div>
@@ -348,7 +348,7 @@ export default function ShareInsightsPage() {
                 <TrendingUp className="h-8 w-8 text-green-600 mx-auto mb-2" />
                 <h4 className="font-semibold text-green-800">Plataforma Líder</h4>
                 <p className="text-sm text-green-600">
-                  {shareData?.sharesByPlatform ? 
+                  {shareData?.sharesByPlatform && Object.keys(shareData.sharesByPlatform).length > 0 ? 
                     platformNames[Object.keys(shareData.sharesByPlatform).reduce((a, b) => 
                       (shareData.sharesByPlatform as any)[a] > (shareData.sharesByPlatform as any)[b] ? a : b
                     ) as keyof typeof platformNames] || 'N/A'
