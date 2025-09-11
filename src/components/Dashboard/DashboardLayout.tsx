@@ -492,7 +492,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     {user?.name || 'Admin'}
                   </p>
                   <p className="text-xs text-neutral-500">
-                    {user?.role || 'Administrador'}
+                    {user?.role === 'admin' ? 'Administrador' : 
+                     user?.role === 'editor' ? 'Editor' : 
+                     user?.role === 'author' ? 'Autor' : 'Usuário'}
                   </p>
                 </div>
               </div>
