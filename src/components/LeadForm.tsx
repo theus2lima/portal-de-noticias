@@ -70,72 +70,112 @@ const LeadForm = () => {
     setIsLoading(true)
     setErrors({})
 
-    try {
-      // Simular envio da API (pode ser substituído por chamada real quando Supabase estiver configurado)
-      const response = await fetch('/api/leads', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          phone: formData.phone,
-          city: formData.city,
-          email: formData.email || undefined,
-          source: 'website'
-        }),
-      })
+    console.log('📱 Iniciando envio do lead:', { 
+      name: formData.name, 
+      phone: formData.phone, 
+      city: formData.city,
+      userAgent: navigator.userAgent
+    })
 
-      const result = await response.json()
+    try {
+      // Criar lead para localStorage imediatamente (fallback)
+      const leadForStorage = {
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        city: formData.city.trim(),
+        email: formData.email?.trim() || null,
+        source: 'website',
+        message: null,
+        is_contacted: false,
+        notes: null
+      }
+
+      // Sempre salvar no localStorage primeiro
+      try {
+        LeadsStorage.addLead(leadForStorage)
+        console.log('✅ Lead salvo no localStorage com sucesso:', leadForStorage)
+      } catch (localStorageError) {
+        console.error('❌ Erro ao salvar no localStorage:', localStorageError)
+      }
+
+      // Tentar enviar para API
+      let apiSuccess = false
+      try {
+        const response = await fetch('/api/leads', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            phone: formData.phone,
+            city: formData.city,
+            email: formData.email || undefined,
+            source: 'website'
+          }),
+        })
+
+        const result = await response.json()
+        
+        if (response.ok) {
+          console.log('✅ Lead enviado para API com sucesso:', result)
+          apiSuccess = true
+        } else {
+          console.warn('⚠️ API retornou erro, mas continuando com localStorage:', result)
+        }
+      } catch (apiError) {
+        console.warn('⚠️ Erro na API, mas continuando com localStorage:', apiError)
+      }
+        
+      // Sempre mostrar sucesso se salvou no localStorage
+      setIsSubmitted(true)
+      setFormData({ name: '', phone: '', email: '', city: '' })
       
-      if (response.ok) {
-        // Se a API indicar para usar localStorage, salvar o lead localmente também
-        if (result.useLocalStorage && result.data) {
-          try {
-            LeadsStorage.addLead({
-              name: result.data.name,
-              phone: result.data.phone,
-              city: result.data.city,
-              email: result.data.email,
-              source: result.data.source,
-              message: result.data.message,
-              is_contacted: result.data.is_contacted,
-              notes: result.data.notes
-            })
-            console.log('Lead salvo no localStorage:', result.data)
-          } catch (localStorageError) {
-            console.error('Erro ao salvar no localStorage:', localStorageError)
+      console.log('📱 Preparando redirecionamento para WhatsApp...')
+      
+      // Buscar link do WhatsApp e redirecionar
+      setTimeout(async () => {
+        let whatsappUrl = 'https://chat.whatsapp.com/IgDgvCJdgy38nFMQCyhy0L' // Link padrão
+        
+        try {
+          console.log('🔗 Buscando link do WhatsApp...')
+          const response = await fetch('/api/settings/whatsapp-lead-link')
+          const result = await response.json()
+          
+          if (response.ok && result.success && result.data?.whatsapp_lead_link) {
+            whatsappUrl = result.data.whatsapp_lead_link
+            console.log('✅ Link do WhatsApp obtido:', whatsappUrl)
+          } else {
+            console.log('⚠️ Usando link padrão do WhatsApp')
           }
+        } catch (error) {
+          console.warn('⚠️ Erro ao buscar link, usando padrão:', error)
         }
         
-        setIsSubmitted(true)
-        setFormData({ name: '', phone: '', email: '', city: '' })
+        // Redirecionamento otimizado para mobile
+        console.log('🚀 Redirecionando para WhatsApp:', whatsappUrl)
         
-        // Simular redirecionamento para WhatsApp após 2 segundos
-        setTimeout(async () => {
+        // Detectar mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        
+        if (isMobile) {
+          // No mobile, usar window.location.href para melhor compatibilidade
           try {
-            // Buscar link do WhatsApp das configurações
-            const response = await fetch('/api/settings/whatsapp-lead-link')
-            const result = await response.json()
-            
-            let whatsappUrl = 'https://chat.whatsapp.com/IgDgvCJdgy38nFMQCyhy0L' // Link padrão
-            
-            if (response.ok && result.success && result.data?.whatsapp_lead_link) {
-              whatsappUrl = result.data.whatsapp_lead_link
-            }
-            
+            window.location.href = whatsappUrl
+          } catch (locationError) {
+            console.error('❌ Erro no location.href, tentando window.open:', locationError)
             window.open(whatsappUrl, '_blank')
-          } catch (error) {
-            console.error('Erro ao buscar link do WhatsApp:', error)
-            // Fallback para o link padrão
-            window.open('https://chat.whatsapp.com/IgDgvCJdgy38nFMQCyhy0L', '_blank')
           }
-        }, 2000)
-      } else {
-        throw new Error(result.error || 'Erro ao enviar formulário')
-      }
+        } else {
+          // No desktop, usar window.open
+          window.open(whatsappUrl, '_blank')
+        }
+        
+        console.log('✅ Redirecionamento executado')
+      }, 2000)
+      
     } catch (error) {
-      console.error('Erro ao enviar lead:', error)
+      console.error('❌ Erro geral no envio do lead:', error)
       setErrors({ submit: 'Erro ao enviar formulário. Tente novamente.' })
     } finally {
       setIsLoading(false)

@@ -81,11 +81,21 @@ export async function GET(request: NextRequest) {
 
 // POST - Criar novo lead (geralmente vindo do formulário público)
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  console.log('📱 [API] Iniciando cadastro de lead...')
+  
   try {
     const body = await request.json()
+    console.log('📱 [API] Dados recebidos:', { 
+      name: body.name, 
+      phone: body.phone?.substring(0, 3) + '***', 
+      city: body.city,
+      userAgent: request.headers.get('user-agent')?.substring(0, 50)
+    })
     
     // Validação básica
     if (!body.name || !body.phone || !body.city) {
+      console.log('❌ [API] Validação falhou: campos obrigatórios')
       return NextResponse.json(
         { error: 'Nome, telefone e cidade são obrigatórios' },
         { status: 400 }
@@ -95,6 +105,7 @@ export async function POST(request: NextRequest) {
     // Limpar e validar telefone
     const cleanPhone = body.phone.replace(/\D/g, '')
     if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+      console.log('❌ [API] Validação falhou: telefone inválido')
       return NextResponse.json(
         { error: 'Telefone deve ter 10 ou 11 dígitos' },
         { status: 400 }
@@ -105,6 +116,7 @@ export async function POST(request: NextRequest) {
     if (body.email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(body.email)) {
+        console.log('❌ [API] Validação falhou: email inválido')
         return NextResponse.json(
           { error: 'Email inválido' },
           { status: 400 }
@@ -123,7 +135,12 @@ export async function POST(request: NextRequest) {
       notes: null
     }
     
-    // Tentar usar Supabase, mas usar localStorage se não estiver configurado
+    console.log('✅ [API] Validação passou, tentando Supabase...')
+    
+    // Tentar usar Supabase primeiro
+    let supabaseSuccess = false
+    let supabaseData = null
+    
     try {
       const supabase = await createClient()
       const { data: lead, error } = await supabase
@@ -133,38 +150,52 @@ export async function POST(request: NextRequest) {
         .single()
       
       if (!error && lead) {
-        return NextResponse.json({ 
-          data: lead, 
-          message: 'Lead criado com sucesso!' 
-        }, { status: 201 })
+        console.log('✅ [API] Lead salvo no Supabase com sucesso!')
+        supabaseSuccess = true
+        supabaseData = lead
+      } else {
+        console.log('⚠️ [API] Erro no Supabase:', error)
       }
     } catch (supabaseError) {
-      console.log('Supabase não configurado, usando localStorage como fallback:', supabaseError)
+      console.log('⚠️ [API] Supabase não disponível, usando fallback:', supabaseError)
     }
     
-    // Se Supabase não estiver configurado, salvar no localStorage (via client-side)
-    // Note: localStorage só funciona no client-side, então criamos um lead simulado aqui
-    // e deixamos o frontend salvar no localStorage também
+    // Criar resposta (sempre com sucesso se passou pela validação)
     const simulatedLead: Lead = {
-      id: Date.now(),
+      id: supabaseData?.id || Date.now(),
       ...leadData,
-      created_at: new Date().toISOString()
+      created_at: supabaseData?.created_at || new Date().toISOString()
     }
     
-    // Log para demonstração
-    console.log('Lead criado (usando fallback):', simulatedLead)
+    const responseTime = Date.now() - startTime
+    console.log(`✅ [API] Lead processado em ${responseTime}ms`, {
+      supabaseSuccess,
+      leadId: simulatedLead.id
+    })
     
     return NextResponse.json({ 
+      success: true,
       data: simulatedLead, 
       message: 'Lead criado com sucesso!',
-      useLocalStorage: true // Flag para o frontend saber que deve usar localStorage
+      useLocalStorage: !supabaseSuccess, // Usar localStorage se Supabase falhou
+      debug: {
+        supabaseSuccess,
+        responseTime
+      }
     }, { status: 201 })
+    
   } catch (error) {
-    console.error('Erro ao processar lead:', error)
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
+    const responseTime = Date.now() - startTime
+    console.error(`❌ [API] Erro ao processar lead em ${responseTime}ms:`, error)
+    
+    return NextResponse.json({
+      success: false,
+      error: 'Erro interno do servidor',
+      debug: {
+        responseTime,
+        errorMessage: error instanceof Error ? error.message : 'Erro desconhecido'
+      }
+    }, { status: 500 })
   }
 }
 
