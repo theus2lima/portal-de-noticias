@@ -99,19 +99,13 @@ export async function GET(request: NextRequest) {
       })
 
     } catch (supabaseError) {
-      console.log('Erro de Supabase, retornando dados mock:', supabaseError)
+      console.log('Erro de Supabase, retornando dados vazios:', supabaseError)
       
-      // Fallback com dados mock para demonstração
+      // Retorna dados vazios quando não há dados disponíveis
       return NextResponse.json({
         data: {
           totalShares: 0,
-          sharesByPlatform: {
-            facebook: 0,
-            twitter: 0,
-            whatsapp: 0,
-            instagram: 0,
-            threads: 0
-          },
+          sharesByPlatform: {},
           last7Days: [],
           topArticles: [],
           period: parseInt(period)

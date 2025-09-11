@@ -55,8 +55,20 @@ export default function UsersPage() {
     setSuccess('')
 
     try {
-      // Simular update de usuário localmente
-      setTimeout(() => {
+      // Atualizar usuário via API
+      const response = await fetch(`/api/admin/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: editingUser.name,
+          email: editingUser.email,
+          role: editingUser.role
+        })
+      })
+      
+      if (response.ok) {
         setUsers(users.map(user => 
           user.id === editingUser.id 
             ? { ...user, name: editingUser.name, email: editingUser.email, role: editingUser.role }
@@ -65,10 +77,12 @@ export default function UsersPage() {
         
         setEditingUser(null)
         setShowEditModal(false)
-        setSuccess('Usuário atualizado com sucesso! (demonstração)')
+        setSuccess('Usuário atualizado com sucesso!')
         setTimeout(() => setSuccess(''), 3000)
-        setSubmitLoading(false)
-      }, 1000)
+      } else {
+        setError('Erro ao atualizar usuário')
+      }
+      setSubmitLoading(false)
       
     } catch (error) {
       setError('Erro de conexão')
@@ -89,16 +103,22 @@ export default function UsersPage() {
     setSuccess('')
 
     try {
-      // Simular delete de usuário localmente
-      setTimeout(() => {
+      // Deletar usuário via API
+      const response = await fetch(`/api/admin/users/${userToDelete.id}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
         setUsers(users.filter(user => user.id !== userToDelete.id))
         
         setUserToDelete(null)
         setShowDeleteModal(false)
-        setSuccess('Usuário removido com sucesso! (demonstração)')
+        setSuccess('Usuário removido com sucesso!')
         setTimeout(() => setSuccess(''), 3000)
-        setSubmitLoading(false)
-      }, 1000)
+      } else {
+        setError('Erro ao remover usuário')
+      }
+      setSubmitLoading(false)
       
     } catch (error) {
       setError('Erro de conexão')
@@ -108,58 +128,20 @@ export default function UsersPage() {
 
   const fetchUsers = async () => {
     try {
-      // Usar dados de demonstração locais
-      const mockUsers: User[] = [
-        {
-          id: '1',
-          email: 'admin@portalnoticias.com.br',
-          name: 'Administrador Principal',
-          role: 'admin',
-          is_active: true,
-          created_at: '2024-01-01T10:00:00Z'
-        },
-        {
-          id: '2',
-          email: 'editor@portalnoticias.com.br',
-          name: 'Editor Chefe',
-          role: 'editor',
-          is_active: true,
-          created_at: '2024-01-02T14:30:00Z'
-        },
-        {
-          id: '3',
-          email: 'maria.silva@portalnoticias.com.br',
-          name: 'Maria Silva',
-          role: 'author',
-          is_active: true,
-          created_at: '2024-01-03T16:45:00Z'
-        },
-        {
-          id: '4',
-          email: 'carlos.santos@portalnoticias.com.br',
-          name: 'Carlos Santos',
-          role: 'editor',
-          is_active: false,
-          created_at: '2024-01-04T09:15:00Z'
-        },
-        {
-          id: '5',
-          email: 'ana.costa@portalnoticias.com.br',
-          name: 'Ana Costa',
-          role: 'author',
-          is_active: true,
-          created_at: '2024-01-05T11:20:00Z'
-        }
-      ]
-      
-      // Simular delay de carregamento
-      setTimeout(() => {
-        setUsers(mockUsers)
-        setLoading(false)
-      }, 800)
-      
+      // Carregar usuários reais da API
+      const response = await fetch('/api/admin/users')
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data.data || [])
+      } else {
+        // Não há usuários para carregar
+        setUsers([])
+      }
+      setLoading(false)
     } catch (error) {
-      setError('Erro de conexão')
+      console.error('Erro ao carregar usuários:', error)
+      setUsers([])
+      setError('Erro ao carregar usuários')
       setLoading(false)
     }
   }
@@ -184,24 +166,26 @@ export default function UsersPage() {
         return
       }
 
-      // Simular criação de usuário localmente
-      setTimeout(() => {
-        const mockNewUser: User = {
-          id: Date.now().toString(),
-          email: newUser.email,
-          name: newUser.name,
-          role: newUser.role,
-          is_active: true,
-          created_at: new Date().toISOString()
-        }
-        
-        setUsers([mockNewUser, ...users])
+      // Criar usuário via API
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newUser)
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setUsers([data.data, ...users])
         setNewUser({ email: '', password: '', name: '', role: 'admin' })
         setShowAddModal(false)
-        setSuccess('Usuário criado com sucesso! (demonstração)')
+        setSuccess('Usuário criado com sucesso!')
         setTimeout(() => setSuccess(''), 3000)
-        setSubmitLoading(false)
-      }, 1000)
+      } else {
+        setError('Erro ao criar usuário')
+      }
+      setSubmitLoading(false)
       
     } catch (error) {
       setError('Erro de conexão')

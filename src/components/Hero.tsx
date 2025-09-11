@@ -36,29 +36,8 @@ const Hero = () => {
         }
       } catch (error) {
         console.error('Erro ao buscar artigos para o hero:', error)
-        // Fallback com artigos padrão usando os slugs reais
-        setHeadlines([
-          {
-            id: 'test-article-001',
-            title: 'Artigo de Teste - Portal de Notícias',
-            subtitle: 'Este é um artigo de teste para verificar se a publicação funciona corretamente',
-            slug: 'artigo-de-teste-portal-noticias-1736442600000',
-            featured_image: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&h=600&fit=crop',
-            category_name: 'Política',
-            author_name: 'Editor Teste',
-            created_at: '2024-01-09T17:30:00Z'
-          },
-          {
-            id: 'test-article-002',
-            title: 'Segunda Notícia de Teste - Economia Local',
-            subtitle: 'Análise sobre o desenvolvimento econômico da região',
-            slug: 'segunda-noticia-teste-economia-local-1736442700000',
-            featured_image: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=1200&h=600&fit=crop',
-            category_name: 'Economia',
-            author_name: 'Repórter Econômico',
-            created_at: '2024-01-09T16:45:00Z'
-          }
-        ])
+        // Não há dados para exibir
+        setHeadlines([])
       } finally {
         setLoading(false)
       }
@@ -85,15 +64,10 @@ const Hero = () => {
         }
       } catch (error) {
         console.error('Erro ao buscar dados do ticker:', error)
-        // Fallback com dados padrão
+        // Não há dados de ticker para exibir
         setTickerData({
-          enabled: true,
-          items: [
-            '🔴 Nova lei aprovada no Senado',
-            '🏆 Brasil conquista medalha de ouro', 
-            '💰 Bolsa de valores atinge recorde histórico',
-            '🌿 Projeto ambiental recebe investimento de R$ 50 milhões'
-          ]
+          enabled: false,
+          items: []
         })
       }
     }

@@ -79,28 +79,9 @@ export async function GET(request: NextRequest) {
       }
 
     } catch (supabaseError) {
-      console.log('Erro de Supabase, retornando dados mock:', supabaseError)
+      console.log('Erro de Supabase, não há dados para exportar:', supabaseError)
       
-      // Fallback com dados mock para demonstração
-      const mockData = [
-        {
-          id: 'mock-1',
-          platform: 'whatsapp',
-          title: 'Artigo de Exemplo 1',
-          category: 'Política',
-          author: 'Admin',
-          shared_at: new Date().toISOString()
-        },
-        {
-          id: 'mock-2', 
-          platform: 'x',
-          title: 'Artigo de Exemplo 2',
-          category: 'Economia',
-          author: 'Admin',
-          shared_at: new Date(Date.now() - 86400000).toISOString()
-        }
-      ]
-
+      // Retorna dados vazios quando não há dados disponíveis
       if (format === 'csv') {
         const csvHeaders = [
           'ID',
@@ -111,33 +92,24 @@ export async function GET(request: NextRequest) {
           'Data/Hora do Compartilhamento'
         ].join(',')
 
-        const csvRows = mockData.map(share => [
-          share.id,
-          share.platform,
-          `"${share.title}"`,
-          `"${share.category}"`,
-          `"${share.author}"`,
-          new Date(share.shared_at).toLocaleString('pt-BR')
-        ].join(','))
-
-        const csvContent = [csvHeaders, ...csvRows].join('\n')
+        const csvContent = csvHeaders + '\n' + 'Nenhum dado disponível para o período selecionado'
 
         return new NextResponse(csvContent, {
           headers: {
             'Content-Type': 'text/csv; charset=utf-8',
-            'Content-Disposition': `attachment; filename="compartilhamentos-mock-${new Date().toISOString().split('T')[0]}.csv"`
+            'Content-Disposition': `attachment; filename="compartilhamentos-vazio-${new Date().toISOString().split('T')[0]}.csv"`
           }
         })
       } else {
         return NextResponse.json({
-          data: mockData,
+          data: [],
           metadata: {
             period: parseInt(period),
             startDate: startDate.toISOString(),
             endDate: endDate.toISOString(),
-            totalRecords: mockData.length,
+            totalRecords: 0,
             exportDate: new Date().toISOString(),
-            note: 'Dados de demonstração'
+            note: 'Nenhum dado disponível para o período selecionado'
           }
         })
       }
