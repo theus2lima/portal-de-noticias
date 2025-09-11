@@ -91,39 +91,39 @@ const CategorySection = () => {
         </div>
 
         {/* Category Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
           {(loading ? [] : normalized).map((category, index) => (
             <Link 
               key={category.name}
               href={category.href}
               className={`
                 ${category.color} 
-                text-white rounded-xl p-6 transition-all duration-300 
+                text-white rounded-lg p-4 transition-all duration-300 
                 hover:scale-105 hover:shadow-xl group
                 animate-fadeInUp
               `}
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3">
                 <category.icon 
-                  size={32} 
+                  size={24} 
                   className="group-hover:scale-110 transition-transform duration-200"
                 />
                 <ArrowRight 
-                  size={20} 
+                  size={16} 
                   className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 />
               </div>
               
-              <h3 className="text-xl font-bold mb-2 group-hover:text-yellow-200 transition-colors duration-200">
+              <h3 className="text-lg font-bold mb-2 group-hover:text-yellow-200 transition-colors duration-200">
                 {category.name}
               </h3>
               
-              <p className="text-sm text-white/80 mb-4 leading-relaxed">
+              <p className="text-xs text-white/80 mb-3 leading-relaxed line-clamp-2">
                 {category.description}
               </p>
               
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-xs">
                 <span className="bg-white/20 px-2 py-1 rounded-full">
                   {category.newsCount} notícias
                 </span>
