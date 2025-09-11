@@ -234,26 +234,26 @@ WHERE NOT EXISTS (SELECT 1 FROM leads LIMIT 1);
 -- 📋 10. VERIFICAÇÃO FINAL
 -- ============================================
 
--- Verificar estrutura das tabelas principais
+-- Verificar estrutura das tabelas principais (padronizado para TEXT para evitar erros de UNION)
 SELECT 
-    'Verificação da estrutura do banco concluída!' as status,
-    NOW() as timestamp
+    'Verificação da estrutura do banco concluída!'::TEXT AS info,
+    to_char(NOW(), 'YYYY-MM-DD"T"HH24:MI:SSOF')::TEXT AS value
 UNION ALL
 SELECT 
-    'Tabelas principais:' as info,
-    COUNT(DISTINCT table_name)::TEXT || ' tabelas encontradas'
+    'Tabelas principais:'::TEXT AS info,
+    (COUNT(DISTINCT table_name)::TEXT || ' tabelas encontradas') AS value
 FROM information_schema.tables 
 WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
 UNION ALL
 SELECT 
-    'Views criadas:' as info,
-    COUNT(DISTINCT table_name)::TEXT || ' views encontradas'
+    'Views criadas:'::TEXT AS info,
+    (COUNT(DISTINCT table_name)::TEXT || ' views encontradas') AS value
 FROM information_schema.views 
 WHERE table_schema = 'public'
 UNION ALL
 SELECT 
-    'Triggers ativos:' as info,
-    COUNT(*)::TEXT || ' triggers encontrados'
+    'Triggers ativos:'::TEXT AS info,
+    (COUNT(*)::TEXT || ' triggers encontrados') AS value
 FROM information_schema.triggers 
 WHERE trigger_schema = 'public';
 
