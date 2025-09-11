@@ -39,21 +39,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return
       }
 
-      // Simulação simples para desenvolvimento - evita loops infinitos
-      // Para produção, substituir por verificação real do Supabase
-      if (token) {
-        // Assumir que o token é válido temporariamente
-        setUser({
-          id: '00000000-0000-0000-0000-000000000001',
-          email: 'admin@portalnoticias.com.br',
-          name: 'Administrador',
-          role: 'admin',
-          created_at: new Date().toISOString()
-        })
+      // Verificar token com a API
+      const response = await fetch('/api/auth/verify', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setUser(data.user)
+      } else {
+        // Token inválido, remover e deslogar
+        localStorage.removeItem('admin_token')
+        setUser(null)
       }
     } catch (error) {
       console.error('Erro ao verificar autenticação:', error)
       localStorage.removeItem('admin_token')
+      setUser(null)
     } finally {
       setLoading(false)
     }
