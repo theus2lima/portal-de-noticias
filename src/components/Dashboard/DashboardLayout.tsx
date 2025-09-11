@@ -51,19 +51,22 @@ const FontesSubmenu = ({ pathname, setSidebarOpen }: { pathname: string, setSide
       name: 'Gerenciar Fontes',
       href: '/admin/curadoria/fontes',
       icon: Rss,
-      isActive: pathname === '/admin/curadoria/fontes'
+      isActive: pathname === '/admin/curadoria/fontes',
+      description: 'Configurar fontes RSS'
     },
     {
-      name: 'Histórico (Fontes)',
-      href: '/admin/curadoria/fontes-historico',
-      icon: Clock,
-      isActive: pathname?.startsWith('/admin/curadoria/fontes-historico') || false
-    },
-    {
-      name: 'Histórico (Interna)',
+      name: 'Histórico Geral',
       href: '/admin/curadoria/historico',
       icon: Activity,
-      isActive: pathname === '/admin/curadoria/historico'
+      isActive: pathname === '/admin/curadoria/historico',
+      description: 'Atividade de curadoria'
+    },
+    {
+      name: 'Log das Fontes',
+      href: '/admin/curadoria/fontes-historico',
+      icon: Clock,
+      isActive: pathname?.startsWith('/admin/curadoria/fontes-historico') || false,
+      description: 'Histórico detalhado'
     }
   ]
 
@@ -131,12 +134,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const menuSections = [
     {
-      title: 'Dashboard',
+      title: 'Principal',
       items: [
         {
-          name: 'Visão Geral',
+          name: 'Dashboard',
           href: '/admin/dashboard',
-          icon: Home
+          icon: Home,
+          description: 'Visão geral do sistema',
+          badge: null
         }
       ]
     },
@@ -146,69 +151,103 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         {
           name: 'Artigos',
           href: '/admin/articles',
-          icon: FileText
+          icon: FileText,
+          description: 'Criar e gerenciar artigos',
+          badge: 'hot'
         },
         {
           name: 'Categorias',
           href: '/admin/categories',
-          icon: FolderOpen
+          icon: FolderOpen,
+          description: 'Organizar conteúdo por categoria',
+          badge: null
         },
+        {
+          name: 'Curadoria IA',
+          href: '/admin/curadoria',
+          icon: Bot,
+          description: 'Automação de conteúdo',
+          badge: 'new'
+        }
+      ]
+    },
+    {
+      title: 'Marketing & Leads',
+      items: [
         {
           name: 'Leads',
           href: '/admin/leads',
-          icon: MessageSquare
-        }
-      ]
-    },
-    {
-      title: 'Analytics & Monitoramento',
-      items: [
-        {
-          name: 'Analytics',
-          href: '/admin/analytics',
-          icon: PieChart
-        },
-        {
-          name: 'Compartilhamentos',
-          href: '/admin/insights/compartilhamentos',
-          icon: Share
-        },
-        {
-          name: 'Status do Sistema',
-          href: '/admin/status',
-          icon: TrendingUp
-        }
-      ]
-    },
-    {
-      title: 'Administração',
-      items: [
-        {
-          name: 'Usuários',
-          href: '/admin/users',
-          icon: Users
+          icon: MessageSquare,
+          description: 'Gerenciar leads e conversões',
+          badge: null
         },
         {
           name: 'WhatsApp',
           href: '/admin/whatsapp',
           icon: ({ className }: { className?: string }) => (
             <WhatsAppIcon size={20} className={className} />
-          )
+          ),
+          description: 'Configurações do WhatsApp',
+          badge: null
+        },
+        {
+          name: 'Compartilhamentos',
+          href: '/admin/insights/compartilhamentos',
+          icon: Share,
+          description: 'Análise de compartilhamentos',
+          badge: null
+        }
+      ]
+    },
+    {
+      title: 'Analytics & Relatórios',
+      items: [
+        {
+          name: 'Relatórios Gerais',
+          href: '/admin/analytics',
+          icon: BarChart3,
+          description: 'Estatísticas e métricas',
+          badge: null
+        },
+        {
+          name: 'Status do Sistema',
+          href: '/admin/status',
+          icon: Activity,
+          description: 'Monitoramento e saúde',
+          badge: null
+        }
+      ]
+    },
+    {
+      title: 'Configurações',
+      items: [
+        {
+          name: 'Site & Aparência',
+          href: '/admin/site-config',
+          icon: Globe,
+          description: 'Layout, redes sociais, newsletter',
+          badge: null
+        },
+        {
+          name: 'Sistema',
+          href: '/admin/settings',
+          icon: Settings,
+          description: 'Configurações gerais',
+          badge: null
+        },
+        {
+          name: 'Usuários',
+          href: '/admin/users',
+          icon: Users,
+          description: 'Permissões e acessos',
+          badge: null
         },
         {
           name: 'Banco de Dados',
           href: '/admin/config',
-          icon: Database
-        },
-        {
-          name: 'Configurações',
-          href: '/admin/settings',
-          icon: Settings
-        },
-        {
-          name: 'Config do Site',
-          href: '/admin/site-config',
-          icon: Globe
+          icon: Database,
+          description: 'Configurações de BD',
+          badge: null
         }
       ]
     }
@@ -260,19 +299,43 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`flex items-center px-3 py-2.5 mx-3 text-sm font-medium rounded-lg transition-all duration-200 group ${
+                        className={`flex items-center px-3 py-2.5 mx-3 text-sm font-medium rounded-lg transition-all duration-200 group relative ${
                           isActive
                             ? 'bg-secondary-600 text-white shadow-lg'
                             : 'text-primary-200 hover:text-white hover:bg-primary-800/70'
                         }`}
                         onClick={() => setSidebarOpen(false)}
+                        title={item.description}
                       >
-                        <item.icon className={`mr-3 h-5 w-5 transition-colors ${
+                        <item.icon className={`mr-3 h-5 w-5 transition-colors flex-shrink-0 ${
                           isActive ? 'text-white' : 'text-primary-300 group-hover:text-secondary-400'
                         }`} />
-                        <span className="truncate">{item.name}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <span className="truncate block">{item.name}</span>
+                            {item.badge && (
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                                item.badge === 'hot' 
+                                  ? 'bg-red-100 text-red-600' 
+                                  : item.badge === 'new' 
+                                  ? 'bg-blue-100 text-blue-600'
+                                  : 'bg-gray-100 text-gray-600'
+                              }`}>
+                                {item.badge === 'hot' ? '🔥' : item.badge === 'new' ? '✨' : '•'}
+                              </span>
+                            )}
+                          </div>
+                          {!isActive && (
+                            <span className="text-xs text-primary-400 truncate block group-hover:text-primary-300 transition-colors">
+                              {item.description}
+                            </span>
+                          )}
+                        </div>
                         {isActive && (
-                          <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                          <>
+                            <div className="ml-2 w-1.5 h-1.5 bg-white rounded-full animate-pulse flex-shrink-0" />
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-secondary-400 rounded-r-full" />
+                          </>
                         )}
                       </Link>
                     )
@@ -282,52 +345,45 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             ))}
             
             {/* Separador */}
-            <div className="mx-6 my-6 h-px bg-primary-700" />
+            <div className="mx-6 my-4 h-px bg-primary-700" />
             
-            {/* Curadoria Section */}
+            {/* Seção de Ferramentas Avançadas */}
             <div className="mb-6">
               <div className="px-3 mb-3">
                 <h3 className="text-xs font-semibold text-primary-300 uppercase tracking-wider flex items-center">
-                  <Bot className="mr-1 h-3 w-3" />
-                  Curadoria
+                  <Layers className="mr-1 h-3 w-3" />
+                  Ferramentas
                 </h3>
               </div>
               <div className="space-y-1">
-                <Link
-                  href="/admin/curadoria"
-                  className={`flex items-center px-3 py-2.5 mx-3 text-sm font-medium rounded-lg transition-all duration-200 group ${
-                    pathname === '/admin/curadoria'
-                      ? 'bg-secondary-600 text-white shadow-lg'
-                      : 'text-primary-200 hover:text-white hover:bg-primary-800/70'
-                  }`}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <Filter className={`mr-3 h-5 w-5 transition-colors ${
-                    pathname === '/admin/curadoria' ? 'text-white' : 'text-primary-300 group-hover:text-secondary-400'
-                  }`} />
-                  <span className="truncate">Dashboard</span>
-                  {pathname === '/admin/curadoria' && (
-                    <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                  )}
-                </Link>
-                
                 <FontesSubmenu pathname={pathname} setSidebarOpen={setSidebarOpen} />
                 
                 <Link
                   href="/admin/curadoria/configuracoes"
-                  className={`flex items-center px-3 py-2.5 mx-3 text-sm font-medium rounded-lg transition-all duration-200 group ${
+                  className={`flex items-center px-3 py-2.5 mx-3 text-sm font-medium rounded-lg transition-all duration-200 group relative ${
                     pathname === '/admin/curadoria/configuracoes'
                       ? 'bg-secondary-600 text-white shadow-lg'
                       : 'text-primary-200 hover:text-white hover:bg-primary-800/70'
                   }`}
                   onClick={() => setSidebarOpen(false)}
+                  title="Configurações da curadoria automática"
                 >
-                  <Settings className={`mr-3 h-5 w-5 transition-colors ${
+                  <Settings className={`mr-3 h-5 w-5 transition-colors flex-shrink-0 ${
                     pathname === '/admin/curadoria/configuracoes' ? 'text-white' : 'text-primary-300 group-hover:text-secondary-400'
                   }`} />
-                  <span className="truncate">Configurações</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="truncate block">Config. Curadoria</span>
+                    {pathname !== '/admin/curadoria/configuracoes' && (
+                      <span className="text-xs text-primary-400 truncate block group-hover:text-primary-300 transition-colors">
+                        Automação de notícias
+                      </span>
+                    )}
+                  </div>
                   {pathname === '/admin/curadoria/configuracoes' && (
-                    <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                    <>
+                      <div className="ml-2 w-1.5 h-1.5 bg-white rounded-full animate-pulse flex-shrink-0" />
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-secondary-400 rounded-r-full" />
+                    </>
                   )}
                 </Link>
               </div>
