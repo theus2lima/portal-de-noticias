@@ -112,10 +112,24 @@ const LeadForm = () => {
         setFormData({ name: '', phone: '', email: '', city: '' })
         
         // Simular redirecionamento para WhatsApp após 2 segundos
-        setTimeout(() => {
-          const whatsappMessage = `Olá! Me cadastrei no portal de notícias e gostaria de receber as notícias principais. Meu nome é ${formData.name} e sou de ${formData.city}.`
-          const whatsappUrl = `https://wa.me/5544999823193?text=${encodeURIComponent(whatsappMessage)}`
-          window.open(whatsappUrl, '_blank')
+        setTimeout(async () => {
+          try {
+            // Buscar link do WhatsApp das configurações
+            const response = await fetch('/api/settings/whatsapp-lead-link')
+            const result = await response.json()
+            
+            let whatsappUrl = 'https://chat.whatsapp.com/IgDgvCJdgy38nFMQCyhy0L' // Link padrão
+            
+            if (response.ok && result.success && result.data?.whatsapp_lead_link) {
+              whatsappUrl = result.data.whatsapp_lead_link
+            }
+            
+            window.open(whatsappUrl, '_blank')
+          } catch (error) {
+            console.error('Erro ao buscar link do WhatsApp:', error)
+            // Fallback para o link padrão
+            window.open('https://chat.whatsapp.com/IgDgvCJdgy38nFMQCyhy0L', '_blank')
+          }
         }, 2000)
       } else {
         throw new Error(result.error || 'Erro ao enviar formulário')

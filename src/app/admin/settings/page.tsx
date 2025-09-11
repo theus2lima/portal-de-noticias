@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { 
   Settings, 
@@ -16,7 +16,10 @@ import {
   Lock,
   Upload,
   Check,
-  Trash2
+  Trash2,
+  MessageCircle,
+  ExternalLink,
+  Copy
 } from 'lucide-react'
 import TickerNewsManager from '@/components/admin/TickerNewsManager'
 
@@ -55,9 +58,81 @@ export default function SettingsPage() {
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
   const [logoUploading, setLogoUploading] = useState(false)
+  const [whatsappLink, setWhatsappLink] = useState('https://chat.whatsapp.com/IgDgvCJdgy38nFMQCyhy0L')
+  const [whatsappLinkLoading, setWhatsappLinkLoading] = useState(false)
   
   const handleInputChange = (field: string, value: any) => {
     setSettings(prev => ({ ...prev, [field]: value }))
+  }
+
+  // Carregar link do WhatsApp
+  useEffect(() => {
+    const fetchWhatsAppLink = async () => {
+      try {
+        const response = await fetch('/api/settings/whatsapp-lead-link')
+        const result = await response.json()
+        if (result.success && result.data?.whatsapp_lead_link) {
+          setWhatsappLink(result.data.whatsapp_lead_link)
+        }
+      } catch (error) {
+        console.error('Erro ao carregar link do WhatsApp:', error)
+      }
+    }
+    fetchWhatsAppLink()
+  }, [])
+
+  // Salvar link do WhatsApp
+  const handleSaveWhatsAppLink = async () => {
+    if (!whatsappLink.trim()) {
+      setError('Link do WhatsApp é obrigatório')
+      return
+    }
+
+    setWhatsappLinkLoading(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const response = await fetch('/api/settings/whatsapp-lead-link', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ whatsapp_lead_link: whatsappLink }),
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        setSuccess('Link do WhatsApp atualizado com sucesso!')
+        setTimeout(() => setSuccess(''), 3000)
+      } else {
+        setError(result.error || 'Erro ao salvar link do WhatsApp')
+      }
+    } catch (error) {
+      console.error('Erro ao salvar:', error)
+      setError('Erro ao salvar link do WhatsApp')
+    } finally {
+      setWhatsappLinkLoading(false)
+    }
+  }
+
+  // Testar link do WhatsApp
+  const handleTestWhatsAppLink = () => {
+    if (whatsappLink.trim()) {
+      window.open(whatsappLink, '_blank')
+    }
+  }
+
+  // Copiar link do WhatsApp
+  const handleCopyWhatsAppLink = async () => {
+    try {
+      await navigator.clipboard.writeText(whatsappLink)
+      setSuccess('Link copiado para área de transferência!')
+      setTimeout(() => setSuccess(''), 2000)
+    } catch (error) {
+      setError('Erro ao copiar link')
+    }
   }
   
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -205,6 +280,82 @@ export default function SettingsPage() {
           {error}
         </div>
       )}
+
+      {/* WhatsApp Lead Settings - Full Width */}
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+        <div className="flex items-center mb-6">
+          <div className="bg-green-100 p-2 rounded-lg mr-3">
+            <MessageCircle className="h-5 w-5 text-green-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-neutral-900">Configurações do WhatsApp para Leads</h3>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
+              Link do Grupo/Chat do WhatsApp
+            </label>
+            <div className="flex items-center space-x-3">
+              <div className="flex-1">
+                <input
+                  type="url"
+                  value={whatsappLink}
+                  onChange={(e) => setWhatsappLink(e.target.value)}
+                  placeholder="https://chat.whatsapp.com/..."
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyWhatsAppLink}
+                className="btn-outline text-sm flex items-center space-x-1 px-3 py-2"
+                title="Copiar link"
+              >
+                <Copy className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleTestWhatsAppLink}
+                className="btn-outline text-sm flex items-center space-x-1 px-3 py-2"
+                title="Testar link"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveWhatsAppLink}
+                disabled={whatsappLinkLoading}
+                className="btn-primary text-sm flex items-center space-x-2 px-4 py-2 disabled:opacity-50"
+              >
+                {whatsappLinkLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Salvando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    <span>Salvar</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-neutral-500 mt-1">
+              Este link será usado para redirecionar usuários após se cadastrarem no formulário de leads. 
+              Aceita links do WhatsApp como: <code className="bg-neutral-100 px-1 rounded">https://chat.whatsapp.com/...</code> ou <code className="bg-neutral-100 px-1 rounded">https://wa.me/...</code>
+            </p>
+          </div>
+
+          <div className="bg-neutral-50 p-4 rounded-lg">
+            <h4 className="text-sm font-medium text-neutral-900 mb-2">Como funciona:</h4>
+            <ul className="text-sm text-neutral-600 space-y-1">
+              <li>• Quando um usuário preenche o formulário de captação de leads</li>
+              <li>• Após o cadastro bem-sucedido, ele é redirecionado automaticamente para este WhatsApp</li>
+              <li>• Você pode alterar este link a qualquer momento para direcionar para diferentes grupos ou conversas</li>
+            </ul>
+          </div>
+        </div>
+      </div>
 
       {/* Settings Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
