@@ -18,132 +18,47 @@ import LeadConversionChart from '@/components/LeadConversionChart'
 import { Lead } from '@/utils/localStorage'
 import { useNotificationHelpers } from '@/hooks/useNotificationHelpers'
 
-// Dados simulados - no client-side, usaremos apenas dados mock por enquanto
-function getLeadsData() {
-  const mockLeads = [
-    {
-      id: 1,
-      name: "Matheus Victor de Lima Machado",
-      phone: "44999823193",
-      city: "Paranavaí",
-      email: null,
-      source: "website",
-      message: null,
-      is_contacted: false,
-      notes: null,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 2,
-      name: "Ana Silva Santos",
-      phone: "11987654321",
-      city: "São Paulo",
-      email: "ana@email.com",
-      source: "website",
-      message: "Gostaria de receber notícias de política",
-      is_contacted: true,
-      notes: "Contatado via WhatsApp",
-      created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 3,
-      name: "Carlos Eduardo Oliveira",
-      phone: "21987654321",
-      city: "Rio de Janeiro",
-      email: null,
-      source: "website",
-      message: null,
-      is_contacted: false,
-      notes: null,
-      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 4,
-      name: "Maria José da Silva",
-      phone: "11999887766",
-      city: "Campinas",
-      email: "maria@exemplo.com",
-      source: "website",
-      message: "Interessada em notícias de economia",
-      is_contacted: true,
-      notes: "Contatado por email",
-      created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 5,
-      name: "João Pedro Costa",
-      phone: "47988776655",
-      city: "Blumenau",
-      email: null,
-      source: "website",
-      message: null,
-      is_contacted: false,
-      notes: null,
-      created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 6,
-      name: "Fernanda Lima",
-      phone: "85987654321",
-      city: "Fortaleza",
-      email: "fernanda@teste.com",
-      source: "website",
-      message: "Gostaria de receber notícias de esportes",
-      is_contacted: true,
-      notes: "Lead qualificado",
-      created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 7,
-      name: "Roberto Santos",
-      phone: "62999888777",
-      city: "Goiânia",
-      email: null,
-      source: "website",
-      message: null,
-      is_contacted: false,
-      notes: null,
-      created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 8,
-      name: "Carla Mendes",
-      phone: "31987654321",
-      city: "Belo Horizonte",
-      email: "carla@exemplo.com",
-      source: "website",
-      message: "Interessada em política local",
-      is_contacted: true,
-      notes: "Follow-up agendado",
-      created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 9,
-      name: "Pedro Alves",
-      phone: "41988776644",
-      city: "Curitiba",
-      email: null,
-      source: "website",
-      message: null,
-      is_contacted: false,
-      notes: null,
-      created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 10,
-      name: "Luciana Costa",
-      phone: "51999887755",
-      city: "Porto Alegre",
-      email: "luciana@email.com",
-      source: "website",
-      message: "Quero receber resumos diários",
-      is_contacted: false,
-      notes: null,
-      created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+// Função para carregar leads reais da API ou localStorage
+async function fetchLeadsData() {
+  try {
+    console.log('🔄 Carregando leads da API...')
+    const response = await fetch('/api/leads?limit=100', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (response.ok) {
+      const result = await response.json()
+      console.log('✅ Leads carregados da API:', result.data?.length || 0)
+      return { 
+        leads: result.data || [], 
+        useLocalStorage: false 
+      }
+    } else {
+      console.warn('⚠️ API não disponível, usando localStorage')
+      throw new Error('API não disponível')
     }
-  ]
-
-  return { leads: mockLeads, useLocalStorage: true }
+  } catch (error) {
+    console.warn('⚠️ Erro na API, usando localStorage:', error)
+    // Fallback para localStorage
+    try {
+      const { LeadsStorage } = await import('@/utils/localStorage')
+      const localLeads = LeadsStorage.getLeads()
+      console.log('✅ Leads carregados do localStorage:', localLeads.length)
+      return { 
+        leads: localLeads, 
+        useLocalStorage: true 
+      }
+    } catch (localError) {
+      console.error('❌ Erro no localStorage:', localError)
+      return { 
+        leads: [], 
+        useLocalStorage: true 
+      }
+    }
+  }
 }
 
 function LeadsPageContent() {
@@ -179,10 +94,21 @@ function LeadsPageContent() {
   const [whatsappError, setWhatsappError] = useState('')
 
   useEffect(() => {
-    const { leads: initialLeads, useLocalStorage } = getLeadsData()
-    setLeads(initialLeads)
-    setUseLocalStorage(useLocalStorage)
-    setMounted(true)
+    const loadLeads = async () => {
+      try {
+        const { leads: initialLeads, useLocalStorage } = await fetchLeadsData()
+        setLeads(initialLeads)
+        setUseLocalStorage(useLocalStorage)
+      } catch (error) {
+        console.error('Erro ao carregar leads:', error)
+        setLeads([])
+        setUseLocalStorage(true)
+      } finally {
+        setMounted(true)
+      }
+    }
+    
+    loadLeads()
     
     // Carregar configurações do WhatsApp
     fetchWhatsAppLink()
