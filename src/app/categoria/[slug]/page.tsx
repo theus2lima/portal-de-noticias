@@ -13,53 +13,33 @@ interface CategoryData {
 
 async function getCategoryBySlug(slug: string): Promise<CategoryData | null> {
   try {
-    // Para build local, usar fallback categories
-    const fallbackCategories = [
-      { id: '1', name: 'Política', slug: 'politica', description: 'Notícias sobre política nacional e local', color: '#DC2626', is_active: true },
-      { id: '2', name: 'Economia', slug: 'economia', description: 'Economia, finanças e mercado', color: '#059669', is_active: true },
-      { id: '3', name: 'Esportes', slug: 'esportes', description: 'Esportes nacionais e internacionais', color: '#7C3AED', is_active: true },
-      { id: '4', name: 'Cultura', slug: 'cultura', description: 'Arte, cultura e entretenimento', color: '#0EA5E9', is_active: true },
-      { id: '5', name: 'Cidades', slug: 'cidades', description: 'Notícias das cidades e regiões', color: '#D97706', is_active: true },
-      { id: '6', name: 'Tecnologia', slug: 'tecnologia', description: 'Inovação e tecnologia', color: '#3B82F6', is_active: true }
-    ]
-
-    // Durante build, pular fetch da API e usar fallback diretamente
-    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL_URL && !process.env.NEXT_PUBLIC_BASE_URL) {
-      console.log('Build em produção detectado, usando fallback categories')
-    } else {
-      try {
-        // Tentar buscar da API apenas em runtime
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-                       process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-                       'http://localhost:3000'
-        
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 5000) // 5s timeout
-        
-        const response = await fetch(`${baseUrl}/api/categories`, {
-          next: { revalidate: 300 },
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          signal: controller.signal
-        })
-        
-        clearTimeout(timeoutId)
-        
-        if (response.ok) {
-          const data = await response.json()
-          const categories = data.data || []
-          const category = categories.find((cat: CategoryData) => cat.slug === slug && cat.is_active)
-          if (category) return category
-        }
-      } catch (apiError) {
-        console.log('API não disponível, usando fallback categories')
-      }
+    // Tentar buscar da API
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+                   'http://localhost:3000'
+    
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5s timeout
+    
+    const response = await fetch(`${baseUrl}/api/categories`, {
+      next: { revalidate: 300 },
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      signal: controller.signal
+    })
+    
+    clearTimeout(timeoutId)
+    
+    if (response.ok) {
+      const data = await response.json()
+      const categories = data.data || []
+      const category = categories.find((cat: CategoryData) => cat.slug === slug && cat.is_active)
+      return category || null
     }
     
-    // Fallback para categorias padrão
-    const category = fallbackCategories.find(cat => cat.slug === slug)
-    return category || null
+    console.error('Erro ao buscar categoria da API:', response.status)
+    return null
   } catch (error) {
     console.error('Erro ao buscar categoria:', error)
     return null

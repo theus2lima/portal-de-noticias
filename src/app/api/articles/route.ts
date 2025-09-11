@@ -1,38 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
-import fs from 'fs'
-import path from 'path'
-
-// Função para ler artigos do arquivo local
-function readLocalArticles() {
-  try {
-    const filePath = path.join(process.cwd(), 'data', 'articles.json')
-    if (!fs.existsSync(filePath)) {
-      return []
-    }
-    const data = fs.readFileSync(filePath, 'utf8')
-    return JSON.parse(data)
-  } catch (error) {
-    console.log('Erro ao ler artigos locais:', error)
-    return []
-  }
-}
-
-// Função para salvar artigos no arquivo local
-function saveLocalArticles(articles: any[]) {
-  try {
-    const filePath = path.join(process.cwd(), 'data', 'articles.json')
-    const dir = path.dirname(filePath)
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true })
-    }
-    fs.writeFileSync(filePath, JSON.stringify(articles, null, 2))
-    return true
-  } catch (error) {
-    console.log('Erro ao salvar artigos locais:', error)
-    return false
-  }
-}
 
 // GET - Buscar artigos
 export async function GET(request: NextRequest) {
@@ -88,60 +55,20 @@ export async function GET(request: NextRequest) {
         })
       }
       
-      console.log('Supabase query error, using local fallback:', error)
+      console.error('Erro ao buscar artigos no Supabase:', error)
+      return NextResponse.json({
+        success: false,
+        error: 'Erro ao carregar artigos',
+        details: error.message
+      }, { status: 500 })
     } catch (supabaseError) {
-      console.log('Supabase connection error, using local fallback:', supabaseError)
+      console.error('Erro de conexão com Supabase:', supabaseError)
+      return NextResponse.json({
+        success: false,
+        error: 'Erro de conexão com o banco de dados',
+        details: supabaseError instanceof Error ? supabaseError.message : 'Erro desconhecido'
+      }, { status: 500 })
     }
-    
-    // Fallback: usar artigos locais
-    console.log('Using local articles fallback')
-    let articles = readLocalArticles()
-    console.log('Local articles read:', articles.length, 'articles found')
-    console.log('First article sample:', articles[0] ? articles[0].title : 'No articles')
-    
-    // Aplicar filtros localmente
-    if (status) {
-      articles = articles.filter((article: any) => article.status === status)
-    }
-    
-    if (category) {
-      articles = articles.filter((article: any) => article.category_id === category)
-    }
-    
-    if (search) {
-      const searchLower = search.toLowerCase()
-      articles = articles.filter((article: any) => 
-        article.title.toLowerCase().includes(searchLower) ||
-        article.content.toLowerCase().includes(searchLower)
-      )
-    }
-    
-    // Ordenar por data de criação (mais recente primeiro)
-    articles.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    
-    // Aplicar paginação
-    const total = articles.length
-    const from = (page - 1) * limit
-    const to = from + limit
-    const paginatedArticles = articles.slice(from, to)
-    
-    console.log('Final response:')
-    console.log('- Total articles after filters:', total)
-    console.log('- Paginated articles count:', paginatedArticles.length)
-    console.log('- Pagination info:', { page, limit, total, totalPages: Math.ceil(total / limit) })
-    
-    const response = {
-      data: paginatedArticles,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
-    }
-    
-    console.log('Returning response:', response)
-    return NextResponse.json(response)
   } catch (error) {
     console.error('Error in GET /api/articles:', error)
     return NextResponse.json(
@@ -251,40 +178,12 @@ export async function POST(request: NextRequest) {
       
       return NextResponse.json({ data: article }, { status: 201 })
     } catch (supabaseError) {
-      console.log('Supabase error, using fallback:', supabaseError)
-      
-      // Fallback: salvar artigo localmente
-      const fallbackArticle = {
-        id: Date.now().toString(),
-        ...articleData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        author_name: 'Admin',
-        category_name: body.category_id === '11111111-1111-1111-1111-111111111111' ? 'Política' :
-                      body.category_id === '22222222-2222-2222-2222-222222222222' ? 'Economia' :
-                      body.category_id === '33333333-3333-3333-3333-333333333333' ? 'Esportes' :
-                      body.category_id === '44444444-4444-4444-4444-444444444444' ? 'Cultura' :
-                      body.category_id === '55555555-5555-5555-5555-555555555555' ? 'Cidades' :
-                      body.category_id === '66666666-6666-6666-6666-666666666666' ? 'Tecnologia' :
-                      body.category_id === '1' ? 'Política' :
-                      body.category_id === '2' ? 'Economia' :
-                      body.category_id === '3' ? 'Esportes' :
-                      body.category_id === '4' ? 'Cultura' :
-                      body.category_id === '5' ? 'Cidades' : 'Geral',
-        views_count: 0
-      }
-      
-      // Salvar no arquivo local
-      const localArticles = readLocalArticles()
-      localArticles.unshift(fallbackArticle) // Adicionar no início da lista
-      saveLocalArticles(localArticles)
-      
-      console.log('Artigo criado e salvo localmente:', fallbackArticle.title)
-      
-      return NextResponse.json({ 
-        data: fallbackArticle,
-        message: 'Artigo criado com sucesso (salvo localmente)' 
-      }, { status: 201 })
+      console.error('Erro ao criar artigo no Supabase:', supabaseError)
+      return NextResponse.json({
+        success: false,
+        error: 'Erro ao criar artigo',
+        details: supabaseError instanceof Error ? supabaseError.message : 'Erro desconhecido'
+      }, { status: 500 })
     }
   } catch (error) {
     return NextResponse.json(

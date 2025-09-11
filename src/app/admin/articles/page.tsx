@@ -99,17 +99,15 @@ export default function ArticlesPage() {
           totalPages: data.pagination?.totalPages || 1
         })
       } else {
-        // Fallback para dados mockados se a API falhar
-        console.log('API response failed, status:', response.status)
-        const mockData = await generateMockData()
-        console.log('Using mock data:', mockData)
-        setArticles(mockData)
+        console.error('Erro ao carregar artigos da API:', response.status)
+        setArticles([])
         setPagination({
           page: 1,
           limit: 10,
-          total: mockData.length,
-          totalPages: Math.ceil(mockData.length / 10)
+          total: 0,
+          totalPages: 1
         })
+        toast.error('Erro ao carregar artigos')
       }
       
       // Buscar categorias da API
@@ -120,15 +118,9 @@ export default function ArticlesPage() {
           setCategories(categoriesData.data || [])
         }
       } catch (error) {
-        console.log('Erro ao buscar categorias, usando fallback')
-        const mockCategories = [
-          { id: '1', name: 'Política', slug: 'politica' },
-          { id: '2', name: 'Economia', slug: 'economia' },
-          { id: '3', name: 'Esportes', slug: 'esportes' },
-          { id: '4', name: 'Cultura', slug: 'cultura' },
-          { id: '5', name: 'Cidades', slug: 'cidades' }
-        ]
-        setCategories(mockCategories)
+        console.error('Erro ao buscar categorias:', error)
+        setCategories([])
+        toast.error('Erro ao carregar categorias')
       }
       
     } catch (error) {
@@ -139,54 +131,6 @@ export default function ArticlesPage() {
     }
   }, [pagination.page, searchTerm, selectedCategory, selectedStatus, pagination.limit])
 
-  // Função para gerar dados mockados
-  const generateMockData = async () => {
-    return [
-      {
-        id: '1',
-        title: 'Nova Lei de Orçamento Aprovada no Congresso',
-        slug: 'nova-lei-orcamento-aprovada-congresso',
-        excerpt: 'O Congresso Nacional aprovou por unanimidade a nova lei que estabelece diretrizes para o orçamento público...',
-        content: 'Conteúdo completo do artigo...',
-        featured_image: 'https://picsum.photos/400/300?random=1',
-        image_alt: 'Congresso Nacional',
-        category_id: '1',
-        category_name: 'Política',
-        author_name: 'João Silva',
-        status: 'published' as const,
-        views_count: 1248,
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        title: 'Mercado Financeiro em Alta',
-        slug: 'mercado-financeiro-alta',
-        excerpt: 'Os principais indicadores do mercado financeiro apresentaram crescimento significativo neste trimestre...',
-        content: 'Conteúdo completo do artigo...',
-        featured_image: 'https://picsum.photos/400/300?random=2',
-        image_alt: 'Gráfico do mercado financeiro',
-        category_id: '2',
-        category_name: 'Economia',
-        author_name: 'Maria Santos',
-        status: 'published' as const,
-        views_count: 892,
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-      },
-      {
-        id: '3',
-        title: 'Campeonato Regional de Futebol',
-        slug: 'campeonato-regional-futebol',
-        excerpt: 'O campeonato regional de futebol promete grandes emoções nesta temporada com times renovados...',
-        content: 'Conteúdo completo do artigo...',
-        category_id: '3',
-        category_name: 'Esportes',
-        author_name: 'Carlos Oliveira',
-        status: 'draft' as const,
-        views_count: 0,
-        created_at: new Date(Date.now() - 172800000).toISOString(),
-      }
-    ]
-  }
 
   // Aplicar filtros localmente quando a busca não funcionar via API
   useEffect(() => {
