@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { 
   Share, 
   TrendingUp, 
@@ -74,7 +74,7 @@ export default function ShareInsightsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
 
-  const fetchShareData = async (showLoader = true) => {
+  const fetchShareData = useCallback(async (showLoader = true) => {
     try {
       if (showLoader) setLoading(true)
       setError(null)
@@ -93,7 +93,7 @@ export default function ShareInsightsPage() {
       setLoading(false)
       setIsRefreshing(false)
     }
-  }
+  }, [period])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -128,7 +128,7 @@ export default function ShareInsightsPage() {
 
   useEffect(() => {
     fetchShareData()
-  }, [period])
+  }, [period, fetchShareData])
 
   const platformIcons = {
     whatsapp: WhatsAppIcon,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon'
 
 interface WhatsAppSettings {
@@ -35,14 +35,14 @@ export default function WhatsAppPopup() {
 
 
   // Função para exibir o popup
-  const triggerPopup = () => {
+  const triggerPopup = useCallback(() => {
     if (settings?.isActive) {
       setShowPopup(true)
     }
-  }
+  }, [settings?.isActive])
 
   // Manipular scroll
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     if (settings?.triggerType === 'scroll' && !isScrollTriggered) {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop
       const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight
@@ -53,7 +53,7 @@ export default function WhatsAppPopup() {
         triggerPopup()
       }
     }
-  }
+  }, [settings?.triggerType, settings?.scrollPercentage, isScrollTriggered, triggerPopup])
 
   // Abrir link do WhatsApp
   const openWhatsApp = () => {
@@ -76,7 +76,7 @@ export default function WhatsAppPopup() {
       window.addEventListener('scroll', handleScroll, { passive: true })
       return () => window.removeEventListener('scroll', handleScroll)
     }
-  }, [settings, isScrollTriggered])
+  }, [settings, isScrollTriggered, triggerPopup, handleScroll])
 
   // Buscar configurações na inicialização
   useEffect(() => {

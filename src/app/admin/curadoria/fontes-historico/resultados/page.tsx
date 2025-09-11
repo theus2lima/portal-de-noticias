@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { fetchJSON } from '@/utils/http'
 import { ArrowLeft, Calendar, ExternalLink, Eye, Send, Filter, CheckCircle2 } from 'lucide-react'
 
@@ -40,14 +41,6 @@ export default function HistoricalResultsPage() {
   const [sending, setSending] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadSources()
-  }, [])
-
-  useEffect(() => {
-    loadNews()
-  }, [filter])
-
   const loadSources = async () => {
     try {
       const response = await fetchJSON<{ success: boolean; data: NewsSource[] }>(
@@ -62,7 +55,7 @@ export default function HistoricalResultsPage() {
     }
   }
 
-  const loadNews = async () => {
+  const loadNews = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
@@ -87,7 +80,15 @@ export default function HistoricalResultsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filter])
+
+  useEffect(() => {
+    loadSources()
+  }, [])
+
+  useEffect(() => {
+    loadNews()
+  }, [loadNews])
 
   const toggleSelection = (id: string) => {
     setSelected(prev => 
@@ -269,8 +270,13 @@ export default function HistoricalResultsPage() {
                 />
                 
                 {item.image_url && (
-                  <div className="w-20 h-20 bg-neutral-100 rounded-lg overflow-hidden flex-shrink-0">
-                    <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                  <div className="w-20 h-20 bg-neutral-100 rounded-lg overflow-hidden flex-shrink-0 relative">
+                    <Image 
+                      src={item.image_url} 
+                      alt={item.title || ''} 
+                      fill
+                      className="object-cover" 
+                    />
                   </div>
                 )}
                 

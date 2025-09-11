@@ -16,7 +16,7 @@ import {
   AlertCircle,
   BookOpen
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 interface AnalyticsData {
   stats: {
@@ -75,7 +75,7 @@ export default function AnalyticsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
 
-  const fetchAnalyticsData = async (showLoader = true) => {
+  const fetchAnalyticsData = useCallback(async (showLoader = true) => {
     try {
       if (showLoader) setLoading(true)
       setError(null)
@@ -94,7 +94,7 @@ export default function AnalyticsPage() {
       setLoading(false)
       setIsRefreshing(false)
     }
-  }
+  }, [period])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -129,7 +129,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     fetchAnalyticsData()
-  }, [period])
+  }, [period, fetchAnalyticsData])
 
   // Extract data with fallbacks
   const stats = analyticsData?.stats || {

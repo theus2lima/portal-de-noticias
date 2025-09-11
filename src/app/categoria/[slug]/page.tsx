@@ -23,27 +23,38 @@ async function getCategoryBySlug(slug: string): Promise<CategoryData | null> {
       { id: '6', name: 'Tecnologia', slug: 'tecnologia', description: 'Inovação e tecnologia', color: '#3B82F6', is_active: true }
     ]
 
-    try {
-      // Tentar buscar da API primeiro
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-                     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-                     'http://localhost:3000'
-      
-      const response = await fetch(`${baseUrl}/api/categories`, {
-        next: { revalidate: 300 },
-        headers: {
-          'Content-Type': 'application/json'
+    // Durante build, pular fetch da API e usar fallback diretamente
+    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL_URL && !process.env.NEXT_PUBLIC_BASE_URL) {
+      console.log('Build em produção detectado, usando fallback categories')
+    } else {
+      try {
+        // Tentar buscar da API apenas em runtime
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                       process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+                       'http://localhost:3000'
+        
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 5000) // 5s timeout
+        
+        const response = await fetch(`${baseUrl}/api/categories`, {
+          next: { revalidate: 300 },
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          signal: controller.signal
+        })
+        
+        clearTimeout(timeoutId)
+        
+        if (response.ok) {
+          const data = await response.json()
+          const categories = data.data || []
+          const category = categories.find((cat: CategoryData) => cat.slug === slug && cat.is_active)
+          if (category) return category
         }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        const categories = data.data || []
-        const category = categories.find((cat: CategoryData) => cat.slug === slug && cat.is_active)
-        if (category) return category
+      } catch (apiError) {
+        console.log('API não disponível, usando fallback categories')
       }
-    } catch (apiError) {
-      console.log('API não disponível durante build, usando fallback')
     }
     
     // Fallback para categorias padrão
@@ -60,30 +71,7 @@ export async function generateStaticParams() {
   // Categorias padrão que sempre devem existir
   const defaultSlugs = ['politica', 'economia', 'esportes', 'cultura', 'cidades', 'tecnologia']
   
-  try {
-    // Tentar buscar categorias da API
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-    const response = await fetch(`${baseUrl}/api/categories`, {
-      next: { revalidate: 300 }
-    })
-    
-    if (response.ok) {
-      const data = await response.json()
-      const categories = data.data || []
-      const apiSlugs = categories
-        .filter((cat: CategoryData) => cat.is_active)
-        .map((cat: CategoryData) => cat.slug)
-      
-      // Combinar slugs da API com padrões
-      const uniqueSlugs = new Set([...defaultSlugs, ...apiSlugs])
-      const allSlugs = Array.from(uniqueSlugs)
-      return allSlugs.map(slug => ({ slug }))
-    }
-  } catch (error) {
-    console.log('Usando categorias padrão para generateStaticParams')
-  }
-  
-  // Fallback para categorias padrão
+  // Retornar apenas categorias padrão para evitar erros de fetch durante build
   return defaultSlugs.map(slug => ({ slug }))
 }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { 
   Plus, 
   Edit, 
@@ -68,7 +68,7 @@ export default function ArticlesPage() {
   const [deleting, setDeleting] = useState(false)
 
   // Função para buscar dados
-  const fetchData = async (page?: number, search?: string, category?: string, status?: string) => {
+  const fetchData = useCallback(async (page?: number, search?: string, category?: string, status?: string) => {
     setLoading(true)
     try {
       // Usar valores dos parâmetros ou fallback para o estado atual
@@ -137,7 +137,7 @@ export default function ArticlesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [pagination.page, searchTerm, selectedCategory, selectedStatus, pagination.limit])
 
   // Função para gerar dados mockados
   const generateMockData = async () => {
@@ -212,7 +212,7 @@ export default function ArticlesPage() {
   
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fetchData])
 
   // Função para lidar com mudanças de filtro
   const handleFilterChange = () => {

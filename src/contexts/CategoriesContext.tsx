@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { listenToCategoriesUpdates } from '@/lib/categoriesNotifier'
 
 interface Category {
@@ -41,7 +41,7 @@ export const CategoriesProvider = ({ children }: CategoriesProviderProps) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       setError(null)
       const response = await fetch('/api/categories', {
@@ -75,16 +75,16 @@ export const CategoriesProvider = ({ children }: CategoriesProviderProps) => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const refreshCategories = async () => {
+  const refreshCategories = useCallback(async () => {
     await fetchCategories()
-  }
+  }, [fetchCategories])
 
   // Carregar categorias na inicialização
   useEffect(() => {
     fetchCategories()
-  }, [])
+  }, [fetchCategories])
 
   // Escutar mudanças nas categorias para sincronizar entre abas
   useEffect(() => {
@@ -96,7 +96,7 @@ export const CategoriesProvider = ({ children }: CategoriesProviderProps) => {
     })
     
     return cleanup
-  }, [])
+  }, [refreshCategories])
 
   const value: CategoriesContextType = {
     categories,
