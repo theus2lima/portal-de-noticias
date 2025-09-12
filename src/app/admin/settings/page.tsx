@@ -27,6 +27,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import TickerNewsManager from '@/components/admin/TickerNewsManager'
+import WhatsAppGroupConfig from '@/components/WhatsAppGroupConfig'
 import { useTheme, type ColorScheme, type FontFamily } from '@/hooks/useTheme'
 import { useSystemSettings } from '@/hooks/useSystemSettings'
 
@@ -296,6 +297,9 @@ export default function SettingsPage() {
           {error}
         </div>
       )}
+
+      {/* WhatsApp Group Auto-Send Settings - Full Width */}
+      <WhatsAppGroupConfig />
 
       {/* WhatsApp Lead Settings - Full Width */}
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">

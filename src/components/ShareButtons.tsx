@@ -11,6 +11,8 @@ interface ShareButtonsProps {
   excerpt?: string
   categoryName?: string
   className?: string
+  featuredImage?: string
+  imageAlt?: string
 }
 
 // Ícones customizados para as redes sociais
@@ -38,7 +40,7 @@ const InstagramIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 )
 
-export default function ShareButtons({ url, title, articleId, excerpt = '', categoryName = '', className = "" }: ShareButtonsProps) {
+export default function ShareButtons({ url, title, articleId, excerpt = '', categoryName = '', className = "", featuredImage, imageAlt }: ShareButtonsProps) {
   const [isSharing, setIsSharing] = useState<string | null>(null)
 
   // Função para registrar compartilhamento com dados da categoria
@@ -126,9 +128,16 @@ export default function ShareButtons({ url, title, articleId, excerpt = '', cate
   const shareText = `${title} - Portal de Notícias`
   
   // Gerar URL personalizada do WhatsApp com emoji e formatação especial
+  let whatsappExcerpt = excerpt || `Confira esta notícia importante no Portal Radar Noroeste!`
+  
+  // Se houver imagem, mencionar na mensagem
+  if (featuredImage) {
+    whatsappExcerpt += ` 🖼 Veja também a imagem!`
+  }
+  
   const whatsappUrl = generateWhatsAppShareURL(
     title,
-    excerpt || `Confira esta notícia importante no Portal Radar Noroeste!`,
+    whatsappExcerpt,
     url,
     categoryName
   )

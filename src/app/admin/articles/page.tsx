@@ -18,6 +18,7 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 import { toast } from 'react-hot-toast'
+import WhatsAppSendButton from '@/components/WhatsAppSendButton'
 
 interface Article {
   id: string
@@ -416,6 +417,32 @@ export default function ArticlesPage() {
                             </svg>
                           )}
                         </button>
+                        
+                        {/* WhatsApp - Enviar para WhatsApp se for publicado */}
+                        {article.status === 'published' && (
+                          <div className="flex items-center justify-center">
+                            <WhatsAppSendButton 
+                              article={{
+                                id: article.id,
+                                title: article.title,
+                                excerpt: article.excerpt,
+                                slug: article.slug,
+                                category_name: article.category_name,
+                                featured_image: article.featured_image,
+                                author_name: article.author_name,
+                                published_at: article.created_at
+                              }}
+                              variant="icon-only"
+                              className="w-8 h-8 rounded-full"
+                              onSuccess={() => {
+                                toast.success('Artigo enviado para WhatsApp!')
+                              }}
+                              onError={(error) => {
+                                toast.error(error)
+                              }}
+                            />
+                          </div>
+                        )}
                         
                         {/* Excluir artigo */}
                         <button

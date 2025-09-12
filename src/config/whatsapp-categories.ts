@@ -11,7 +11,7 @@ export interface CategoryConfig {
 
 export const WHATSAPP_CATEGORIES: Record<string, CategoryConfig> = {
   'Política': {
-    emoji: '🏛️',
+    emoji: '🏤',
     name: 'Política',
     color: 'bg-primary-900'
   },
@@ -26,12 +26,12 @@ export const WHATSAPP_CATEGORIES: Record<string, CategoryConfig> = {
     color: 'bg-accent-500'
   },
   'Cultura': {
-    emoji: '🎭',
+    emoji: '🎨',
     name: 'Cultura',
     color: 'bg-primary-500'
   },
   'Cidades': {
-    emoji: '🏘️',
+    emoji: '🏠',
     name: 'Cidades',
     color: 'bg-secondary-700'
   },
@@ -41,7 +41,7 @@ export const WHATSAPP_CATEGORIES: Record<string, CategoryConfig> = {
     color: 'bg-primary-600'
   },
   'Educação': {
-    emoji: '🎓',
+    emoji: '📚',
     name: 'Educação',
     color: 'bg-blue-600'
   },
@@ -51,7 +51,7 @@ export const WHATSAPP_CATEGORIES: Record<string, CategoryConfig> = {
     color: 'bg-green-600'
   },
   'Saúde': {
-    emoji: '🏥',
+    emoji: '❤️',
     name: 'Saúde',
     color: 'bg-red-600'
   },
@@ -61,7 +61,7 @@ export const WHATSAPP_CATEGORIES: Record<string, CategoryConfig> = {
     color: 'bg-gray-700'
   },
   'Turismo': {
-    emoji: '🗺️',
+    emoji: '🏖️',
     name: 'Turismo',
     color: 'bg-purple-600'
   },
@@ -113,16 +113,27 @@ export function generateWhatsAppMessage(
 
 ${truncatedSummary}
 
-👉 Leia no Radar Noroeste: ${url}`;
+🔗 Leia no Radar Noroeste: ${url}`;
 
   return message;
 }
 
 /**
- * Codifica mensagem para URL do WhatsApp
+ * Codifica mensagem para URL do WhatsApp usando abordagem mais simples
  */
 export function encodeWhatsAppMessage(message: string): string {
-  return encodeURIComponent(message);
+  // Usar apenas codificação básica, sem tocar nos emojis
+  return message
+    .replace(/\*/g, '%2A')    // Asterisco para negrito
+    .replace(/\n/g, '%0A')    // Quebra de linha
+    .replace(/ /g, '%20')     // Espaço
+    .replace(/:/g, '%3A')     // Dois pontos
+    .replace(/\//g, '%2F')    // Barra
+    .replace(/\?/g, '%3F')    // Interrogação
+    .replace(/#/g, '%23')     // Hashtag
+    .replace(/&/g, '%26')     // E comercial
+    .replace(/=/g, '%3D')     // Igual
+    // Não codificar emojis - deixar como está
 }
 
 /**
