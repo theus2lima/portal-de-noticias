@@ -419,9 +419,9 @@ export default function NewLandingPage() {
             {activeTab === 'content' && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Título da Seção "Sobre"
-                  </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Título da Seção &quot;Sobre&quot;
+                    </label>
                   <input
                     type="text"
                     name="about_title"
@@ -432,9 +432,9 @@ export default function NewLandingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Conteúdo da Seção "Sobre"
-                  </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Conteúdo da Seção &quot;Sobre&quot;
+                    </label>
                   <textarea
                     name="about_content"
                     value={formData.about_content}
@@ -445,9 +445,9 @@ export default function NewLandingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Imagem da Seção "Sobre" (URL)
-                  </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Imagem da Seção &quot;Sobre&quot; (URL)
+                    </label>
                   <input
                     type="url"
                     name="about_image"

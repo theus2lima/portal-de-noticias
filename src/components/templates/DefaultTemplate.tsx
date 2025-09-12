@@ -216,7 +216,7 @@ export default function DefaultTemplate({ data }: DefaultTemplateProps) {
                   </div>
                   
                   <blockquote className="text-gray-600 mb-6 italic">
-                    "{testimonial.testimonial}"
+                    &quot;{testimonial.testimonial}&quot;
                   </blockquote>
                   
                   <div className="flex items-center">

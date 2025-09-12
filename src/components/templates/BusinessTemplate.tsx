@@ -354,7 +354,7 @@ export default function BusinessTemplate({ data }: BusinessTemplateProps) {
                   </div>
                   
                   <blockquote className="text-gray-700 mb-8 text-lg leading-relaxed">
-                    "{testimonial.testimonial}"
+                    &quot;{testimonial.testimonial}&quot;
                   </blockquote>
                   
                   <div className="flex items-center">

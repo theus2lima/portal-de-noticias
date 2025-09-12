@@ -63,7 +63,7 @@ export default function LandingPagesAdmin() {
 
   useEffect(() => {
     fetchLandingPages()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
