@@ -59,6 +59,14 @@ export async function GET(
         .single()
 
       if (!error && article) {
+        // Debug: Log do artigo retornado
+        console.log('🔍 Article API Debug:')
+        console.log('- Article ID:', article.id)
+        console.log('- Title:', article.title)
+        console.log('- Content length:', article.content ? article.content.length : 'NULL')
+        console.log('- Content preview:', article.content ? article.content.substring(0, 100) + '...' : 'EMPTY')
+        console.log('- All fields:', Object.keys(article))
+        
         return NextResponse.json({ data: article })
       }
       

@@ -97,6 +97,13 @@ export default function EditArticlePage({ params }: EditArticlePageProps) {
         const data = await response.json()
         const article = data.data
 
+        // Debug: Log do artigo recebido
+        console.log('📝 Edit Page Debug:')
+        console.log('- Article received:', article)
+        console.log('- Content field:', article.content)
+        console.log('- Content length:', article.content ? article.content.length : 'NULL')
+        console.log('- All article fields:', Object.keys(article))
+
         // Preencher formulário com dados do artigo
         setFormData({
           title: article.title || '',
