@@ -31,7 +31,8 @@ import {
   Layers,
   TrendingUp,
   MessageCircle,
-  Share
+  Share,
+  Monitor
 } from 'lucide-react'
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon'
 import NotificationDropdown from '@/components/NotificationDropdown'
@@ -174,6 +175,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     {
       title: 'Marketing & Leads',
       items: [
+        {
+          name: 'Landing Pages',
+          href: '/admin/landing-pages',
+          icon: Monitor,
+          description: 'Criar páginas de conversão',
+          badge: 'new'
+        },
         {
           name: 'Leads',
           href: '/admin/leads',
