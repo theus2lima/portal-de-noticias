@@ -54,6 +54,31 @@ export default function ShareButtons({ url, title, articleId, className = "" }: 
     }
   }
 
+  // Função para detectar se está em mobile
+  const isMobile = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+           (window.navigator && window.navigator.maxTouchPoints > 0) ||
+           (window.screen && window.screen.width <= 768)
+  }
+
+  // Função para compartilhar via Web Share API (nativo)
+  const handleNativeShare = async (platform: string) => {
+    if (navigator.share && platform === 'whatsapp') {
+      try {
+        await navigator.share({
+          title: shareText,
+          text: shareText,
+          url: url,
+        })
+        return true
+      } catch (error) {
+        console.log('Erro no Web Share API:', error)
+        return false
+      }
+    }
+    return false
+  }
+
   // Função para compartilhar e rastrear
   const handleShare = async (platform: string, shareUrl: string) => {
     setIsSharing(platform)
@@ -61,8 +86,26 @@ export default function ShareButtons({ url, title, articleId, className = "" }: 
     // Registrar o compartilhamento
     await trackShare(platform)
     
-    // Abrir a URL de compartilhamento
-    window.open(shareUrl, '_blank', 'noopener,noreferrer')
+    // Para WhatsApp, tentar Web Share API primeiro em mobile
+    if (platform === 'whatsapp' && isMobile()) {
+      const nativeShareWorked = await handleNativeShare(platform)
+      
+      if (!nativeShareWorked) {
+        // Fallback para protocolo whatsapp://
+        const mobileWhatsAppUrl = shareUrl.replace('https://wa.me/?text=', 'whatsapp://send?text=')
+        
+        try {
+          // Tentar abrir o app nativo
+          window.location.href = mobileWhatsAppUrl
+        } catch (error) {
+          // Se falhar, usar window.open como último recurso
+          window.open(shareUrl, '_blank', 'noopener,noreferrer')
+        }
+      }
+    } else {
+      // Para outras plataformas ou desktop, usar window.open normal
+      window.open(shareUrl, '_blank', 'noopener,noreferrer')
+    }
     
     setTimeout(() => setIsSharing(null), 1000)
   }
