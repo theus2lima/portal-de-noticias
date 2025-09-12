@@ -64,12 +64,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Incrementar contador de leads na landing page
-    await supabase
+    // Buscar o contador atual
+    const { data: currentPage } = await supabase
       .from('landing_pages')
-      .update({ 
-        leads_count: supabase.raw('leads_count + 1') 
-      })
+      .select('leads_count')
       .eq('id', body.landing_page_id)
+      .single()
+
+    if (currentPage) {
+      await supabase
+        .from('landing_pages')
+        .update({ 
+          leads_count: (currentPage.leads_count || 0) + 1
+        })
+        .eq('id', body.landing_page_id)
+    }
 
     return NextResponse.json(data, { status: 201 })
   } catch (error) {
