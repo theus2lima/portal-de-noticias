@@ -122,18 +122,8 @@ ${truncatedSummary}
  * Codifica mensagem para URL do WhatsApp usando abordagem mais simples
  */
 export function encodeWhatsAppMessage(message: string): string {
-  // Usar apenas codificação básica, sem tocar nos emojis
-  return message
-    .replace(/\*/g, '%2A')    // Asterisco para negrito
-    .replace(/\n/g, '%0A')    // Quebra de linha
-    .replace(/ /g, '%20')     // Espaço
-    .replace(/:/g, '%3A')     // Dois pontos
-    .replace(/\//g, '%2F')    // Barra
-    .replace(/\?/g, '%3F')    // Interrogação
-    .replace(/#/g, '%23')     // Hashtag
-    .replace(/&/g, '%26')     // E comercial
-    .replace(/=/g, '%3D')     // Igual
-    // Não codificar emojis - deixar como está
+  // Usar encodeURIComponent que é mais confiável para URLs
+  return encodeURIComponent(message)
 }
 
 /**

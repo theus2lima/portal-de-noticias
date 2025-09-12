@@ -101,9 +101,14 @@ export class WhatsAppGroupService {
     const config = this.getConfig()
     const encodedMessage = encodeWhatsAppMessage(message)
     
-    // Para grupos, usar o formato específico do WhatsApp
-    const groupId = config.groupUrl.split('/').pop() // Extrai o ID do grupo
-    return `https://wa.me/g/${groupId}?text=${encodedMessage}`
+    // Para grupos do WhatsApp, usar o link direto do grupo com parâmetro text
+    // Formato: https://chat.whatsapp.com/[ID]?text=[mensagem]
+    if (config.groupUrl.includes('chat.whatsapp.com')) {
+      return `${config.groupUrl}?text=${encodedMessage}`
+    }
+    
+    // Fallback para formato wa.me se não for link de grupo
+    return `https://wa.me/?text=${encodedMessage}`
   }
 
   /**
@@ -120,6 +125,14 @@ export class WhatsAppGroupService {
 
       const message = this.generateGroupMessage(article, siteUrl)
       const shareUrl = this.generateGroupShareUrl(message)
+      
+      // Debug: Log da URL gerada
+      console.log('🔗 WhatsApp Debug:')
+      console.log('- Site URL:', siteUrl)
+      console.log('- Article:', { title: article.title, slug: article.slug })
+      console.log('- Message:', message)
+      console.log('- Share URL:', shareUrl)
+      console.log('- Config:', config)
       
       // Registrar tentativa de envio
       await this.logSendAttempt(article.id, 'success')
