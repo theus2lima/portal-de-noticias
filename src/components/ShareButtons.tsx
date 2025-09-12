@@ -2,11 +2,14 @@
 
 import { MessageCircle, Share, Instagram, Hash } from 'lucide-react'
 import { useState } from 'react'
+import { generateWhatsAppShareURL, getCategoryEmoji } from '@/config/whatsapp-categories'
 
 interface ShareButtonsProps {
   url: string
   title: string
   articleId: string
+  excerpt?: string
+  categoryName?: string
   className?: string
 }
 
@@ -35,10 +38,10 @@ const InstagramIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 )
 
-export default function ShareButtons({ url, title, articleId, className = "" }: ShareButtonsProps) {
+export default function ShareButtons({ url, title, articleId, excerpt = '', categoryName = '', className = "" }: ShareButtonsProps) {
   const [isSharing, setIsSharing] = useState<string | null>(null)
 
-  // Função para registrar compartilhamento
+  // Função para registrar compartilhamento com dados da categoria
   const trackShare = async (platform: string) => {
     try {
       await fetch(`/api/articles/${articleId}/share`, {
@@ -46,7 +49,17 @@ export default function ShareButtons({ url, title, articleId, className = "" }: 
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ platform }),
+        body: JSON.stringify({ 
+          platform,
+          category: categoryName,
+          timestamp: new Date().toISOString(),
+          // Dados adicionais para análise
+          metadata: {
+            hasExcerpt: !!excerpt,
+            titleLength: title.length,
+            categoryEmoji: getCategoryEmoji(categoryName)
+          }
+        }),
       })
     } catch (error) {
       console.log('Erro ao registrar compartilhamento:', error)
@@ -112,8 +125,16 @@ export default function ShareButtons({ url, title, articleId, className = "" }: 
 
   const shareText = `${title} - Portal de Notícias`
   
+  // Gerar URL personalizada do WhatsApp com emoji e formatação especial
+  const whatsappUrl = generateWhatsAppShareURL(
+    title,
+    excerpt || `Confira esta notícia importante no Portal Radar Noroeste!`,
+    url,
+    categoryName
+  )
+  
   const shareLinks = {
-    whatsapp: `https://wa.me/?text=${encodeURIComponent(`${shareText} ${url}`)}`,
+    whatsapp: whatsappUrl,
     x: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(url)}`,
     threads: `https://threads.net/intent/post?text=${encodeURIComponent(`${shareText} ${url}`)}`,
     instagram: `https://www.instagram.com/`, // Instagram não permite compartilhamento direto via URL
@@ -123,7 +144,7 @@ export default function ShareButtons({ url, title, articleId, className = "" }: 
     {
       platform: 'whatsapp',
       icon: WhatsAppIcon,
-      label: 'WhatsApp',
+      label: `WhatsApp ${getCategoryEmoji(categoryName)}`,
       color: 'bg-green-600 hover:bg-green-700',
       url: shareLinks.whatsapp,
     },

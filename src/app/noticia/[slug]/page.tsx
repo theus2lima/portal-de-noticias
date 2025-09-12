@@ -228,6 +228,8 @@ export default function ArticlePage({ params }: ArticlePageProps) {
                 url={shareUrl}
                 title={article.title}
                 articleId={article.id}
+                excerpt={article.excerpt}
+                categoryName={article.category_name}
               />
             </header>
 

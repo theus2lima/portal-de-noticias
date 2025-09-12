@@ -1,6 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+
+interface Category {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  color?: string
+  icon?: string
+  is_active?: boolean
+}
 import { useRouter } from 'next/navigation'
 import { 
   Save, 
@@ -28,6 +38,8 @@ export default function EditArticlePage({ params }: EditArticlePageProps) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loadingCategories, setLoadingCategories] = useState(true)
   const [formData, setFormData] = useState({
     title: '',
     subtitle: '',
@@ -47,6 +59,25 @@ export default function EditArticlePage({ params }: EditArticlePageProps) {
   const [tags, setTags] = useState<string[]>([])
   const [currentTag, setCurrentTag] = useState('')
   const [showPreview, setShowPreview] = useState(false)
+
+  // Carregar categorias
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/categories')
+        if (response.ok) {
+          const data = await response.json()
+          setCategories(data.data || [])
+        }
+      } catch (error) {
+        console.error('Erro ao carregar categorias:', error)
+      } finally {
+        setLoadingCategories(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   // Carregar dados do artigo
   useEffect(() => {
@@ -457,13 +488,16 @@ export default function EditArticlePage({ params }: EditArticlePageProps) {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   required
+                  disabled={loadingCategories}
                 >
-                  <option value="">Selecione uma categoria</option>
-                  <option value="1">Política</option>
-                  <option value="2">Economia</option>
-                  <option value="3">Esportes</option>
-                  <option value="4">Cultura</option>
-                  <option value="5">Cidades</option>
+                  <option value="">
+                    {loadingCategories ? 'Carregando categorias...' : 'Selecione uma categoria'}
+                  </option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -594,11 +628,7 @@ export default function EditArticlePage({ params }: EditArticlePageProps) {
                   <span>{new Date().toLocaleDateString('pt-BR')}</span>
                   {formData.category_id && (
                     <span>
-                      • {formData.category_id === '1' ? 'Política' :
-                          formData.category_id === '2' ? 'Economia' :
-                          formData.category_id === '3' ? 'Esportes' :
-                          formData.category_id === '4' ? 'Cultura' :
-                          formData.category_id === '5' ? 'Cidades' : 'Geral'}
+                      • {categories.find(c => c.id === formData.category_id)?.name || 'Categoria'}
                     </span>
                   )}
                 </div>

@@ -80,17 +80,36 @@ export async function GET(request: NextRequest) {
 
 // POST - Criar novo artigo
 export async function POST(request: NextRequest) {
+  console.log('🚀 POST /api/articles - INÍCIO');
+  console.log('Environment:', process.env.NODE_ENV);
+  console.log('Vercel Region:', process.env.VERCEL_REGION || 'local');
+  
   try {
     const supabase = await createClient()
     const body = await request.json()
     
+    console.log('📄 Dados recebidos do frontend:');
+    console.log('- Title:', body.title ? `'${body.title.substring(0, 50)}...'` : 'VAZIO');
+    console.log('- Content:', body.content ? `${body.content.length} caracteres` : 'VAZIO');
+    console.log('- Category ID:', body.category_id || 'VAZIO');
+    console.log('- Status:', body.status || 'VAZIO');
+    console.log('- Keywords:', Array.isArray(body.keywords) ? `${body.keywords.length} tags` : body.keywords);
+    
     // Validação básica
     if (!body.title || !body.content || !body.category_id) {
+      const error = 'Título, conteúdo e categoria são obrigatórios';
+      console.log('❌ FALHA NA VALIDAÇÃO:', error);
+      console.log('- Title presente:', !!body.title);
+      console.log('- Content presente:', !!body.content);
+      console.log('- Category ID presente:', !!body.category_id);
+      
       return NextResponse.json(
-        { error: 'Título, conteúdo e categoria são obrigatórios' },
+        { error },
         { status: 400 }
       )
     }
+    
+    console.log('✅ Validação básica passou');
     
     // Gerar slug a partir do título
     const slug = body.title

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   Save, 
@@ -16,9 +16,21 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 
+interface Category {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  color?: string
+  icon?: string
+  is_active?: boolean
+}
+
 export default function NewArticlePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loadingCategories, setLoadingCategories] = useState(true)
   const [formData, setFormData] = useState({
     title: '',
     subtitle: '',
@@ -38,6 +50,25 @@ export default function NewArticlePage() {
   const [tags, setTags] = useState<string[]>([])
   const [currentTag, setCurrentTag] = useState('')
   const [showPreview, setShowPreview] = useState(false)
+
+  // Carregar categorias na inicialização
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/categories')
+        if (response.ok) {
+          const data = await response.json()
+          setCategories(data.data || [])
+        }
+      } catch (error) {
+        console.error('Erro ao carregar categorias:', error)
+      } finally {
+        setLoadingCategories(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
@@ -70,6 +101,27 @@ export default function NewArticlePage() {
         published_at: status === 'published' ? new Date().toISOString() : null
       }
 
+      // Log para debug em produção
+      console.log('🔍 DEBUG PRODUÇÃO - Dados do formulário:');
+      console.log('- Title:', articleData.title ? 'OK' : 'VAZIO');
+      console.log('- Content:', articleData.content ? `${articleData.content.length} chars` : 'VAZIO');
+      console.log('- Category ID:', articleData.category_id || 'VAZIO');
+      console.log('- Status:', articleData.status);
+      console.log('- Environment:', process.env.NODE_ENV || 'undefined');
+      
+      // Validação no frontend antes de enviar
+      if (!articleData.title?.trim()) {
+        throw new Error('Título é obrigatório');
+      }
+      if (!articleData.content?.trim()) {
+        throw new Error('Conteúdo é obrigatório');
+      }
+      if (!articleData.category_id?.trim()) {
+        throw new Error('Categoria é obrigatória');
+      }
+
+      console.log('✅ Validação frontend passou, enviando requisição...');
+
       const response = await fetch('/api/articles', {
         method: 'POST',
         headers: {
@@ -78,17 +130,29 @@ export default function NewArticlePage() {
         body: JSON.stringify(articleData)
       })
 
+      console.log('📡 Resposta da API:');
+      console.log('- Status:', response.status);
+      console.log('- Status Text:', response.statusText);
+      console.log('- Headers:', Object.fromEntries(response.headers.entries()));
+
       const result = await response.json()
+      console.log('📄 Conteúdo da resposta:', result);
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao salvar artigo')
+        throw new Error(result.error || `Erro ${response.status}: ${response.statusText}`)
       }
 
+      console.log('🎉 Sucesso! Redirecionando...');
       // Sucesso - redirecionar para lista de artigos
       router.push('/admin/articles?success=created')
     } catch (error) {
-      console.error('Erro ao salvar artigo:', error)
-      alert('Erro ao salvar artigo: ' + (error as Error).message)
+      console.error('❌ ERRO DETALHADO:', {
+        type: error instanceof Error ? error.constructor.name : typeof error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : 'N/A'
+      });
+      
+      alert('Erro ao salvar artigo: ' + (error instanceof Error ? error.message : String(error)))
     } finally {
       setLoading(false)
     }
@@ -342,14 +406,16 @@ export default function NewArticlePage() {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   required
+                  disabled={loadingCategories}
                 >
-                  <option value="">Selecione uma categoria</option>
-                  <option value="11111111-1111-1111-1111-111111111111">Política</option>
-                  <option value="22222222-2222-2222-2222-222222222222">Economia</option>
-                  <option value="33333333-3333-3333-3333-333333333333">Esportes</option>
-                  <option value="44444444-4444-4444-4444-444444444444">Cultura</option>
-                  <option value="55555555-5555-5555-5555-555555555555">Cidades</option>
-                  <option value="66666666-6666-6666-6666-666666666666">Tecnologia</option>
+                  <option value="">
+                    {loadingCategories ? 'Carregando categorias...' : 'Selecione uma categoria'}
+                  </option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -493,12 +559,7 @@ export default function NewArticlePage() {
                   <span>{new Date().toLocaleDateString('pt-BR')}</span>
                   {formData.category_id && (
                     <span>
-                      • {formData.category_id === '11111111-1111-1111-1111-111111111111' ? 'Política' :
-                          formData.category_id === '22222222-2222-2222-2222-222222222222' ? 'Economia' :
-                          formData.category_id === '33333333-3333-3333-3333-333333333333' ? 'Esportes' :
-                          formData.category_id === '44444444-4444-4444-4444-444444444444' ? 'Cultura' :
-                          formData.category_id === '55555555-5555-5555-5555-555555555555' ? 'Cidades' :
-                          formData.category_id === '66666666-6666-6666-6666-666666666666' ? 'Tecnologia' : 'Geral'}
+                      • {categories.find(c => c.id === formData.category_id)?.name || 'Categoria'}
                     </span>
                   )}
                 </div>

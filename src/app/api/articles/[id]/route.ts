@@ -213,7 +213,8 @@ export async function PUT(
       '2': 'Economia', 
       '3': 'Esportes',
       '4': 'Cultura',
-      '5': 'Cidades'
+      '5': 'Cidades',
+      '6': 'Tecnologia'
     }
     
     // Atualizar artigo
