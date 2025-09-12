@@ -83,6 +83,69 @@ export default function ArticlePage({ params }: ArticlePageProps) {
     fetchArticle()
   }, [params.slug])
 
+  // Atualizar meta tags dinamicamente
+  useEffect(() => {
+    if (typeof document !== 'undefined' && article) {
+      // Atualizar título da página
+      document.title = `${article.title} - ${config.siteName}`
+      
+      // Função auxiliar para atualizar ou criar meta tag
+      const updateMetaTag = (property: string, content: string, isProperty = true) => {
+        const selector = isProperty ? `meta[property="${property}"]` : `meta[name="${property}"]`
+        let meta = document.querySelector(selector) as HTMLMetaElement
+        
+        if (!meta) {
+          meta = document.createElement('meta')
+          if (isProperty) {
+            meta.setAttribute('property', property)
+          } else {
+            meta.setAttribute('name', property)
+          }
+          document.head.appendChild(meta)
+        }
+        meta.setAttribute('content', content)
+      }
+      
+      // Meta tags básicas
+      updateMetaTag('description', article.excerpt || article.subtitle || `Leia mais sobre ${article.title} no ${config.siteName}`, false)
+      updateMetaTag('keywords', article.keywords?.join(', ') || '', false)
+      
+      // Open Graph tags
+      const baseUrl = config.siteUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+      const shareUrl = `${baseUrl}/noticia/${article.slug}`
+      const ogImage = article.featured_image || `${baseUrl}/default-og-image.png`
+      
+      updateMetaTag('og:type', 'article')
+      updateMetaTag('og:title', article.title)
+      updateMetaTag('og:description', article.excerpt || article.subtitle || `Leia mais sobre ${article.title} no ${config.siteName}`)
+      updateMetaTag('og:url', shareUrl)
+      updateMetaTag('og:image', ogImage)
+      updateMetaTag('og:image:width', '1200')
+      updateMetaTag('og:image:height', '630')
+      updateMetaTag('og:site_name', config.siteName)
+      updateMetaTag('og:locale', 'pt_BR')
+      
+      // Twitter Card tags
+      updateMetaTag('twitter:card', 'summary_large_image', false)
+      updateMetaTag('twitter:title', article.title, false)
+      updateMetaTag('twitter:description', article.excerpt || article.subtitle || `Leia mais sobre ${article.title} no ${config.siteName}`, false)
+      updateMetaTag('twitter:image', ogImage, false)
+      
+      // Article specific tags
+      updateMetaTag('article:author', article.author_name)
+      updateMetaTag('article:published_time', article.published_at)
+      updateMetaTag('article:section', article.category_name)
+      if (article.keywords) {
+        article.keywords.forEach(tag => {
+          const meta = document.createElement('meta')
+          meta.setAttribute('property', 'article:tag')
+          meta.setAttribute('content', tag)
+          document.head.appendChild(meta)
+        })
+      }
+    }
+  }, [article, config])
+
   if (loading) {
     return (
       <div className="min-h-screen bg-neutral-50">
@@ -155,65 +218,6 @@ export default function ArticlePage({ params }: ArticlePageProps) {
   const ogTitle = article.title
   const ogDescription = article.excerpt || article.subtitle || `Leia mais sobre ${article.title} no ${config.siteName}`
   const ogImage = article.featured_image || `${baseUrl}/default-og-image.png`
-  
-  // Atualizar meta tags dinamicamente
-  useEffect(() => {
-    if (typeof document !== 'undefined' && article) {
-      // Atualizar título da página
-      document.title = `${article.title} - ${config.siteName}`
-      
-      // Função auxiliar para atualizar ou criar meta tag
-      const updateMetaTag = (property: string, content: string, isProperty = true) => {
-        const selector = isProperty ? `meta[property="${property}"]` : `meta[name="${property}"]`
-        let meta = document.querySelector(selector) as HTMLMetaElement
-        
-        if (!meta) {
-          meta = document.createElement('meta')
-          if (isProperty) {
-            meta.setAttribute('property', property)
-          } else {
-            meta.setAttribute('name', property)
-          }
-          document.head.appendChild(meta)
-        }
-        meta.setAttribute('content', content)
-      }
-      
-      // Meta tags básicas
-      updateMetaTag('description', ogDescription, false)
-      updateMetaTag('keywords', article.keywords?.join(', ') || '', false)
-      
-      // Open Graph tags
-      updateMetaTag('og:type', 'article')
-      updateMetaTag('og:title', ogTitle)
-      updateMetaTag('og:description', ogDescription)
-      updateMetaTag('og:url', shareUrl)
-      updateMetaTag('og:image', ogImage)
-      updateMetaTag('og:image:width', '1200')
-      updateMetaTag('og:image:height', '630')
-      updateMetaTag('og:site_name', config.siteName)
-      updateMetaTag('og:locale', 'pt_BR')
-      
-      // Twitter Card tags
-      updateMetaTag('twitter:card', 'summary_large_image', false)
-      updateMetaTag('twitter:title', ogTitle, false)
-      updateMetaTag('twitter:description', ogDescription, false)
-      updateMetaTag('twitter:image', ogImage, false)
-      
-      // Article specific tags
-      updateMetaTag('article:author', article.author_name)
-      updateMetaTag('article:published_time', article.published_at)
-      updateMetaTag('article:section', article.category_name)
-      if (article.keywords) {
-        article.keywords.forEach(tag => {
-          const meta = document.createElement('meta')
-          meta.setAttribute('property', 'article:tag')
-          meta.setAttribute('content', tag)
-          document.head.appendChild(meta)
-        })
-      }
-    }
-  }, [article, config, shareUrl, ogTitle, ogDescription, ogImage])
 
   return (
     <div className="min-h-screen bg-neutral-50">

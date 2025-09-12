@@ -29,7 +29,7 @@ export default function WhatsAppGroupConfig() {
     
     // Carregar logs
     setLogs(whatsappService.getSendLogs())
-  }, [])
+  }, [whatsappService])
 
   const handleSave = async () => {
     setLoading(true)

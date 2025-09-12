@@ -568,14 +568,14 @@ export default function NewArticlePage() {
             </div>
             <div>
               <h3 className="text-lg font-medium text-green-800">Artigo Publicado com Sucesso!</h3>
-              <p className="text-green-700 mt-1">Seu artigo "{publishedArticle.title}" foi publicado e está disponível no portal.</p>
+              <p className="text-green-700 mt-1">Seu artigo &quot;{publishedArticle.title}&quot; foi publicado e está disponível no portal.</p>
             </div>
           </div>
           
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             <WhatsAppSendButton 
               article={publishedArticle}
-              variant="primary"
+              variant="default"
               className="flex-shrink-0"
             />
             <div className="flex space-x-3">
