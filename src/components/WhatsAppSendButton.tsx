@@ -117,7 +117,7 @@ export default function WhatsAppSendButton({
     return (
       <>
         <MessageCircle className="h-4 w-4" />
-        <span>{variant === 'small' ? 'WhatsApp' : 'Enviar para WhatsApp'}</span>
+        <span>{variant === 'small' ? 'WhatsApp' : 'Compartilhar no WhatsApp'}</span>
       </>
     )
   }

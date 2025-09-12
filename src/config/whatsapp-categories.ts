@@ -104,7 +104,7 @@ export function generateWhatsAppMessage(
   const emoji = getCategoryEmoji(categoryName);
   
   // Limitar resumo para evitar mensagens muito longas
-  const maxSummaryLength = 150;
+  const maxSummaryLength = 200;
   const truncatedSummary = summary.length > maxSummaryLength 
     ? `${summary.substring(0, maxSummaryLength)}...` 
     : summary;
@@ -113,7 +113,10 @@ export function generateWhatsAppMessage(
 
 ${truncatedSummary}
 
-🔗 Leia no Radar Noroeste: ${url}`;
+📰 *${categoryName}* | Radar Noroeste
+🔗 Leia completo: ${url}
+
+#RadarNoroeste #${categoryName.replace(' ', '')}`;
 
   return message;
 }

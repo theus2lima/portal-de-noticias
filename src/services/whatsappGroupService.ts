@@ -101,10 +101,11 @@ export class WhatsAppGroupService {
     const config = this.getConfig()
     const encodedMessage = encodeWhatsAppMessage(message)
     
-    // Para grupos do WhatsApp, usar o link direto do grupo com parâmetro text
-    // Formato: https://chat.whatsapp.com/[ID]?text=[mensagem]
+    // Para grupos do WhatsApp, construir URL correta
     if (config.groupUrl.includes('chat.whatsapp.com')) {
-      return `${config.groupUrl}?text=${encodedMessage}`
+      // Remover parâmetros existentes da URL do grupo
+      const cleanGroupUrl = config.groupUrl.split('?')[0]
+      return `${cleanGroupUrl}?text=${encodedMessage}`
     }
     
     // Fallback para formato wa.me se não for link de grupo
