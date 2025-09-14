@@ -43,10 +43,10 @@ interface DashboardLayoutProps {
 
 const FontesSubmenu = ({ pathname, setSidebarOpen }: { pathname: string, setSidebarOpen: (open: boolean) => void }) => {
   const [isOpen, setIsOpen] = useState(
-    pathname?.startsWith('/admin/curadoria/fontes') || pathname?.startsWith('/admin/curadoria/historico') || false
+    pathname?.startsWith('/admin/curadoria/fontes') || pathname?.startsWith('/admin/curadoria/historico') || pathname?.startsWith('/admin/curadoria/google-news') || false
   )
 
-  const isActive = pathname?.startsWith('/admin/curadoria/fontes') || pathname?.startsWith('/admin/curadoria/historico') || false
+  const isActive = pathname?.startsWith('/admin/curadoria/fontes') || pathname?.startsWith('/admin/curadoria/historico') || pathname?.startsWith('/admin/curadoria/google-news') || false
   const subItems = [
     {
       name: 'Gerenciar Fontes',
@@ -54,6 +54,13 @@ const FontesSubmenu = ({ pathname, setSidebarOpen }: { pathname: string, setSide
       icon: Rss,
       isActive: pathname === '/admin/curadoria/fontes',
       description: 'Configurar fontes RSS'
+    },
+    {
+      name: 'Google News',
+      href: '/admin/curadoria/google-news',
+      icon: Globe,
+      isActive: pathname === '/admin/curadoria/google-news',
+      description: 'Coletar do Google Notícias'
     },
     {
       name: 'Histórico Geral',
