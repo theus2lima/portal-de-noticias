@@ -56,6 +56,32 @@ export async function GET(request: NextRequest) {
       }
       
       console.error('Erro ao buscar artigos no Supabase:', error)
+      
+      // Se o Supabase não está configurado, usar dados mock
+      if (error.message === 'Supabase not configured' || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+        console.log('Using mock data for articles');
+        // Simular dados do mock (importação dinâmica para evitar dependência circular)
+        const mockArticles = [
+          // Usar alguns dados básicos para evitar import circular
+          { id: 'art-1', title: 'Congresso Aprova Nova Lei', category_name: 'Política', status: 'published', created_at: new Date().toISOString(), views_count: 2850, author_name: 'Equipe Portal', excerpt: 'Projeto estabelece novas regras...' },
+          { id: 'art-2', title: 'Banco Central Mantém Selic', category_name: 'Economia', status: 'published', created_at: new Date().toISOString(), views_count: 3420, author_name: 'Equipe Portal', excerpt: 'Copom decide manter juros...' },
+          { id: 'art-3', title: 'Palmeiras Vence Clássico', category_name: 'Esportes', status: 'published', created_at: new Date().toISOString(), views_count: 5240, author_name: 'Equipe Portal', excerpt: 'Verdão assume liderança...' },
+          { id: 'art-4', title: 'Museu Reabre com Exposição', category_name: 'Cultura', status: 'published', created_at: new Date().toISOString(), views_count: 2840, author_name: 'Equipe Portal', excerpt: 'Nova mostra interativa...' },
+          { id: 'art-5', title: 'São Paulo Inaugura Parque', category_name: 'Cidades', status: 'published', created_at: new Date().toISOString(), views_count: 4680, author_name: 'Equipe Portal', excerpt: 'Maior parque linear da América Latina...' },
+          { id: 'art-6', title: 'IA na Educação Brasileira', category_name: 'Tecnologia', status: 'published', created_at: new Date().toISOString(), views_count: 6420, author_name: 'Equipe Portal', excerpt: 'Programa nacional implementa...' }
+        ];
+        
+        return NextResponse.json({
+          data: mockArticles,
+          pagination: {
+            page: 1,
+            limit: 10,
+            total: mockArticles.length,
+            totalPages: 1
+          }
+        });
+      }
+      
       return NextResponse.json({
         success: false,
         error: 'Erro ao carregar artigos',
