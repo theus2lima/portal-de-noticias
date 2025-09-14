@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useGlobalNotification } from '@/contexts/GlobalNotificationContext'
 import WhatsAppSendButton from '@/components/WhatsAppSendButton'
 
 interface Category {
@@ -30,10 +31,10 @@ interface Category {
 
 export default function NewArticlePage() {
   const router = useRouter()
+  const { showArticleSuccess } = useGlobalNotification()
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [loadingCategories, setLoadingCategories] = useState(true)
-  const [publishedArticle, setPublishedArticle] = useState<any>(null)
   const [formData, setFormData] = useState({
     title: '',
     subtitle: '',
@@ -147,20 +148,27 @@ export default function NewArticlePage() {
 
       console.log('🎉 Sucesso!');
       
-      // Se foi publicado, salvar dados do artigo para botão WhatsApp
+      // Se foi publicado, usar contexto global para mostrar notificação no header
       if (status === 'published' && result.data) {
-        const categoryName = categories.find(cat => cat.id === articleData.category_id)?.name || 'Notícias'
-        const articleData_WhatsApp = {
+        const articleForNotification = {
           id: result.data.id,
           title: articleData.title,
-          excerpt: articleData.excerpt || 'Confira esta notícia importante!',
           slug: result.data.slug,
-          category_name: categoryName,
-          featured_image: articleData.featured_image,
-          author_name: 'Radar Noroeste',
-          published_at: articleData.published_at || new Date().toISOString()
+          content: articleData.content,
+          excerpt: articleData.excerpt || 'Confira esta notícia importante!',
+          featured_image: articleData.featured_image || '',
+          status: 'published',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }
-        setPublishedArticle(articleData_WhatsApp)
+        
+        // Mostrar notificação global no header
+        showArticleSuccess(articleForNotification)
+        
+        // Redirecionar para a página de artigos após um delay para mostrar a notificação
+        setTimeout(() => {
+          router.push('/admin/articles')
+        }, 1000)
       } else {
         // Sucesso - redirecionar para lista de artigos se for rascunho
         router.push('/admin/articles?success=created')
@@ -592,47 +600,6 @@ export default function NewArticlePage() {
         </div>
       </form>
 
-      {/* Success message with WhatsApp button */}
-      {publishedArticle && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="flex-shrink-0">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-medium text-green-800">Artigo Publicado com Sucesso!</h3>
-              <p className="text-green-700 mt-1">Seu artigo &quot;{publishedArticle.title}&quot; foi publicado e está disponível no portal.</p>
-            </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-            <WhatsAppSendButton 
-              article={publishedArticle}
-              variant="default"
-              className="flex-shrink-0"
-            />
-            <div className="flex space-x-3">
-              <Link 
-                href={`/articles/${publishedArticle.slug}`}
-                className="btn-outline text-sm"
-                target="_blank"
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Ver Artigo
-              </Link>
-              <Link 
-                href="/admin/articles"
-                className="btn-secondary text-sm"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar à Lista
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Preview Modal */}
       {showPreview && (

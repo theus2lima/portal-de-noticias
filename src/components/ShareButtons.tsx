@@ -94,6 +94,33 @@ export default function ShareButtons({ url, title, articleId, excerpt = '', cate
     return false
   }
 
+  // Função para verificar se a URL é acessível
+  const getValidShareUrl = (originalUrl: string) => {
+    try {
+      const urlObj = new URL(originalUrl)
+      // Se a URL configurada não for localhost nem uma URL válida em produção,
+      // use a origem atual do browser
+      if (typeof window !== 'undefined') {
+        const currentOrigin = window.location.origin
+        const currentHost = window.location.hostname
+        
+        // Se estivermos em desenvolvimento (localhost), usar origem atual
+        if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+          return originalUrl.replace(urlObj.origin, currentOrigin)
+        }
+      }
+      return originalUrl
+    } catch (error) {
+      // Se a URL for inválida, use a origem atual
+      if (typeof window !== 'undefined') {
+        const currentOrigin = window.location.origin
+        const path = originalUrl.startsWith('/') ? originalUrl : `/${originalUrl}`
+        return `${currentOrigin}${path}`
+      }
+      return originalUrl
+    }
+  }
+
   // Função para compartilhar e rastrear
   const handleShare = async (platform: string, shareUrl: string) => {
     setIsSharing(platform)
@@ -101,25 +128,28 @@ export default function ShareButtons({ url, title, articleId, excerpt = '', cate
     // Registrar o compartilhamento
     await trackShare(platform)
     
+    // Garantir que a URL seja válida e acessível
+    const validShareUrl = platform === 'whatsapp' ? shareUrl : getValidShareUrl(shareUrl)
+    
     // Para WhatsApp, tentar Web Share API primeiro em mobile
     if (platform === 'whatsapp' && isMobile()) {
       const nativeShareWorked = await handleNativeShare(platform)
       
       if (!nativeShareWorked) {
         // Fallback para protocolo whatsapp://
-        const mobileWhatsAppUrl = shareUrl.replace('https://wa.me/?text=', 'whatsapp://send?text=')
+        const mobileWhatsAppUrl = validShareUrl.replace('https://wa.me/?text=', 'whatsapp://send?text=')
         
         try {
           // Tentar abrir o app nativo
           window.location.href = mobileWhatsAppUrl
         } catch (error) {
           // Se falhar, usar window.open como último recurso
-          window.open(shareUrl, '_blank', 'noopener,noreferrer')
+          window.open(validShareUrl, '_blank', 'noopener,noreferrer')
         }
       }
     } else {
       // Para outras plataformas ou desktop, usar window.open normal
-      window.open(shareUrl, '_blank', 'noopener,noreferrer')
+      window.open(validShareUrl, '_blank', 'noopener,noreferrer')
     }
     
     setTimeout(() => setIsSharing(null), 1000)

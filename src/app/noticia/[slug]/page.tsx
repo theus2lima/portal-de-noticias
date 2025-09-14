@@ -209,8 +209,24 @@ export default function ArticlePage({ params }: ArticlePageProps) {
     return colors[category] || 'bg-primary-900'
   }
 
-  // Construir URL pública correta
-  const baseUrl = config.siteUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  // Construir URL pública correta com fallback para desenvolvimento
+  const getBaseUrl = () => {
+    // Se estivermos no browser
+    if (typeof window !== 'undefined') {
+      const currentOrigin = window.location.origin
+      const currentHost = window.location.hostname
+      
+      // Em desenvolvimento (localhost) sempre usar a origem atual
+      if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+        return currentOrigin
+      }
+    }
+    
+    // Caso contrário, usar a configuração ou fallback
+    return config.siteUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  }
+  
+  const baseUrl = getBaseUrl()
   const shareUrl = `${baseUrl}/noticia/${article.slug}`
   const shareText = `${article.title} - ${config.siteName}`
   

@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { useGlobalNotification } from '@/contexts/GlobalNotificationContext'
+import { GlobalSuccessNotification } from '@/components/admin/GlobalSuccessNotification'
 import { 
   Home, 
   FileText, 
@@ -139,6 +141,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
   const { user, logout } = useAuth()
+  const { successArticle, clearArticleSuccess } = useGlobalNotification()
 
   const menuSections = [
     {
@@ -516,6 +519,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </div>
           </div>
         </header>
+
+        {/* Global Success Notification */}
+        <GlobalSuccessNotification
+          article={successArticle}
+          onDismiss={clearArticleSuccess}
+        />
 
         {/* Page Content */}
         <main className="p-6">
