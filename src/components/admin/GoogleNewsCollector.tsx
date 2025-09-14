@@ -199,7 +199,7 @@ const GoogleNewsCollector: React.FC = () => {
                 disabled={isCollecting}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
               >
-                {stats?.available_categories.map((cat) => (
+                {(stats?.available_categories || []).map((cat) => (
                   <option key={cat.value || 'all'} value={cat.value || ''}>
                     {cat.label}
                   </option>
