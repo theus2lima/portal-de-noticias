@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Eye, ArrowLeft, X, CheckCircle } from 'lucide-react'
-import { WhatsAppSendButton } from '@/components/WhatsAppSendButton'
 
 interface Article {
   id: string
@@ -30,6 +29,13 @@ const GlobalSuccessNotification = ({
 }: GlobalSuccessNotificationProps) => {
   const [isVisible, setIsVisible] = useState(false)
 
+  const handleDismiss = useCallback(() => {
+    setIsVisible(false)
+    setTimeout(() => {
+      if (onDismiss) onDismiss()
+    }, 300) // Wait for animation to complete
+  }, [onDismiss])
+
   useEffect(() => {
     if (article) {
       setIsVisible(true)
@@ -40,14 +46,7 @@ const GlobalSuccessNotification = ({
 
       return () => clearTimeout(timer)
     }
-  }, [article])
-
-  const handleDismiss = () => {
-    setIsVisible(false)
-    setTimeout(() => {
-      if (onDismiss) onDismiss()
-    }, 300) // Wait for animation to complete
-  }
+  }, [article, handleDismiss])
 
   if (!article || !isVisible) {
     return null
@@ -69,16 +68,11 @@ const GlobalSuccessNotification = ({
                 Artigo Publicado com Sucesso!
               </h3>
               <p className="text-sm text-green-700 mb-3 line-clamp-1">
-                Seu artigo "{article.title}" foi publicado e está disponível no portal.
+                Seu artigo &quot;{article.title}&quot; foi publicado e está disponível no portal.
               </p>
               
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-2">
-                <WhatsAppSendButton 
-                  article={article}
-                  variant="compact"
-                  className="text-xs h-7 px-3"
-                />
                 <Link 
                   href={`/noticia/${article.slug}`}
                   className="inline-flex items-center px-3 h-7 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
