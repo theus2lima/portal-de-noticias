@@ -53,8 +53,12 @@ export async function GET(
     try {
       // Tentar buscar do Supabase primeiro
       const { data: article, error } = await supabase
-        .from('articles_with_details')
-        .select('*')
+        .from('articles')
+        .select(`
+          *,
+          categories(id, name, slug),
+          article_tags(tags(id, name, slug))
+        `)
         .eq('id', id)
         .single()
 

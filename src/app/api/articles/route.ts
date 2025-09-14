@@ -19,8 +19,12 @@ export async function GET(request: NextRequest) {
     // Primeiro tentar buscar do Supabase
     try {
       let query = supabase
-        .from('articles_with_details')
-        .select('*', { count: 'exact' })
+        .from('articles')
+        .select(`
+          *,
+          categories(id, name, slug),
+          article_tags(tags(id, name, slug))
+        `, { count: 'exact' })
       
       // Aplicar filtros
       if (status) {
