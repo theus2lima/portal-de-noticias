@@ -91,8 +91,32 @@ const CategorySection = () => {
         </div>
 
         {/* Category Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {(loading ? [] : normalized).map((category, index) => (
+        {loading ? (
+          // Loading state
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-gray-200 animate-pulse h-32 rounded-lg"></div>
+            ))}
+          </div>
+        ) : normalized.length === 0 ? (
+          // Empty state
+          <div className="text-center py-16">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 mx-auto mb-4 bg-neutral-200 rounded-full flex items-center justify-center">
+                <Building2 className="w-8 h-8 text-neutral-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-neutral-700 mb-2">
+                Categorias em Breve
+              </h3>
+              <p className="text-neutral-600">
+                Estamos organizando as categorias de notícias. Em breve você encontrará todo o conteúdo organizado por temas.
+              </p>
+            </div>
+          </div>
+        ) : (
+          // Content
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            {normalized.map((category, index) => (
             <Link 
               key={category.name}
               href={category.href}
@@ -132,8 +156,9 @@ const CategorySection = () => {
                 </span>
               </div>
             </Link>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Call to Action */}
         <div className="text-center mt-12">

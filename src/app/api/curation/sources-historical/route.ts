@@ -136,8 +136,8 @@ export async function POST(request: NextRequest) {
           status: 'pending',
           suggested_category_id: null, // Será preenchido pela IA
           ai_confidence: null,
-          ai_category_reasoning: `Reprocessamento histórico de fonte externa: ${news.news_sources?.name}`,
-          curator_notes: `Coleta histórica - Fonte: ${news.news_sources?.name}, Tipo: ${reprocessType}, Período: ${startDate} a ${endDate}`
+          ai_category_reasoning: `Reprocessamento histórico de fonte externa: ${(news as any).news_sources?.name}`,
+          curator_notes: `Coleta histórica - Fonte: ${(news as any).news_sources?.name}, Tipo: ${reprocessType}, Período: ${startDate} a ${endDate}`
         }
 
         let curationResult
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
           results.push({
             news_id: news.id,
             title: news.title,
-            source: news.news_sources?.name,
+            source: (news as any).news_sources?.name,
             success: true,
             action: existingCuration ? 'updated' : 'created'
           })

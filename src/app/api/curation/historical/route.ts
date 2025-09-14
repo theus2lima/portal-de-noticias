@@ -93,15 +93,15 @@ export async function POST(request: NextRequest) {
           title: article.title,
           summary: article.summary || '',
           content: article.content || '',
-          author: article.users?.name || 'Sistema',
+          author: (Array.isArray((article as any).users) ? (article as any).users[0]?.name : (article as any).users?.name) || 'Sistema',
           published_at: article.published_at || article.created_at,
           image_url: article.featured_image,
           tags: [],
           raw_data: {
             original_article_id: article.id,
             reprocess_type: reprocessType,
-            original_category: article.categories?.name,
-            original_author: article.users?.name
+            original_category: (article as any).categories?.name,
+            original_author: (article as any).users?.name
           },
           content_hash: generateContentHash(article.title + article.content)
         }
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
           status: 'pending',
           suggested_category_id: article.category_id, // Categoria original como sugestão
           ai_confidence: null, // Será preenchido pela IA
-          ai_category_reasoning: `Artigo histórico reprocessado. Categoria original: ${article.categories?.name}`,
+          ai_category_reasoning: `Artigo histórico reprocessado. Categoria original: ${(article as any).categories?.name}`,
           curator_notes: `Reprocessamento histórico - Tipo: ${reprocessType}, Período: ${startDate} a ${endDate}`
         }
 

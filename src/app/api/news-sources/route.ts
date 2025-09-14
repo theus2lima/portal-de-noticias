@@ -236,7 +236,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verificar se há notícias associadas
-    const { data: newsCount } = await supabase
+    const { count: newsCount } = await supabase
       .from('scraped_news')
       .select('id', { count: 'exact', head: true })
       .eq('source_id', id)
