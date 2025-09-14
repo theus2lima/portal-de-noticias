@@ -222,8 +222,16 @@ export default function ArticlePage({ params }: ArticlePageProps) {
       }
     }
     
-    // Caso contrário, usar a configuração ou fallback
-    return config.siteUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+    // Usar configuração ou fallback
+    let url = config.siteUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+    
+    // Garantir protocolo HTTPS em produção e remover barra final
+    if (url && !url.includes('localhost')) {
+      url = url.replace(/^http:/, 'https:')
+    }
+    
+    // Remover barra final se existir
+    return url.replace(/\/$/, '')
   }
   
   const baseUrl = getBaseUrl()
