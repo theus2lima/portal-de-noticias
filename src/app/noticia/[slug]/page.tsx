@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import Head from 'next/head'
 import ShareButtons from '@/components/ShareButtons'
+import LeadForm from '@/components/LeadForm'
 import { useSiteConfig } from '@/hooks/useSiteConfig'
 import { 
   ArrowLeft, 
@@ -419,6 +420,9 @@ export default function ArticlePage({ params }: ArticlePageProps) {
           </div>
         </div>
       </article>
+      
+      {/* Formulário de cadastro WhatsApp */}
+      <LeadForm />
     </div>
   )
 }
