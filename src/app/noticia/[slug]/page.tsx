@@ -48,6 +48,9 @@ export default function ArticlePage({ params }: ArticlePageProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([])
+  const [moreArticles, setMoreArticles] = useState<Article[]>([])
+  const [showMoreArticles, setShowMoreArticles] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const { config } = useSiteConfig()
 
   useEffect(() => {
@@ -146,6 +149,48 @@ export default function ArticlePage({ params }: ArticlePageProps) {
       }
     }
   }, [article, config])
+
+  // Hook para detectar scroll e carregar mais artigos
+  useEffect(() => {
+    if (!article) return
+
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + window.innerHeight
+      const documentHeight = document.documentElement.scrollHeight
+      const scrollPercentage = (scrollPosition / documentHeight) * 100
+
+      // Quando o usuário rolar 70% da página, mostrar mais artigos
+      if (scrollPercentage > 70 && !showMoreArticles && !isLoadingMore && moreArticles.length === 0) {
+        setIsLoadingMore(true)
+        loadMoreArticles()
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [article, showMoreArticles, isLoadingMore, moreArticles, relatedArticles])
+
+  // Função para carregar mais artigos
+  const loadMoreArticles = async () => {
+    if (!article) return
+
+    try {
+      // Buscar artigos recentes, excluindo o atual e os relacionados
+      const excludeIds = [article.id, ...relatedArticles.map(a => a.id)]
+      const response = await fetch(`/api/articles?status=published&limit=6`)
+      
+      if (response.ok) {
+        const data = await response.json()
+        const filteredArticles = data.data?.filter((a: Article) => !excludeIds.includes(a.id)) || []
+        setMoreArticles(filteredArticles.slice(0, 6))
+        setShowMoreArticles(true)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar mais artigos:', error)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -420,6 +465,99 @@ export default function ArticlePage({ params }: ArticlePageProps) {
           </div>
         </div>
       </article>
+      
+      {/* Mais Artigos - carregados ao rolar a página */}
+      {(showMoreArticles || isLoadingMore) && (
+        <section className="py-12 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-neutral-900 mb-4">
+                  Mais Artigos para Você
+                </h2>
+                <p className="text-neutral-600">
+                  Continue navegando e descubra mais conteúdo interessante
+                </p>
+              </div>
+              
+              {isLoadingMore ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[...Array(6)].map((_, index) => (
+                    <div key={index} className="bg-white rounded-lg border border-neutral-200 p-4 animate-pulse">
+                      <div className="h-48 bg-neutral-200 rounded-lg mb-4"></div>
+                      <div className="h-4 bg-neutral-200 rounded mb-2 w-1/4"></div>
+                      <div className="h-6 bg-neutral-200 rounded mb-2"></div>
+                      <div className="h-4 bg-neutral-200 rounded w-3/4"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {moreArticles.map(moreArticle => (
+                    <Link 
+                      key={moreArticle.id}
+                      href={`/noticia/${moreArticle.slug}`}
+                      className="group bg-white rounded-lg border border-neutral-200 overflow-hidden hover:shadow-lg transition-all duration-300"
+                    >
+                      <div className="relative h-48">
+                        {moreArticle.featured_image ? (
+                          <Image
+                            src={moreArticle.featured_image}
+                            alt={moreArticle.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-neutral-200 flex items-center justify-center">
+                            <FileText className="h-12 w-12 text-neutral-400" />
+                          </div>
+                        )}
+                        <div className="absolute top-3 left-3">
+                          <span className={`px-2 py-1 text-xs font-semibold text-white rounded ${getCategoryColor(moreArticle.category_name)}`}>
+                            {moreArticle.category_name}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="p-4">
+                        <h3 className="font-bold text-neutral-900 group-hover:text-primary-600 transition-colors duration-200 line-clamp-2 mb-2">
+                          {moreArticle.title}
+                        </h3>
+                        <p className="text-neutral-600 text-sm line-clamp-3 mb-3">
+                          {moreArticle.excerpt}
+                        </p>
+                        
+                        <div className="flex items-center justify-between text-xs text-neutral-500">
+                          <div className="flex items-center space-x-1">
+                            <Clock size={12} />
+                            <span>{moreArticle.reading_time} min</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Eye size={12} />
+                            <span>{moreArticle.views_count.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+              
+              {showMoreArticles && moreArticles.length > 0 && (
+                <div className="text-center mt-8">
+                  <Link 
+                    href="/noticias"
+                    className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200"
+                  >
+                    <span>Ver Todas as Notícias</span>
+                    <ArrowLeft size={16} className="rotate-180" />
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
       
       {/* Formulário de cadastro WhatsApp */}
       <LeadForm />
