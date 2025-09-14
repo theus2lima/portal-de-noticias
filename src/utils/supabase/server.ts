@@ -59,9 +59,21 @@ export const createClient = async () => {
           }),
           limit: () => Promise.resolve({ data: [TEMP_ADMIN_USER], error: null })
         }),
-        insert: () => ({
+        insert: (data: any) => ({
           select: () => ({
-            single: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') })
+            single: () => {
+              if (table === 'articles') {
+                // Mock para inserção de artigo
+                const mockArticle = {
+                  id: '00000000-0000-0000-0000-' + Date.now(),
+                  ...data[0],
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                };
+                return Promise.resolve({ data: mockArticle, error: null });
+              }
+              return Promise.resolve({ data: null, error: new Error('Supabase not configured') });
+            }
           })
         }),
         update: () => ({

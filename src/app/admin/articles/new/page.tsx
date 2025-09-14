@@ -172,7 +172,42 @@ export default function NewArticlePage() {
         stack: error instanceof Error ? error.stack : 'N/A'
       });
       
-      alert('Erro ao salvar artigo: ' + (error instanceof Error ? error.message : String(error)))
+      // Melhor UX para exibir erros
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      
+      // Tentar extrair erro mais específico se for um erro de rede/API
+      let displayMessage = errorMessage
+      
+      if (errorMessage.includes('Load failed') || errorMessage.includes('Failed to fetch')) {
+        displayMessage = 'Erro de conexão. Verifique sua internet e tente novamente.'
+      } else if (errorMessage.includes('500')) {
+        displayMessage = 'Erro interno do servidor. Tente novamente em alguns instantes.'
+      } else if (errorMessage.includes('400')) {
+        displayMessage = 'Dados inválidos. Verifique se todos os campos obrigatórios estão preenchidos.'
+      }
+      
+      // Usar uma modal de erro mais amigável em vez de alert
+      const errorModal = document.createElement('div')
+      errorModal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4'
+      errorModal.innerHTML = `
+        <div class="bg-white rounded-xl p-6 max-w-md w-full">
+          <div class="flex items-center space-x-3 mb-4">
+            <div class="flex-shrink-0">
+              <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-medium text-red-800">Erro ao salvar artigo</h3>
+            </div>
+          </div>
+          <p class="text-red-700 mb-4">${displayMessage}</p>
+          <div class="flex justify-end space-x-3">
+            <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">OK</button>
+          </div>
+        </div>
+      `
+      document.body.appendChild(errorModal)
     } finally {
       setLoading(false)
     }
@@ -224,11 +259,11 @@ export default function NewArticlePage() {
             <p className="text-neutral-600">Crie um novo artigo para o portal</p>
           </div>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           <button 
             type="button"
             onClick={handlePreview}
-            className="btn-outline flex items-center space-x-2"
+            className="btn-outline flex items-center justify-center space-x-2 w-full sm:w-auto"
             disabled={loading}
           >
             <Eye className="h-4 w-4" />
@@ -238,7 +273,7 @@ export default function NewArticlePage() {
             type="submit"
             form="article-form"
             onClick={(e) => handleSubmit(e, 'draft')}
-            className="btn-secondary flex items-center space-x-2"
+            className="btn-secondary flex items-center justify-center space-x-2 w-full sm:w-auto"
             disabled={loading}
           >
             <Save className="h-4 w-4" />
@@ -248,7 +283,7 @@ export default function NewArticlePage() {
             type="submit"
             form="article-form"
             onClick={(e) => handleSubmit(e, 'published')}
-            className="btn-primary flex items-center space-x-2"
+            className="btn-primary flex items-center justify-center space-x-2 w-full sm:w-auto"
             disabled={loading}
           >
             <FileText className="h-4 w-4" />
