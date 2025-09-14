@@ -19,7 +19,7 @@ async function getCategoryBySlug(slug: string): Promise<CategoryData | null> {
                    'http://localhost:3000'
     
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 8000) // 8s timeout
     
     const response = await fetch(`${baseUrl}/api/categories`, {
       next: { revalidate: 300 },
@@ -35,14 +35,39 @@ async function getCategoryBySlug(slug: string): Promise<CategoryData | null> {
       const data = await response.json()
       const categories = data.data || []
       const category = categories.find((cat: CategoryData) => cat.slug === slug && cat.is_active)
-      return category || null
+      return category || createFallbackCategory(slug)
     }
     
     console.error('Erro ao buscar categoria da API:', response.status)
-    return null
+    return createFallbackCategory(slug)
   } catch (error) {
     console.error('Erro ao buscar categoria:', error)
-    return null
+    return createFallbackCategory(slug)
+  }
+}
+
+// Criar categoria de fallback baseada no slug
+function createFallbackCategory(slug: string): CategoryData | null {
+  const categoryMap: Record<string, Partial<CategoryData>> = {
+    'politica': { name: 'Política', color: '#DC2626', description: 'Acompanhe as últimas notícias políticas do Brasil e do mundo.' },
+    'economia': { name: 'Economia', color: '#059669', description: 'Notícias sobre economia, mercados financeiros e negócios.' },
+    'esportes': { name: 'Esportes', color: '#7C3AED', description: 'Cobertura completa do mundo esportivo.' },
+    'cultura': { name: 'Cultura', color: '#0EA5E9', description: 'Arte, música, cinema e manifestações culturais.' },
+    'cidades': { name: 'Cidades', color: '#3B82F6', description: 'Notícias locais e acontecimentos urbanos.' },
+    'tecnologia': { name: 'Tecnologia', color: '#D97706', description: 'Inovação, ciência e tecnologia.' },
+    'saude': { name: 'Saúde', color: '#16A34A', description: 'Saúde, medicina e bem-estar.' }
+  }
+  
+  const categoryInfo = categoryMap[slug]
+  if (!categoryInfo) return null
+  
+  return {
+    id: `fallback-${slug}`,
+    name: categoryInfo.name || slug.charAt(0).toUpperCase() + slug.slice(1),
+    slug: slug,
+    description: categoryInfo.description || `Notícias de ${categoryInfo.name?.toLowerCase()}`,
+    color: categoryInfo.color || '#374151',
+    is_active: true
   }
 }
 

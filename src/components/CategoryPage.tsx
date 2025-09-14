@@ -37,7 +37,18 @@ const CategoryPage = ({ category, categoryColor, description, categoryId, catego
       try {
         let url = '/api/articles?status=published&limit=100'
         
-        const response = await fetch(url)
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout
+        
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        clearTimeout(timeoutId)
+        
         if (response.ok) {
           const data = await response.json()
           let articles = data.data || []
@@ -45,7 +56,7 @@ const CategoryPage = ({ category, categoryColor, description, categoryId, catego
           // Filtrar artigos por categoria com lógica robusta
           articles = articles.filter((article: any) => {
             // Primeiro tenta filtrar por ID da categoria (mais preciso)
-            if (categoryId && article.category_id) {
+            if (categoryId && article.category_id && !categoryId.startsWith('fallback-')) {
               const idMatch = String(article.category_id) === String(categoryId)
               return idMatch
             }
@@ -59,9 +70,15 @@ const CategoryPage = ({ category, categoryColor, description, categoryId, catego
           })
           
           setAllArticles(articles)
+        } else {
+          console.error('Erro na resposta da API:', response.status, response.statusText)
         }
       } catch (error) {
-        console.error('Erro ao buscar artigos da categoria:', error)
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.error('Timeout ao buscar artigos da categoria')
+        } else {
+          console.error('Erro ao buscar artigos da categoria:', error)
+        }
       } finally {
         setLoading(false)
       }
