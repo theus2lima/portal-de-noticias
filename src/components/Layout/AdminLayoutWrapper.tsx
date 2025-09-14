@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/Auth/ProtectedRoute'
 import DashboardLayout from '@/components/Dashboard/DashboardLayout'
 import { NotificationProvider } from '@/contexts/NotificationContext'
+import { GlobalNotificationProvider } from '@/contexts/GlobalNotificationContext'
 
 export default function AdminLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -18,9 +19,11 @@ export default function AdminLayoutWrapper({ children }: { children: React.React
   return (
     <AuthProvider>
       <NotificationProvider>
-        <ProtectedRoute>
-          <DashboardLayout>{children}</DashboardLayout>
-        </ProtectedRoute>
+        <GlobalNotificationProvider>
+          <ProtectedRoute>
+            <DashboardLayout>{children}</DashboardLayout>
+          </ProtectedRoute>
+        </GlobalNotificationProvider>
       </NotificationProvider>
     </AuthProvider>
   )
