@@ -150,11 +150,7 @@ export async function POST(request: NextRequest) {
     await supabase
       .from('news_sources')
       .update({ 
-        last_fetch: new Date().toISOString(),
-        metadata: {
-          last_query: query,
-          last_results: successCount
-        }
+        last_fetch: new Date().toISOString()
       })
       .eq('id', googleNewsSource.id)
 
@@ -243,7 +239,7 @@ export async function GET(request: NextRequest) {
             count
           })),
           last_fetch: source.last_fetch,
-          last_results: source.metadata?.last_results || 0
+          last_results: 0
         },
         available_categories: [
           { value: null, label: 'Todas as categorias' },
@@ -377,14 +373,7 @@ async function getOrCreateGoogleNewsSource(supabase: any) {
       name: 'Google News',
       url: 'https://news.google.com',
       type: 'rss',
-      description: 'Agregador automático do Google Notícias',
-      crawl_interval: 1, // 1 hora
-      is_active: true,
-      metadata: {
-        automated: true,
-        supports_categories: true,
-        supports_search: true
-      }
+      is_active: true
     })
     .select()
     .single()
