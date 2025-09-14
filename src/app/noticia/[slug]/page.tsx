@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Head from 'next/head'
 import ShareButtons from '@/components/ShareButtons'
 import LeadForm from '@/components/LeadForm'
+import GoogleAd from '@/components/GoogleAd'
 import { useSiteConfig } from '@/hooks/useSiteConfig'
 import { 
   ArrowLeft, 
@@ -313,7 +314,19 @@ export default function ArticlePage({ params }: ArticlePageProps) {
 
       <article className="py-8">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-7xl mx-auto flex gap-8">
+            {/* Anúncio Sidebar - Fixo durante a leitura */}
+            <div className="hidden lg:block fixed right-4 top-1/2 transform -translate-y-1/2 w-160px z-10">
+              <GoogleAd 
+                slot="3456789012"
+                format="vertical"
+                style={{ width: '160px', height: '600px' }}
+                className="shadow-lg rounded-lg overflow-hidden"
+              />
+            </div>
+            
+            {/* Conteúdo principal */}
+            <div className="flex-1 max-w-4xl">
             {/* Header */}
             <header className="mb-8">
               <Link 
@@ -366,7 +379,7 @@ export default function ArticlePage({ params }: ArticlePageProps) {
                 </div>
               </div>
 
-              {/* Social sharing */}
+            {/* Social sharing */}
               <ShareButtons 
                 url={shareUrl}
                 title={article.title}
@@ -377,6 +390,15 @@ export default function ArticlePage({ params }: ArticlePageProps) {
                 imageAlt={article.image_alt}
               />
             </header>
+            
+            {/* Anúncio 1 - Após header, antes da imagem */}
+            <div className="mb-8">
+              <GoogleAd 
+                slot="1234567890"
+                format="auto"
+                className="text-center"
+              />
+            </div>
 
             {/* Featured image */}
             {article.featured_image ? (
@@ -408,6 +430,15 @@ export default function ArticlePage({ params }: ArticlePageProps) {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Anúncio 2 - Após conteudo do artigo */}
+            <div className="my-8">
+              <GoogleAd 
+                slot="2345678901"
+                format="rectangle"
+                className="text-center"
+              />
             </div>
 
             {/* Tags */}
@@ -462,9 +493,23 @@ export default function ArticlePage({ params }: ArticlePageProps) {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </div>
       </article>
+      
+      {/* Anúncio 3 - Entre seções */}
+      <div className="py-8 bg-neutral-100">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <GoogleAd 
+              slot="4567890123"
+              format="horizontal"
+              className="text-center"
+            />
+          </div>
+        </div>
+      </div>
       
       {/* Mais Artigos - carregados ao rolar a página */}
       {(showMoreArticles || isLoadingMore) && (

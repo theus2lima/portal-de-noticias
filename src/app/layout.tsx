@@ -49,9 +49,17 @@ export default function RootLayout({
           }}
         />
         
+        {/* Google AdSense */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXXX"
+          crossOrigin="anonymous"
+        />
+        
         {/* DNS Prefetch */}
         <link rel="dns-prefetch" href="//images.unsplash.com" />
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="//pagead2.googlesyndication.com" />
       </head>
       <body className={`${inter.className} bg-neutral-50`}>
         <ThemeProvider>
