@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
             author: item.source,
             tags: extractTags(item.title, item.description),
             source_id: googleNewsSource.id,
-            metadata: {
+            raw_data: {
               google_news: true,
               query: query,
               category: category,

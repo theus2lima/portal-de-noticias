@@ -36,6 +36,17 @@ const GoogleNewsCollector: React.FC = () => {
   const [lastCollection, setLastCollection] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // Categorias padrão do Google News
+  const defaultCategories = [
+    { value: null, label: 'Todas as categorias' },
+    { value: 'business', label: 'Negócios' },
+    { value: 'entertainment', label: 'Entretenimento' },
+    { value: 'health', label: 'Saúde' },
+    { value: 'science', label: 'Ciência' },
+    { value: 'sports', label: 'Esportes' },
+    { value: 'technology', label: 'Tecnologia' }
+  ]
+
   // Carregar estatísticas iniciais
   useEffect(() => {
     loadStats()
@@ -199,7 +210,7 @@ const GoogleNewsCollector: React.FC = () => {
                 disabled={isCollecting}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
               >
-                {(stats?.available_categories || []).map((cat) => (
+                {(stats?.available_categories || defaultCategories).map((cat) => (
                   <option key={cat.value || 'all'} value={cat.value || ''}>
                     {cat.label}
                   </option>
