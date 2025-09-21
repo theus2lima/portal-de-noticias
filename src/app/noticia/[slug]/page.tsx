@@ -44,6 +44,21 @@ interface Article {
 // Função para buscar dados do artigo
 async function getArticle(slug: string): Promise<Article | null> {
   try {
+    // Durante o build, usar dados locais diretamente
+    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL_URL) {
+      // Fallback para dados locais durante build
+      const fs = require('fs')
+      const path = require('path')
+      const filePath = path.join(process.cwd(), 'data', 'articles.json')
+      
+      if (fs.existsSync(filePath)) {
+        const data = fs.readFileSync(filePath, 'utf8')
+        const articles = JSON.parse(data)
+        return articles.find((a: any) => a.slug === slug && a.status === 'published') || null
+      }
+      return null
+    }
+    
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL 
       ? `https://${process.env.VERCEL_URL}` 
       : 'http://localhost:3000'
@@ -53,6 +68,16 @@ async function getArticle(slug: string): Promise<Article | null> {
     })
     
     if (!response.ok) {
+      // Fallback para dados locais se API falhar
+      const fs = require('fs')
+      const path = require('path')
+      const filePath = path.join(process.cwd(), 'data', 'articles.json')
+      
+      if (fs.existsSync(filePath)) {
+        const data = fs.readFileSync(filePath, 'utf8')
+        const articles = JSON.parse(data)
+        return articles.find((a: any) => a.slug === slug && a.status === 'published') || null
+      }
       return null
     }
     
@@ -60,6 +85,22 @@ async function getArticle(slug: string): Promise<Article | null> {
     return data.data
   } catch (error) {
     console.error('Erro ao buscar artigo:', error)
+    
+    // Fallback final para dados locais
+    try {
+      const fs = require('fs')
+      const path = require('path')
+      const filePath = path.join(process.cwd(), 'data', 'articles.json')
+      
+      if (fs.existsSync(filePath)) {
+        const data = fs.readFileSync(filePath, 'utf8')
+        const articles = JSON.parse(data)
+        return articles.find((a: any) => a.slug === slug && a.status === 'published') || null
+      }
+    } catch (fallbackError) {
+      console.error('Erro no fallback:', fallbackError)
+    }
+    
     return null
   }
 }

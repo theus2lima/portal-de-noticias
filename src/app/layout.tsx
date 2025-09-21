@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import ConditionalLayout from '@/components/ConditionalLayout'
 import ThemeProvider from '@/components/ThemeProvider'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import { generateSEO, generateOrganizationSchema } from '@/lib/seo'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -67,6 +68,7 @@ export default function RootLayout({
             {children}
           </ConditionalLayout>
         </ThemeProvider>
+        <SpeedInsights />
       </body>
     </html>
   )
