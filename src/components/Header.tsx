@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Search, Menu, X, Facebook, Twitter, Instagram, MessageCircle, LinkIcon } from 'lucide-react'
 import { useCategoriesContext } from '@/contexts/CategoriesContext'
 import { useSiteConfig } from '@/hooks/useSiteConfig'
@@ -80,14 +81,16 @@ const Header = () => {
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary-900 to-secondary-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">RN</span>
-            </div>
-            <div className="hidden md:block">
-              <h1 className="text-2xl font-bold text-gradient">
-                Radar Noroeste PR
-              </h1>
-              <p className="text-sm text-neutral-600">Sua fonte confiável</p>
+            <Image 
+              src="/logo.png" 
+              alt="Radar Noroeste PR" 
+              width={180} 
+              height={60}
+              className="h-12 w-auto"
+              priority
+            />
+            <div className="hidden lg:block">
+              <p className="text-sm text-neutral-600">Seu portal de notícias confiável</p>
             </div>
           </Link>
 

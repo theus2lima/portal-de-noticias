@@ -35,15 +35,18 @@ async function getCategoryBySlug(slug: string): Promise<CategoryData | null> {
       const data = await response.json()
       const categories = data.data || []
       const category = categories.find((cat: CategoryData) => cat.slug === slug && cat.is_active)
-      return category || createFallbackCategory(slug)
+      if (category) {
+        return category
+      }
     }
     
     console.error('Erro ao buscar categoria da API:', response.status)
-    return createFallbackCategory(slug)
   } catch (error) {
     console.error('Erro ao buscar categoria:', error)
-    return createFallbackCategory(slug)
   }
+  
+  // Se chegou aqui, usar fallback
+  return createFallbackCategory(slug)
 }
 
 // Criar categoria de fallback baseada no slug

@@ -55,14 +55,23 @@ const CategoryPage = ({ category, categoryColor, description, categoryId, catego
           
           // Filtrar artigos por categoria com lógica robusta
           articles = articles.filter((article: any) => {
-            // Primeiro tenta filtrar por ID da categoria (mais preciso)
-            if (categoryId && article.category_id && !categoryId.startsWith('fallback-')) {
-              const idMatch = String(article.category_id) === String(categoryId)
-              return idMatch
+            // Se temos um categoryId real (não fallback), usar ele para filtrar
+            if (categoryId && !categoryId.startsWith('fallback-') && article.category_id) {
+              return String(article.category_id) === String(categoryId)
             }
             
-            // Se não tiver ID ou não der match, tenta por nome da categoria
+            // Para categorias fallback ou quando não temos category_id, filtrar por nome/slug
             const categoryLower = category.toLowerCase()
+            const categorySlugLower = categorySlug?.toLowerCase()
+            
+            // Verificar se o artigo tem dados de categoria relacionados
+            if (article.categories && article.categories.name) {
+              const articleCategoryName = article.categories.name.toLowerCase()
+              const articleCategorySlug = article.categories.slug?.toLowerCase()
+              return articleCategoryName === categoryLower || articleCategorySlug === categorySlugLower
+            }
+            
+            // Fallback para campos diretos no artigo
             const categoryNameMatch = article.category_name?.toLowerCase() === categoryLower
             const categoryMatch = article.category?.toLowerCase() === categoryLower
             
