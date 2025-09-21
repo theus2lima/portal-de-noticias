@@ -22,7 +22,7 @@ async function getCategoryBySlug(slug: string): Promise<CategoryData | null> {
     const timeoutId = setTimeout(() => controller.abort(), 8000) // 8s timeout
     
     const response = await fetch(`${baseUrl}/api/categories`, {
-      next: { revalidate: 300 },
+      next: { revalidate: 30 }, // Cache de 30 segundos para mudanças aparecerem mais rápido
       headers: {
         'Content-Type': 'application/json'
       },
@@ -119,10 +119,12 @@ export default async function DynamicCategoryPage({ params }: { params: { slug: 
       '#3B82F6': 'bg-gradient-to-br from-blue-900 to-blue-800',
       '#D97706': 'bg-gradient-to-br from-amber-900 to-amber-800',
       '#16A34A': 'bg-gradient-to-br from-green-900 to-green-800',
+      '#10B981': 'bg-gradient-to-br from-emerald-900 to-emerald-800',
       '#BE185D': 'bg-gradient-to-br from-pink-900 to-pink-800',
       '#7C2D12': 'bg-gradient-to-br from-amber-800 to-amber-900',
       '#374151': 'bg-gradient-to-br from-gray-600 to-gray-700',
-      '#1F2937': 'bg-gradient-to-br from-gray-800 to-gray-900'
+      '#1F2937': 'bg-gradient-to-br from-gray-800 to-gray-900',
+      '#1E3A8A': 'bg-gradient-to-br from-blue-900 to-blue-800'
     }
     
     return colorMap[color] || 'bg-gradient-to-br from-primary-900 to-primary-800'
