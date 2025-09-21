@@ -16,6 +16,7 @@ interface SiteConfig {
   siteName: string
   siteDescription: string
   siteUrl: string
+  siteLogo: string
   
   // Cabeçalho
   headerText: string
@@ -50,6 +51,7 @@ const defaultConfig: SiteConfig = {
   siteName: 'Radar Noroeste PR',
   siteDescription: 'Informação de qualidade, sempre atualizada. Acompanhe as principais notícias do Brasil e do mundo.',
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://radarnoroestepr.com.br',
+  siteLogo: '/icon.svg',
   
   headerText: '📍 Últimas notícias em tempo real',
   

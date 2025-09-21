@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { Search, Menu, X, Facebook, Twitter, Instagram, MessageCircle, LinkIcon } from 'lucide-react'
 import { useCategoriesContext } from '@/contexts/CategoriesContext'
 import { useSiteConfig } from '@/hooks/useSiteConfig'
+import { useSystemSettings } from '@/hooks/useSystemSettings'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -18,6 +19,9 @@ const Header = () => {
   
   // Usar configurações do site
   const { config, loading: configLoading } = useSiteConfig()
+  
+  // Usar configurações do sistema para logo
+  const { settings } = useSystemSettings()
   
   // Mapear ícones para componentes
   const iconMap = {
@@ -82,12 +86,16 @@ const Header = () => {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3">
             <Image 
-              src="/logo.png" 
-              alt="Radar Noroeste PR" 
+              src={settings.logo || config.siteLogo || "/icon.svg"}
+              alt={config.siteName || settings.siteName || "Radar Noroeste PR"}
               width={180} 
               height={60}
               className="h-12 w-auto"
               priority
+              onError={(e) => {
+                // Fallback para icon.svg se a logo configurada falhar
+                (e.target as HTMLImageElement).src = '/icon.svg'
+              }}
             />
             <div className="hidden lg:block">
               <p className="text-sm text-neutral-600">Seu portal de notícias confiável</p>
