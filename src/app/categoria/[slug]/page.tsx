@@ -40,7 +40,7 @@ async function getCategoryBySlug(slug: string): Promise<CategoryData | null> {
       }
     }
     
-    console.error('Erro ao buscar categoria da API:', response.status)
+    console.log('Categoria não encontrada na API, usando fallback')
   } catch (error) {
     console.error('Erro ao buscar categoria:', error)
   }
