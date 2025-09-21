@@ -1,19 +1,16 @@
-'use client'
-
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import Head from 'next/head'
+import { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import ShareButtons from '@/components/ShareButtons'
 import LeadForm from '@/components/LeadForm'
 import GoogleAd from '@/components/GoogleAd'
-import { useSiteConfig } from '@/hooks/useSiteConfig'
+import ArticleClient from './ArticleClient'
+import { generateSEO, generateArticleSchema } from '@/lib/seo'
 import { 
   ArrowLeft, 
   Clock, 
-  User, 
   Eye, 
-  Share2, 
   Calendar,
   FileText
 } from 'lucide-react'
@@ -44,195 +41,108 @@ interface Article {
   published_at: string
 }
 
-export default function ArticlePage({ params }: ArticlePageProps) {
-  const [article, setArticle] = useState<Article | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [relatedArticles, setRelatedArticles] = useState<Article[]>([])
-  const [moreArticles, setMoreArticles] = useState<Article[]>([])
-  const [showMoreArticles, setShowMoreArticles] = useState(false)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const { config } = useSiteConfig()
-
-  useEffect(() => {
-    const fetchArticle = async () => {
-      try {
-        const response = await fetch(`/api/articles/by-slug/${params.slug}`)
-        if (!response.ok) {
-          if (response.status === 404) {
-            setError('Artigo não encontrado')
-          } else {
-            setError('Erro ao carregar artigo')
-          }
-          return
-        }
-        const data = await response.json()
-        setArticle(data.data)
-        
-        // Buscar artigos relacionados da mesma categoria
-        if (data.data.category_id) {
-          const relatedResponse = await fetch(`/api/articles?status=published&category=${data.data.category_id}&limit=3`)
-          if (relatedResponse.ok) {
-            const relatedData = await relatedResponse.json()
-            setRelatedArticles(relatedData.data?.filter((a: Article) => a.id !== data.data.id) || [])
-          }
-        }
-      } catch (err) {
-        setError('Erro ao carregar artigo')
-        console.error('Erro ao buscar artigo:', err)
-      } finally {
-        setLoading(false)
-      }
+// Função para buscar dados do artigo
+async function getArticle(slug: string): Promise<Article | null> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3000'
+    
+    const response = await fetch(`${baseUrl}/api/articles/by-slug/${slug}`, {
+      next: { revalidate: 300 } // Revalidar a cada 5 minutos
+    })
+    
+    if (!response.ok) {
+      return null
     }
-
-    fetchArticle()
-  }, [params.slug])
-
-  // Atualizar meta tags dinamicamente
-  useEffect(() => {
-    if (typeof document !== 'undefined' && article) {
-      // Atualizar título da página
-      document.title = `${article.title} - ${config.siteName}`
-      
-      // Função auxiliar para atualizar ou criar meta tag
-      const updateMetaTag = (property: string, content: string, isProperty = true) => {
-        const selector = isProperty ? `meta[property="${property}"]` : `meta[name="${property}"]`
-        let meta = document.querySelector(selector) as HTMLMetaElement
-        
-        if (!meta) {
-          meta = document.createElement('meta')
-          if (isProperty) {
-            meta.setAttribute('property', property)
-          } else {
-            meta.setAttribute('name', property)
-          }
-          document.head.appendChild(meta)
-        }
-        meta.setAttribute('content', content)
-      }
-      
-      // Meta tags básicas
-      updateMetaTag('description', article.excerpt || article.subtitle || `Leia mais sobre ${article.title} no ${config.siteName}`, false)
-      updateMetaTag('keywords', article.keywords?.join(', ') || '', false)
-      
-      // Open Graph tags
-      const baseUrl = config.siteUrl || (typeof window !== 'undefined' ? window.location.origin : '')
-      const shareUrl = `${baseUrl}/noticia/${article.slug}`
-      const ogImage = article.featured_image || `${baseUrl}/default-og-image.png`
-      
-      updateMetaTag('og:type', 'article')
-      updateMetaTag('og:title', article.title)
-      updateMetaTag('og:description', article.excerpt || article.subtitle || `Leia mais sobre ${article.title} no ${config.siteName}`)
-      updateMetaTag('og:url', shareUrl)
-      updateMetaTag('og:image', ogImage)
-      updateMetaTag('og:image:width', '1200')
-      updateMetaTag('og:image:height', '630')
-      updateMetaTag('og:site_name', config.siteName)
-      updateMetaTag('og:locale', 'pt_BR')
-      
-      // Twitter Card tags
-      updateMetaTag('twitter:card', 'summary_large_image', false)
-      updateMetaTag('twitter:title', article.title, false)
-      updateMetaTag('twitter:description', article.excerpt || article.subtitle || `Leia mais sobre ${article.title} no ${config.siteName}`, false)
-      updateMetaTag('twitter:image', ogImage, false)
-      
-      // Article specific tags
-      updateMetaTag('article:author', article.author_name)
-      updateMetaTag('article:published_time', article.published_at)
-      updateMetaTag('article:section', article.category_name)
-      if (article.keywords) {
-        article.keywords.forEach(tag => {
-          const meta = document.createElement('meta')
-          meta.setAttribute('property', 'article:tag')
-          meta.setAttribute('content', tag)
-          document.head.appendChild(meta)
-        })
-      }
+    
+    const data = await response.json()
+    return data.data
+  } catch (error) {
+    console.error('Erro ao buscar artigo:', error)
+    return null
+  }
+}
+// Gerar metadata dinamicamente
+export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
+  const article = await getArticle(params.slug)
+  
+  if (!article) {
+    return {
+      title: 'Artigo não encontrado - Radar Noroeste PR',
+      description: 'O artigo solicitado não foi encontrado.',
     }
-  }, [article, config])
+  }
+  
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://radarnoroestepr.com.br'
+  const articleUrl = `${baseUrl}/noticia/${article.slug}`
+  
+  // Debug: verificar se featured_image existe
+  console.log('Article data for meta tags:', {
+    slug: article.slug,
+    title: article.title,
+    featured_image: article.featured_image,
+    hasImage: !!article.featured_image
+  })
+  
+  // Validar se featured_image é uma URL válida
+  let ogImage = `${baseUrl}/og-image.svg` // fallback padrão
+  
+  if (article.featured_image && 
+      (article.featured_image.startsWith('http://') || 
+       article.featured_image.startsWith('https://') ||
+       article.featured_image.startsWith('/'))
+     ) {
+    // Se a imagem começa com '/', adicionar baseUrl
+    ogImage = article.featured_image.startsWith('/') 
+      ? `${baseUrl}${article.featured_image}`
+      : article.featured_image
+    
+    console.log('Using article featured_image:', ogImage)
+  } else {
+    console.log('Using fallback og-image.svg:', ogImage)
+  }
+  
+  return generateSEO({
+    title: article.title,
+    description: article.excerpt || article.subtitle || `Leia mais sobre ${article.title} no Radar Noroeste PR`,
+    keywords: article.keywords || [article.category_name.toLowerCase(), 'notícias', 'paraná'],
+    image: ogImage,
+    url: articleUrl,
+    type: 'article',
+    publishedTime: article.published_at,
+    modifiedTime: article.updated_at,
+    author: article.author_name,
+    category: article.category_name,
+    tags: article.keywords || []
+  })
+}
 
-  // Hook para detectar scroll e carregar mais artigos
-  useEffect(() => {
-    if (!article) return
+export default async function ArticlePage({ params }: ArticlePageProps) {
+  const article = await getArticle(params.slug)
+  
+  if (!article) {
+    notFound()
+  }
 
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + window.innerHeight
-      const documentHeight = document.documentElement.scrollHeight
-      const scrollPercentage = (scrollPosition / documentHeight) * 100
-
-      // Quando o usuário rolar 70% da página, mostrar mais artigos
-      if (scrollPercentage > 70 && !showMoreArticles && !isLoadingMore && moreArticles.length === 0) {
-        setIsLoadingMore(true)
-        loadMoreArticles()
-      }
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [article, showMoreArticles, isLoadingMore, moreArticles, relatedArticles])
-
-  // Função para carregar mais artigos
-  const loadMoreArticles = async () => {
-    if (!article) return
-
+  // Buscar artigos relacionados no servidor
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL 
+    ? `https://${process.env.VERCEL_URL}` 
+    : 'http://localhost:3000'
+  
+  let relatedArticles: Article[] = []
+  if (article.category_id) {
     try {
-      // Buscar artigos recentes, excluindo o atual e os relacionados
-      const excludeIds = [article.id, ...relatedArticles.map(a => a.id)]
-      const response = await fetch(`/api/articles?status=published&limit=6`)
-      
-      if (response.ok) {
-        const data = await response.json()
-        const filteredArticles = data.data?.filter((a: Article) => !excludeIds.includes(a.id)) || []
-        setMoreArticles(filteredArticles.slice(0, 6))
-        setShowMoreArticles(true)
+      const relatedResponse = await fetch(`${baseUrl}/api/articles?status=published&category=${article.category_id}&limit=3`, {
+        next: { revalidate: 300 }
+      })
+      if (relatedResponse.ok) {
+        const relatedData = await relatedResponse.json()
+        relatedArticles = relatedData.data?.filter((a: Article) => a.id !== article.id) || []
       }
     } catch (error) {
-      console.error('Erro ao carregar mais artigos:', error)
-    } finally {
-      setIsLoadingMore(false)
+      console.error('Erro ao buscar artigos relacionados:', error)
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-neutral-50">
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto animate-pulse">
-            <div className="h-8 bg-neutral-200 rounded mb-4 w-1/4"></div>
-            <div className="h-12 bg-neutral-200 rounded mb-4"></div>
-            <div className="h-6 bg-neutral-200 rounded mb-8 w-3/4"></div>
-            <div className="h-96 bg-neutral-200 rounded mb-8"></div>
-            <div className="space-y-4">
-              <div className="h-4 bg-neutral-200 rounded"></div>
-              <div className="h-4 bg-neutral-200 rounded"></div>
-              <div className="h-4 bg-neutral-200 rounded w-2/3"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !article) {
-    return (
-      <div className="min-h-screen bg-neutral-50">
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto text-center">
-            <FileText className="mx-auto h-16 w-16 text-neutral-400 mb-4" />
-            <h1 className="text-2xl font-bold text-neutral-900 mb-2">
-              {error || 'Artigo não encontrado'}
-            </h1>
-            <p className="text-neutral-600 mb-6">
-              O artigo que você está procurando não existe ou foi removido.
-            </p>
-            <Link href="/" className="btn-primary">
-              <ArrowLeft size={16} className="mr-2" />
-              Voltar ao início
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   const formatDate = (dateString: string) => {
@@ -256,42 +166,33 @@ export default function ArticlePage({ params }: ArticlePageProps) {
     return colors[category] || 'bg-primary-900'
   }
 
-  // Construir URL pública correta com fallback para desenvolvimento
-  const getBaseUrl = () => {
-    // Se estivermos no browser
-    if (typeof window !== 'undefined') {
-      const currentOrigin = window.location.origin
-      const currentHost = window.location.hostname
-      
-      // Em desenvolvimento (localhost) sempre usar a origem atual
-      if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
-        return currentOrigin
-      }
-    }
-    
-    // Usar configuração ou fallback
-    let url = config.siteUrl || (typeof window !== 'undefined' ? window.location.origin : '')
-    
-    // Garantir protocolo HTTPS em produção e remover barra final
-    if (url && !url.includes('localhost')) {
-      url = url.replace(/^http:/, 'https:')
-    }
-    
-    // Remover barra final se existir
-    return url.replace(/\/$/, '')
-  }
-  
-  const baseUrl = getBaseUrl()
-  const shareUrl = `${baseUrl}/noticia/${article.slug}`
-  const shareText = `${article.title} - ${config.siteName}`
-  
-  // Meta dados para Open Graph
-  const ogTitle = article.title
-  const ogDescription = article.excerpt || article.subtitle || `Leia mais sobre ${article.title} no ${config.siteName}`
-  const ogImage = article.featured_image || `${baseUrl}/default-og-image.png`
+  // URLs para compartilhamento
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://radarnoroestepr.com.br'
+  const shareUrl = `${siteUrl}/noticia/${article.slug}`
+  const shareText = `${article.title} - Radar Noroeste PR`
+
+  // Dados estruturados JSON-LD para SEO
+  const articleSchema = generateArticleSchema({
+    headline: article.title,
+    description: article.excerpt || article.subtitle || `Leia mais sobre ${article.title} no Radar Noroeste PR`,
+    image: article.featured_image || `${siteUrl}/og-image.svg`,
+    datePublished: article.published_at,
+    dateModified: article.updated_at,
+    author: article.author_name,
+    category: article.category_name,
+    url: shareUrl
+  })
 
   return (
     <div className="min-h-screen bg-neutral-50">
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(articleSchema),
+        }}
+      />
+      
       {/* Breadcrumb */}
       <div className="bg-white border-b border-neutral-200">
         <div className="container mx-auto px-4 py-4">
@@ -511,98 +412,8 @@ export default function ArticlePage({ params }: ArticlePageProps) {
         </div>
       </div>
       
-      {/* Mais Artigos - carregados ao rolar a página */}
-      {(showMoreArticles || isLoadingMore) && (
-        <section className="py-12 bg-white">
-          <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-neutral-900 mb-4">
-                  Mais Artigos para Você
-                </h2>
-                <p className="text-neutral-600">
-                  Continue navegando e descubra mais conteúdo interessante
-                </p>
-              </div>
-              
-              {isLoadingMore ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[...Array(6)].map((_, index) => (
-                    <div key={index} className="bg-white rounded-lg border border-neutral-200 p-4 animate-pulse">
-                      <div className="h-48 bg-neutral-200 rounded-lg mb-4"></div>
-                      <div className="h-4 bg-neutral-200 rounded mb-2 w-1/4"></div>
-                      <div className="h-6 bg-neutral-200 rounded mb-2"></div>
-                      <div className="h-4 bg-neutral-200 rounded w-3/4"></div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {moreArticles.map(moreArticle => (
-                    <Link 
-                      key={moreArticle.id}
-                      href={`/noticia/${moreArticle.slug}`}
-                      className="group bg-white rounded-lg border border-neutral-200 overflow-hidden hover:shadow-lg transition-all duration-300"
-                    >
-                      <div className="relative h-48">
-                        {moreArticle.featured_image ? (
-                          <Image
-                            src={moreArticle.featured_image}
-                            alt={moreArticle.title}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-neutral-200 flex items-center justify-center">
-                            <FileText className="h-12 w-12 text-neutral-400" />
-                          </div>
-                        )}
-                        <div className="absolute top-3 left-3">
-                          <span className={`px-2 py-1 text-xs font-semibold text-white rounded ${getCategoryColor(moreArticle.category_name)}`}>
-                            {moreArticle.category_name}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="p-4">
-                        <h3 className="font-bold text-neutral-900 group-hover:text-primary-600 transition-colors duration-200 line-clamp-2 mb-2">
-                          {moreArticle.title}
-                        </h3>
-                        <p className="text-neutral-600 text-sm line-clamp-3 mb-3">
-                          {moreArticle.excerpt}
-                        </p>
-                        
-                        <div className="flex items-center justify-between text-xs text-neutral-500">
-                          <div className="flex items-center space-x-1">
-                            <Clock size={12} />
-                            <span>{moreArticle.reading_time} min</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Eye size={12} />
-                            <span>{moreArticle.views_count.toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-              
-              {showMoreArticles && moreArticles.length > 0 && (
-                <div className="text-center mt-8">
-                  <Link 
-                    href="/noticias"
-                    className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200"
-                  >
-                    <span>Ver Todas as Notícias</span>
-                    <ArrowLeft size={16} className="rotate-180" />
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Componente cliente para funcionalidades interativas */}
+      <ArticleClient initialArticle={article} />
       
       {/* Formulário de cadastro WhatsApp */}
       <LeadForm />
