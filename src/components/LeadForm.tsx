@@ -4,7 +4,11 @@ import { useState } from 'react'
 import { User, Phone, MapPin, Mail, Send, CheckCircle } from 'lucide-react'
 import { LeadsStorage } from '@/utils/localStorage'
 
-const LeadForm = () => {
+interface LeadFormProps {
+  source?: string
+}
+
+const LeadForm = ({ source = 'website' }: LeadFormProps) => {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -84,7 +88,7 @@ const LeadForm = () => {
         phone: formData.phone.trim(),
         city: formData.city.trim(),
         email: formData.email?.trim() || null,
-        source: 'website',
+        source: source,
         message: null,
         is_contacted: false,
         notes: null
@@ -111,7 +115,7 @@ const LeadForm = () => {
             phone: formData.phone,
             city: formData.city,
             email: formData.email || undefined,
-            source: 'website'
+            source: source
           }),
         })
 

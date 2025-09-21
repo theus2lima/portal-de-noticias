@@ -34,8 +34,12 @@ export function generateSEO({
 
   const allKeywords = [...keywords, ...tags].join(', ')
 
+  // Garantir que a URL base não seja duplicada
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://radarnoroestepr.com.br'
+  const cleanUrl = url.startsWith('http') ? url : `${baseUrl}${url.startsWith('/') ? url : '/' + url}`
+  
   const metadata: Metadata = {
-    metadataBase: new URL('https://radarnoroestepr.com.br'),
+    metadataBase: new URL(baseUrl),
     title: fullTitle,
     description,
     keywords: allKeywords,
@@ -54,12 +58,12 @@ export function generateSEO({
       },
     },
     alternates: {
-      canonical: url,
+      canonical: cleanUrl,
     },
     openGraph: {
       type: type as any,
       locale: 'pt_BR',
-      url,
+      url: cleanUrl,
       siteName: 'Radar Noroeste PR',
       title: fullTitle,
       description,

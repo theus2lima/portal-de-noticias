@@ -92,8 +92,8 @@ export function getCategoryConfig(categoryName: string): CategoryConfig {
 }
 
 /**
- * Template padrão para mensagem do WhatsApp
- * Formato: emoji + título em negrito + resumo + call-to-action + link
+ * Template simples para mensagem do WhatsApp
+ * Formato simplificado: apenas título + call-to-action + link (igual ao Diário do Noroeste)
  */
 export function generateWhatsAppMessage(
   title: string,
@@ -101,22 +101,9 @@ export function generateWhatsAppMessage(
   url: string,
   categoryName: string
 ): string {
-  const emoji = getCategoryEmoji(categoryName);
-  
-  // Limitar resumo para evitar mensagens muito longas
-  const maxSummaryLength = 200;
-  const truncatedSummary = summary.length > maxSummaryLength 
-    ? `${summary.substring(0, maxSummaryLength)}...` 
-    : summary;
+  const message = `${title}
 
-  const message = `${emoji} *${title}*
-
-${truncatedSummary}
-
-📰 *${categoryName}* | Radar Noroeste
-🔗 Leia completo: ${url}
-
-#RadarNoroeste #${categoryName.replace(' ', '')}`;
+Leia a notícia completa: ${url}`;
 
   return message;
 }
