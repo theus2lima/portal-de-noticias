@@ -1,173 +1,149 @@
-# Portal de Notícias
+# News Portal
 
-Um portal de notícias moderno e responsivo construído com Next.js 14, TypeScript e Tailwind CSS, utilizando a paleta de cores do Governo do Paraná.
+Portal de notícias completo com painel administrativo, curadoria automatizada de notícias via IA, captura de leads e analytics.
 
-## 🚀 Características
+## Tecnologias
 
-### Funcionalidades Principais
-- ✅ **Página Inicial** com carrossel de manchetes
-- ✅ **Categorias** (Política, Economia, Esportes, Cultura, Cidades)
-- ✅ **Seção "Mais Lidas"** com ranking de popularidade
-- ✅ **Formulário de Leads** para captura de contatos
-- ✅ **Design Responsivo** (mobile-first)
-- ⏳ **Busca Global** com autocomplete
-- ⏳ **Painel Administrativo** (CMS interno)
-- ⏳ **Integração WhatsApp** para distribuição automática
-- ⏳ **Sistema de Comentários**
-- ⏳ **SEO Otimizado** com sitemap dinâmico
-
-### Tecnologias Utilizadas
-- **Frontend**: Next.js 14 com App Router
+- **Framework**: Next.js 14 (App Router)
 - **Linguagem**: TypeScript
 - **Estilização**: Tailwind CSS
-- **Ícones**: Lucide React
-- **Banco de Dados**: PostgreSQL (planejado)
-- **ORM**: Prisma (planejado)
-- **Autenticação**: JWT (planejado)
+- **Banco de dados**: Supabase (PostgreSQL)
+- **ORM**: Prisma
+- **IA**: OpenAI (classificação e curadoria de notícias)
+- **Autenticação**: JWT + bcryptjs
+- **Deploy**: Vercel
 
-## 🎨 Design
+## Funcionalidades
 
-O projeto utiliza a paleta de cores do Governo do Paraná:
-- **Azul Principal**: #1E3A8A (azul escuro)
-- **Azul Claro**: #3B82F6 (menus e navegação)
-- **Verde Destaque**: #16A34A (destaques e CTAs)
-- **Verde Claro**: #10B981 (acentos)
-- **Neutros**: Tons de cinza para textos e fundos
+### Portal Público
+- Página inicial com carrossel Hero, seções de categorias e notícias mais lidas
+- Página de notícia individual com compartilhamento e rastreamento de visualizações
+- Listagem de notícias por categoria (`/categoria/[slug]`)
+- Busca de notícias (`/buscar`)
+- Landing pages dinâmicas com múltiplos templates (`/landing/[slug]`)
+- Feed RSS (`/rss`)
+- Sitemap automático
+- Formulário de captação de leads
 
-## 🏗️ Estrutura do Projeto
+### Painel Administrativo (`/admin`)
+- **Dashboard** — estatísticas de artigos, visualizações e leads em tempo real
+- **Artigos** — criação, edição e publicação com editor rico e upload de imagens
+- **Curadoria** — fluxo de aprovação/rejeição/publicação de notícias coletadas automaticamente
+- **Fontes de notícias** — gerenciamento de fontes RSS e scraping
+- **Google News** — coleta automática via Google News
+- **Categorias** — gestão de categorias com notificador em tempo real
+- **Leads** — visualização e exportação de leads capturados
+- **Landing Pages** — criador de páginas de conversão com 5 templates
+- **Analytics** — relatórios de visualizações, compartilhamentos e retenção de leitores
+- **WhatsApp** — configuração de grupos e envio automático de notícias
+- **Configurações do site** — personalização geral, SEO e identidade visual
+- **Usuários** — gerenciamento de usuários administradores
+
+## Estrutura do Projeto
 
 ```
-news-portal/
-├── src/
-│   ├── app/
-│   │   ├── globals.css
-│   │   ├── layout.tsx
-│   │   └── page.tsx
-│   ├── components/
-│   │   ├── Header.tsx
-│   │   ├── Footer.tsx
-│   │   ├── Hero.tsx
-│   │   ├── CategorySection.tsx
-│   │   ├── NewsSection.tsx
-│   │   ├── MostRead.tsx
-│   │   └── LeadForm.tsx
-│   ├── lib/
-│   └── types/
-├── public/
-├── package.json
-├── tailwind.config.js
-├── tsconfig.json
-└── next.config.js
+src/
+├── app/
+│   ├── api/                    # API Routes (Next.js)
+│   │   ├── articles/           # CRUD de artigos
+│   │   ├── curation/           # Curadoria de notícias
+│   │   ├── news-collector/     # Coleta automática (RSS, scraping, Google News)
+│   │   ├── analytics/          # Visualizações, compartilhamentos e retenção
+│   │   ├── leads/              # Gerenciamento de leads
+│   │   ├── landing-pages/      # Landing pages dinâmicas
+│   │   ├── categories/         # Categorias
+│   │   ├── auth/               # Autenticação JWT
+│   │   └── settings/           # Configurações do sistema
+│   ├── admin/                  # Páginas do painel admin
+│   ├── noticia/[slug]/         # Página de artigo individual
+│   ├── categoria/[slug]/       # Listagem por categoria
+│   ├── landing/[slug]/         # Landing pages dinâmicas
+│   └── buscar/                 # Busca de notícias
+├── components/
+│   ├── templates/              # Templates de landing page (5 modelos)
+│   ├── admin/                  # Componentes exclusivos do admin
+│   ├── Dashboard/              # Layout do dashboard
+│   └── Layout/                 # Wrappers de layout
+├── contexts/                   # Context API (Auth, Categories, Notifications...)
+├── hooks/                      # Custom hooks (theme, settings, notifications)
+├── lib/                        # Utilitários internos (SEO, storage...)
+├── services/                   # Serviços externos (WhatsApp...)
+├── types/                      # Tipagens TypeScript
+└── utils/                      # Helpers (Supabase client, scraper, HTTP...)
 ```
 
-## 🚀 Como Executar
+## Configuração
 
 ### Pré-requisitos
-- Node.js 18+ 
-- npm ou yarn
+
+- Node.js 18+
+- Conta no [Supabase](https://supabase.com)
+- Conta na [OpenAI](https://platform.openai.com) (para curadoria com IA)
+
+### Variáveis de Ambiente
+
+Crie um arquivo `.env.local` na raiz do projeto:
+
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon
+SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key
+
+# OpenAI
+OPENAI_API_KEY=sua-openai-api-key
+
+# JWT
+JWT_SECRET=sua-chave-secreta-jwt
+
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
 ### Instalação
 
-1. Clone o repositório:
 ```bash
-git clone https://github.com/theus2lima/portal-de-noticias.git
-cd portal-de-noticias
-```
-
-2. Instale as dependências:
-```bash
+# Instalar dependências
 npm install
-```
 
-3. Execute o servidor de desenvolvimento:
-```bash
+# Configurar banco de dados
+# Acesse o SQL Editor no Supabase e execute: database-schema.sql
+
+# Iniciar em desenvolvimento
 npm run dev
 ```
 
-4. Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
+Acesse [http://localhost:3000](http://localhost:3000) no navegador.
 
-## 📱 Funcionalidades Implementadas
+### Build para produção
 
-### ✅ Página Inicial
-- Carrossel de manchetes principais com auto-play
-- Ticker de notícias em tempo real
-- Seções organizadas por categoria
-- Grid de notícias recentes
-- Seção "Mais Lidas" com ranking
+```bash
+npm run build
+npm run start
+```
 
-### ✅ Componentes
-- **Header**: Navigation responsiva com busca
-- **Hero**: Carrossel de manchetes com overlays
-- **CategorySection**: Blocos coloridos para cada categoria
-- **NewsSection**: Grid de notícias com featured article
-- **MostRead**: Ranking de artigos populares
-- **LeadForm**: Formulário de captura com validação
-- **Footer**: Links organizados e newsletter
+## Scripts
 
-### ✅ Design Responsivo
-- Layout mobile-first
-- Breakpoints otimizados
-- Componentes adaptativos
-- Navegação mobile com menu hambúrguer
+| Comando | Descrição |
+|---------|-----------|
+| `npm run dev` | Inicia o servidor de desenvolvimento |
+| `npm run build` | Gera o build de produção |
+| `npm run start` | Inicia o servidor de produção |
+| `npm run lint` | Executa o ESLint |
 
-## 🔄 Próximas Funcionalidades
+## Curadoria de Notícias com IA
 
-### Backend e Database
-- [ ] Setup do banco PostgreSQL
-- [ ] Modelos Prisma para articles, categories, users, leads
-- [ ] API routes para CRUD operations
-- [ ] Sistema de autenticação JWT
+O sistema coleta notícias de fontes RSS e web scraping, classifica automaticamente por categoria usando a OpenAI e apresenta um fluxo de curadoria no admin:
 
-### CMS Administrativo
-- [ ] Login para equipe de redação
-- [ ] Interface para criar/editar artigos
-- [ ] Upload de imagens
-- [ ] Gerenciamento de categorias
-- [ ] Dashboard com analytics
+1. **Coleta** — notícias são coletadas via RSS, scraping ou Google News
+2. **Classificação** — a IA sugere categoria e pontuação de confiança
+3. **Revisão** — curador aprova, rejeita ou edita cada notícia
+4. **Publicação** — notícias aprovadas são publicadas no portal
 
-### Funcionalidades Avançadas
-- [ ] Busca global com autocomplete
-- [ ] Integração WhatsApp Business API
-- [ ] Sistema de comentários
-- [ ] Exportação CSV de leads
-- [ ] SEO com sitemap dinâmico
-- [ ] Meta tags automáticas
+## Landing Pages
 
-## 🎯 Objetivos de Negócio
+O sistema suporta criação de landing pages customizadas com 5 templates visuais (Minimal, Bold, Modern, Business e Default) e formulário de captura de leads integrado. Cada lead pode ser direcionado a um grupo de WhatsApp configurado.
 
-O portal foi projetado para:
-1. **Informar**: Oferecer notícias confiáveis e atualizadas
-2. **Engajar**: Manter os leitores interessados e voltando
-3. **Capturar**: Gerar leads qualificados através do WhatsApp
-4. **Monetizar**: Espaços para banners publicitários
-5. **Escalar**: Arquitetura preparada para crescimento
+## Deploy
 
-## 📊 Performance e SEO
-
-- **Lighthouse Score**: Otimizado para 90+ em todas as métricas
-- **Core Web Vitals**: LCP, FID e CLS otimizados
-- **Meta Tags**: Configuração automática
-- **Structured Data**: Implementação para notícias
-- **Sitemap**: Geração dinâmica
-- **Images**: Otimização automática com Next.js
-
-## 🤝 Contribuição
-
-Para contribuir com o projeto:
-1. Fork o repositório
-2. Crie uma branch para sua feature
-3. Faça commit das mudanças
-4. Push para a branch
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
-
-## 📞 Contato
-
-Para dúvidas sobre o projeto, entre em contato através do email: contato@portalnoticias.com.br
-
----
-
-**Portal de Notícias** - Sua fonte confiável de informação 📰
+O projeto está preparado para deploy na **Vercel** com `@vercel/speed-insights` já integrado. Basta conectar o repositório e configurar as variáveis de ambiente no painel da Vercel.

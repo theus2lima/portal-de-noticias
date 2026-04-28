@@ -54,6 +54,9 @@ export default function NewArticlePage() {
   const [tags, setTags] = useState<string[]>([])
   const [currentTag, setCurrentTag] = useState('')
   const [showPreview, setShowPreview] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [uploadingGallery, setUploadingGallery] = useState(false)
+  const [galleryImages, setGalleryImages] = useState<Array<{url: string, filename: string, originalName: string}>>([])
 
   // Carregar categorias na inicialização
   useEffect(() => {
@@ -93,6 +96,131 @@ export default function NewArticlePage() {
     setTags(tags.filter(tag => tag !== tagToRemove))
   }
 
+  // Função para fazer upload de imagem
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validações no frontend
+    if (!file.type.startsWith('image/')) {
+      alert('Apenas arquivos de imagem são permitidos!')
+      return
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('O arquivo deve ter no máximo 2MB!')
+      return
+    }
+
+    setUploadingImage(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('image', file)
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro no upload')
+      }
+
+      // Atualizar o campo de imagem com a URL retornada
+      setFormData(prev => ({
+        ...prev,
+        featured_image: result.data.url,
+        image_alt: result.data.originalName.replace(/\.[^/.]+$/, '') // Nome sem extensão como alt inicial
+      }))
+
+      alert('Upload realizado com sucesso!')
+    } catch (error) {
+      console.error('Erro no upload:', error)
+      alert(error instanceof Error ? error.message : 'Erro no upload da imagem')
+    } finally {
+      setUploadingImage(false)
+      // Limpar o input para permitir o mesmo arquivo novamente
+      event.target.value = ''
+    }
+  }
+
+  // Função para abrir o seletor de arquivo
+  const handleUploadClick = () => {
+    document.getElementById('image-upload-input')?.click()
+  }
+
+  // Função para upload múltiplo de imagens
+  const handleGalleryUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    // Validar cada arquivo
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      if (!file.type.startsWith('image/')) {
+        alert(`Arquivo ${file.name} não é uma imagem válida!`)
+        return
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        alert(`Arquivo ${file.name} deve ter no máximo 2MB!`)
+        return
+      }
+    }
+
+    setUploadingGallery(true)
+
+    try {
+      const formData = new FormData()
+      for (let i = 0; i < files.length; i++) {
+        formData.append('images', files[i])
+      }
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro no upload')
+      }
+
+      // Adicionar imagens à galeria
+      setGalleryImages(prev => [...prev, ...result.data])
+      alert(`${result.data.length} imagem(ns) enviada(s) com sucesso!`)
+    } catch (error) {
+      console.error('Erro no upload:', error)
+      alert(error instanceof Error ? error.message : 'Erro no upload das imagens')
+    } finally {
+      setUploadingGallery(false)
+      // Limpar o input
+      event.target.value = ''
+    }
+  }
+
+  // Função para abrir seletor de múltiplas imagens
+  const handleGalleryUploadClick = () => {
+    document.getElementById('gallery-upload-input')?.click()
+  }
+
+  // Função para inserir imagem no conteúdo
+  const insertImageInContent = (imageUrl: string, altText: string) => {
+    const imageMarkdown = `\n\n![${altText}](${imageUrl})\n\n`
+    setFormData(prev => ({
+      ...prev,
+      content: prev.content + imageMarkdown
+    }))
+  }
+
+  // Função para remover imagem da galeria
+  const removeImageFromGallery = (index: number) => {
+    setGalleryImages(prev => prev.filter((_, i) => i !== index))
+  }
+
   const handleSubmit = async (e: React.FormEvent, status: 'draft' | 'published') => {
     e.preventDefault()
     setLoading(true)
@@ -102,6 +230,7 @@ export default function NewArticlePage() {
         ...formData,
         status,
         keywords: tags,
+        gallery_images: galleryImages,
         published_at: status === 'published' ? new Date().toISOString() : null
       }
 
@@ -237,7 +366,31 @@ export default function NewArticlePage() {
       .map((paragraph, index) => {
         if (paragraph.trim() === '') return null
         
-        // Simular alguns formatos markdown básicos
+        // Verificar se é uma imagem em Markdown
+        const imageMatch = paragraph.match(/!\[([^\]]*)\]\(([^)]+)\)/)
+        if (imageMatch) {
+          const [, altText, imageUrl] = imageMatch
+          return (
+            <div key={index} className="my-6">
+              <div className="relative w-full h-64 rounded-lg overflow-hidden">
+                <Image 
+                  src={imageUrl} 
+                  alt={altText || 'Imagem do artigo'} 
+                  fill 
+                  className="object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                  }}
+                />
+              </div>
+              {altText && (
+                <p className="text-sm text-neutral-600 text-center mt-2 italic">{altText}</p>
+              )}
+            </div>
+          )
+        }
+        
+        // Simular outros formatos markdown básicos
         let formatted = paragraph
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **bold**
           .replace(/\*(.*?)\*/g, '<em>$1</em>') // *italic*
@@ -547,10 +700,24 @@ export default function NewArticlePage() {
               <div className="border-2 border-dashed border-neutral-300 rounded-lg p-6 text-center">
                 <ImageIcon className="mx-auto h-12 w-12 text-neutral-400" />
                 <div className="mt-4">
-                  <button type="button" className="btn-outline text-sm flex items-center space-x-2 mx-auto">
+                  <button 
+                    type="button" 
+                    onClick={handleUploadClick}
+                    disabled={uploadingImage}
+                    className="btn-outline text-sm flex items-center space-x-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <Upload className="h-4 w-4" />
-                    <span>Upload de Imagem</span>
+                    <span>{uploadingImage ? 'Enviando...' : 'Upload de Imagem'}</span>
                   </button>
+                  
+                  {/* Input file invisível */}
+                  <input
+                    id="image-upload-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
                 </div>
                 <p className="mt-2 text-xs text-neutral-500">
                   PNG, JPG até 2MB
@@ -569,6 +736,82 @@ export default function NewArticlePage() {
                         e.currentTarget.style.display = 'none'
                       }}
                     />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Gallery Images */}
+          <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">Galeria de Imagens</h3>
+            
+            <div className="space-y-4">
+              <div className="border-2 border-dashed border-neutral-300 rounded-lg p-4 text-center">
+                <ImageIcon className="mx-auto h-8 w-8 text-neutral-400 mb-2" />
+                <button 
+                  type="button" 
+                  onClick={handleGalleryUploadClick}
+                  disabled={uploadingGallery}
+                  className="btn-outline text-sm flex items-center space-x-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Upload className="h-4 w-4" />
+                  <span>{uploadingGallery ? 'Enviando...' : 'Upload Múltiplo'}</span>
+                </button>
+                
+                {/* Input file invisível para múltiplas imagens */}
+                <input
+                  id="gallery-upload-input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleGalleryUpload}
+                  className="hidden"
+                />
+                
+                <p className="mt-2 text-xs text-neutral-500">
+                  Selecione várias imagens para inserir no artigo
+                </p>
+              </div>
+
+              {/* Lista de imagens da galeria */}
+              {galleryImages.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-neutral-700">Imagens Enviadas:</h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {galleryImages.map((image, index) => (
+                      <div key={index} className="flex items-center space-x-2 p-2 border border-neutral-200 rounded-lg">
+                        <div className="relative w-12 h-12 rounded overflow-hidden flex-shrink-0">
+                          <Image 
+                            src={image.url} 
+                            alt={image.originalName}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-neutral-800 truncate">{image.originalName}</p>
+                        </div>
+                        <div className="flex items-center space-x-1 flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => insertImageInContent(image.url, image.originalName.replace(/\.[^/.]+$/, ''))}
+                            className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                            title="Inserir no conteúdo"
+                          >
+                            Inserir
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeImageFromGallery(index)}
+                            className="p-1 text-red-600 hover:text-red-800 transition-colors"
+                            title="Remover"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

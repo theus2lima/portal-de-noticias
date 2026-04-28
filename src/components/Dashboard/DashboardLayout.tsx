@@ -12,9 +12,10 @@ import {
   FolderOpen, 
   Users, 
   MessageSquare, 
-  BarChart3, 
+  BarChart3,
   Settings,
   Database,
+  Image,
   Menu,
   X,
   LogOut,
@@ -185,6 +186,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     {
       title: 'Marketing & Leads',
       items: [
+        {
+          name: 'Banners',
+          href: '/admin/banners',
+          icon: Image,
+          description: 'Gerenciar publicidade',
+          badge: null
+        },
         {
           name: 'Landing Pages',
           href: '/admin/landing-pages',
