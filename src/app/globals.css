@@ -226,6 +226,110 @@ a {
   animation: menuSlideIn 0.2s ease-out;
 }
 
+/* ─── Photo Carousel (artigo público + editor admin) ──────────────────────── */
+.photo-carousel {
+  position: relative;
+  margin: 2rem 0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #111;
+  user-select: none;
+}
+
+/* track: scroll horizontal com snap */
+.photo-carousel-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.photo-carousel-track::-webkit-scrollbar { display: none; }
+
+/* cada item ocupa 100% da largura */
+.photo-carousel .carousel-item,
+.photo-carousel figure.carousel-item {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  margin: 0;
+  position: relative;
+  list-style: none;
+}
+
+.photo-carousel img.carousel-img,
+.photo-carousel figure img {
+  width: 100%;
+  height: 420px;
+  object-fit: cover;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .photo-carousel img.carousel-img,
+  .photo-carousel figure img { height: 240px; }
+}
+
+.photo-carousel figcaption.carousel-caption,
+.photo-carousel .carousel-caption {
+  text-align: center;
+  font-size: 0.8125rem;
+  color: rgba(255,255,255,0.75);
+  padding: 0.5rem 1rem;
+  background: rgba(0,0,0,0.5);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+/* Botões de navegação (injetados por JS) */
+.carousel-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: background 0.2s;
+  backdrop-filter: blur(4px);
+}
+.carousel-nav-btn:hover { background: rgba(0,0,0,0.75); }
+.carousel-nav-btn.prev { left: 10px; }
+.carousel-nav-btn.next { right: 10px; }
+
+/* Dots */
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  background: rgba(0,0,0,0.6);
+}
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.35);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  padding: 0;
+}
+.carousel-dot.active {
+  background: #fff;
+  transform: scale(1.25);
+}
+
 /* ─── TipTap Editor styles ─────────────────────────────────────────────────── */
 .ProseMirror {
   outline: none;

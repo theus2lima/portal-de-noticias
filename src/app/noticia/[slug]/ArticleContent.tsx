@@ -68,6 +68,73 @@ export default function ArticleContent({ article }: ArticleContentProps) {
     fetchRelatedArticles()
   }, [article])
 
+  // Inicializar carrosséis de fotos no conteúdo do artigo
+  useEffect(() => {
+    const initCarousels = () => {
+      const carousels = document.querySelectorAll<HTMLElement>('.photo-carousel:not([data-carousel-init])')
+      carousels.forEach((carousel) => {
+        carousel.setAttribute('data-carousel-init', '1')
+        const figures = Array.from(carousel.querySelectorAll<HTMLElement>('figure.carousel-item, .carousel-item'))
+        if (figures.length === 0) return
+
+        const track = document.createElement('div')
+        track.className = 'photo-carousel-track'
+        figures.forEach((fig) => track.appendChild(fig))
+        carousel.prepend(track)
+
+        if (figures.length <= 1) return
+
+        let current = 0
+        const scrollTo = (index: number) => {
+          current = Math.max(0, Math.min(figures.length - 1, index))
+          track.scrollTo({ left: figures[current].offsetLeft, behavior: 'smooth' })
+          dots.forEach((d, i) => d.classList.toggle('active', i === current))
+        }
+
+        const dotsEl = document.createElement('div')
+        dotsEl.className = 'carousel-dots'
+        const dots = figures.map((_, i) => {
+          const dot = document.createElement('button')
+          dot.className = `carousel-dot${i === 0 ? ' active' : ''}`
+          dot.setAttribute('aria-label', `Foto ${i + 1}`)
+          dot.addEventListener('click', () => scrollTo(i))
+          dotsEl.appendChild(dot)
+          return dot
+        })
+        carousel.appendChild(dotsEl)
+
+        const prevBtn = document.createElement('button')
+        prevBtn.className = 'carousel-nav-btn prev'
+        prevBtn.setAttribute('aria-label', 'Foto anterior')
+        prevBtn.innerHTML = '&#8249;'
+        prevBtn.addEventListener('click', () => scrollTo(current - 1))
+
+        const nextBtn = document.createElement('button')
+        nextBtn.className = 'carousel-nav-btn next'
+        nextBtn.setAttribute('aria-label', 'Próxima foto')
+        nextBtn.innerHTML = '&#8250;'
+        nextBtn.addEventListener('click', () => scrollTo(current + 1))
+
+        carousel.appendChild(prevBtn)
+        carousel.appendChild(nextBtn)
+
+        track.addEventListener('scroll', () => {
+          const w = track.offsetWidth
+          if (w > 0) {
+            const idx = Math.round(track.scrollLeft / w)
+            if (idx !== current) {
+              current = idx
+              dots.forEach((d, i) => d.classList.toggle('active', i === current))
+            }
+          }
+        }, { passive: true })
+      })
+    }
+
+    const timer = setTimeout(initCarousels, 150)
+    return () => clearTimeout(timer)
+  }, [article.content])
+
   // Registrar visualização do artigo
   useEffect(() => {
     const trackView = async () => {

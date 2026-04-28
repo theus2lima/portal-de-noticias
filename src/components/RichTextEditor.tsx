@@ -19,7 +19,7 @@ import {
   List, ListOrdered, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Link as LinkIcon, Image as ImageIcon, Youtube as YoutubeIcon,
   Highlighter, Minus, Quote, Undo, Redo, Type,
-  Video, Music, LayoutGrid, X, ExternalLink
+  Video, Music, LayoutGrid, X, ExternalLink, ImagePlus, Trash2, GripVertical
 } from 'lucide-react'
 
 // ─── Custom Node: MediaEmbed (Vimeo, Instagram, Flickr, generic iframe) ───────
@@ -136,6 +136,83 @@ const AudioEmbed = Node.create({
       wrapper.appendChild(audio)
 
       return { dom: wrapper }
+    }
+  },
+})
+
+// ─── Custom Node: PhotoGallery (lightweight CSS carousel) ────────────────────
+const PhotoGallery = Node.create({
+  name: 'photoGallery',
+  group: 'block',
+  atom: true,
+  draggable: true,
+
+  addAttributes() {
+    return {
+      photos: {
+        default: [],
+        parseHTML: (el) => {
+          try { return JSON.parse(el.getAttribute('data-photos') || '[]') } catch { return [] }
+        },
+        renderHTML: (attrs) => ({ 'data-photos': JSON.stringify(attrs.photos) }),
+      },
+    }
+  },
+
+  parseHTML() {
+    return [{ tag: 'div[data-gallery]' }]
+  },
+
+  renderHTML({ node }) {
+    const photos: Array<{ url: string; caption: string }> = node.attrs.photos || []
+    const figures = photos.map((p): any => {
+      const fig: any[] = ['figure', { class: 'carousel-item' },
+        ['img', { src: p.url, alt: p.caption || '', loading: 'lazy', class: 'carousel-img' }],
+      ]
+      if (p.caption) fig.push(['figcaption', { class: 'carousel-caption' }, p.caption])
+      return fig
+    })
+    return ['div', mergeAttributes({
+      'data-gallery': 'true',
+      'data-photos': JSON.stringify(photos),
+      class: 'photo-carousel my-6',
+    }), ...figures]
+  },
+
+  addNodeView() {
+    return ({ node }) => {
+      const photos: Array<{ url: string; caption: string }> = node.attrs.photos || []
+      const dom = document.createElement('div')
+      dom.setAttribute('data-gallery', 'true')
+      dom.className = 'my-4 rounded-lg border-2 border-dashed border-neutral-200 bg-neutral-50 p-3'
+
+      const label = document.createElement('div')
+      label.style.cssText = 'font-size:11px;color:#9ca3af;margin-bottom:8px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;'
+      label.textContent = `📷 Carrossel de fotos (${photos.length} foto${photos.length !== 1 ? 's' : ''})`
+      dom.appendChild(label)
+
+      const strip = document.createElement('div')
+      strip.style.cssText = 'display:flex;gap:6px;overflow-x:auto;padding:4px 0;'
+
+      if (photos.length === 0) {
+        const empty = document.createElement('span')
+        empty.textContent = 'Sem fotos adicionadas'
+        empty.style.cssText = 'color:#d1d5db;font-size:12px;'
+        strip.appendChild(empty)
+      } else {
+        photos.forEach((p) => {
+          const img = document.createElement('img')
+          img.src = p.url
+          img.alt = p.caption || ''
+          img.loading = 'lazy'
+          img.style.cssText = 'height:72px;width:108px;object-fit:cover;border-radius:6px;flex-shrink:0;'
+          img.onerror = () => { img.style.opacity = '0.3' }
+          strip.appendChild(img)
+        })
+      }
+
+      dom.appendChild(strip)
+      return { dom }
     }
   },
 })
@@ -280,6 +357,12 @@ export default function RichTextEditor({
   const [flickrUrl, setFlickrUrl] = useState('')
   const [colorValue, setColorValue] = useState('#000000')
 
+  // Gallery
+  const [galleryDialog, setGalleryDialog] = useState(false)
+  const [galleryPhotos, setGalleryPhotos] = useState<Array<{ url: string; caption: string }>>([])
+  const [galleryInputUrl, setGalleryInputUrl] = useState('')
+  const [galleryInputCaption, setGalleryInputCaption] = useState('')
+
   const colorInputRef = useRef<HTMLInputElement>(null)
 
   const editor = useEditor({
@@ -307,6 +390,7 @@ export default function RichTextEditor({
       }),
       MediaEmbed,
       AudioEmbed,
+      PhotoGallery,
       Placeholder.configure({ placeholder }),
     ],
     content: value || '',
@@ -389,6 +473,25 @@ export default function RichTextEditor({
     setAudioUrl('')
     setAudioTitle('')
   }, [editor, audioUrl, audioTitle])
+
+  const addGalleryPhoto = useCallback(() => {
+    if (!galleryInputUrl.trim()) return
+    setGalleryPhotos(prev => [...prev, { url: galleryInputUrl.trim(), caption: galleryInputCaption.trim() }])
+    setGalleryInputUrl('')
+    setGalleryInputCaption('')
+  }, [galleryInputUrl, galleryInputCaption])
+
+  const insertGallery = useCallback(() => {
+    if (!editor || galleryPhotos.length === 0) return
+    editor.chain().focus().insertContent({
+      type: 'photoGallery',
+      attrs: { photos: galleryPhotos },
+    }).run()
+    setGalleryDialog(false)
+    setGalleryPhotos([])
+    setGalleryInputUrl('')
+    setGalleryInputCaption('')
+  }, [editor, galleryPhotos])
 
   const insertFlickr = useCallback(() => {
     if (!editor || !flickrUrl) return
@@ -524,6 +627,9 @@ export default function RichTextEditor({
         </ToolbarBtn>
         <ToolbarBtn onClick={() => setFlickrDialog(true)} title="Inserir galeria Flickr">
           <LayoutGrid size={15} />
+        </ToolbarBtn>
+        <ToolbarBtn onClick={() => { setGalleryPhotos([]); setGalleryDialog(true) }} title="Inserir carrossel de fotos">
+          <ImagePlus size={15} />
         </ToolbarBtn>
         <ToolbarBtn onClick={() => setAudioDialog(true)} title="Inserir áudio">
           <Music size={15} />
@@ -662,6 +768,89 @@ export default function RichTextEditor({
             <div className="flex gap-2 justify-end pt-2">
               <button type="button" onClick={() => setFlickrDialog(false)} className="px-3 py-2 text-sm border border-neutral-300 rounded-lg">Cancelar</button>
               <button type="button" onClick={insertFlickr} className="px-3 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700">Inserir Galeria</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Photo Gallery / Carousel */}
+      {galleryDialog && (
+        <Modal title="Inserir Carrossel de Fotos" onClose={() => setGalleryDialog(false)}>
+          <div className="space-y-4">
+            <p className="text-xs text-neutral-500">
+              Cole URLs de imagens uma a uma. As fotos ficam em carrossel leve no artigo (lazy loading, sem peso).
+            </p>
+
+            {/* Add photo form */}
+            <div className="space-y-2 p-3 bg-neutral-50 rounded-lg border border-neutral-200">
+              <input
+                autoFocus
+                type="url"
+                value={galleryInputUrl}
+                onChange={(e) => setGalleryInputUrl(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addGalleryPhoto() } }}
+                placeholder="URL da foto (https://...)"
+                className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              <input
+                type="text"
+                value={galleryInputCaption}
+                onChange={(e) => setGalleryInputCaption(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addGalleryPhoto() } }}
+                placeholder="Legenda (opcional)"
+                className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              <button
+                type="button"
+                onClick={addGalleryPhoto}
+                disabled={!galleryInputUrl.trim()}
+                className="w-full py-2 text-sm bg-neutral-200 hover:bg-neutral-300 text-neutral-700 rounded-lg font-medium transition-colors disabled:opacity-40"
+              >
+                + Adicionar foto
+              </button>
+            </div>
+
+            {/* Photo list */}
+            {galleryPhotos.length > 0 && (
+              <div className="space-y-2 max-h-52 overflow-y-auto">
+                {galleryPhotos.map((photo, i) => (
+                  <div key={i} className="flex items-center gap-2 p-2 bg-white border border-neutral-200 rounded-lg">
+                    <img
+                      src={photo.url}
+                      alt=""
+                      className="w-14 h-10 object-cover rounded flex-shrink-0"
+                      onError={(e) => { e.currentTarget.style.opacity = '0.3' }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-neutral-600 truncate">{photo.url}</p>
+                      {photo.caption && <p className="text-xs text-neutral-400">{photo.caption}</p>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setGalleryPhotos(prev => prev.filter((_, j) => j !== i))}
+                      className="p-1 text-red-400 hover:text-red-600 flex-shrink-0"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {galleryPhotos.length === 0 && (
+              <p className="text-center text-xs text-neutral-400 py-2">Nenhuma foto adicionada ainda</p>
+            )}
+
+            <div className="flex gap-2 justify-end pt-1">
+              <button type="button" onClick={() => setGalleryDialog(false)} className="px-3 py-2 text-sm border border-neutral-300 rounded-lg">Cancelar</button>
+              <button
+                type="button"
+                onClick={insertGallery}
+                disabled={galleryPhotos.length === 0}
+                className="px-3 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-40"
+              >
+                Inserir Carrossel ({galleryPhotos.length} foto{galleryPhotos.length !== 1 ? 's' : ''})
+              </button>
             </div>
           </div>
         </Modal>
