@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import Groq from 'groq-sdk'
 import * as cheerio from 'cheerio'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' })
 
 async function fetchArticleContent(url: string): Promise<string> {
   try {
@@ -54,9 +54,9 @@ async function fetchArticleContent(url: string): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GROQ_API_KEY) {
       return NextResponse.json(
-        { success: false, error: 'GEMINI_API_KEY não configurada. Adicione em Variáveis de Ambiente no Vercel.' },
+        { success: false, error: 'GROQ_API_KEY não configurada. Adicione em Variáveis de Ambiente no Vercel.' },
         { status: 400 }
       )
     }
@@ -96,19 +96,16 @@ Responda APENAS com um objeto JSON válido, sem texto antes ou depois, neste for
   "keywords": ["palavra-chave-1", "palavra-chave-2", "palavra-chave-3", "palavra-chave-4"]
 }`
 
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
-      generationConfig: {
-        responseMimeType: 'application/json',
-        maxOutputTokens: 2500,
-        temperature: 0.7,
-      },
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+      max_tokens: 2500,
+      temperature: 0.7,
     })
 
-    const result = await model.generateContent(prompt)
-    const raw = result.response.text()
+    const raw = completion.choices[0]?.message?.content || ''
 
-    // Extrair JSON mesmo se vier com texto ao redor
     const jsonMatch = raw.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       return NextResponse.json({ success: false, error: 'Resposta da IA fora do formato esperado' }, { status: 500 })
