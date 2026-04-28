@@ -338,7 +338,7 @@ export default function RichTextEditor({
     if (linkText) {
       editor.chain().focus().insertContent(`<a href="${url}">${linkText}</a>`).run()
     } else {
-      editor.chain().focus().extendMarkToLink().setLink({ href: url }).run()
+      editor.chain().focus().setLink({ href: url }).run()
     }
     setLinkDialog(false)
     setLinkUrl('')
