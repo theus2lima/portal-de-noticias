@@ -30,6 +30,7 @@ interface Article {
   excerpt: string
   featured_image?: string
   image_alt?: string
+  gallery_images?: Array<{url: string, filename: string, originalName: string}>
   category_id?: string
   category_name: string
   author_name: string
@@ -59,9 +60,8 @@ async function getArticle(slug: string): Promise<Article | null> {
       return null
     }
     
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : 'http://localhost:3000'
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
     
     const response = await fetch(`${baseUrl}/api/articles/by-slug/${slug}`, {
       next: { revalidate: 300 } // Revalidar a cada 5 minutos
@@ -167,9 +167,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   }
 
   // Buscar artigos relacionados no servidor
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL 
-    ? `https://${process.env.VERCEL_URL}` 
-    : 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
   
   let relatedArticles: Article[] = []
   if (article.category_id) {
@@ -373,6 +372,31 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 </div>
               )}
             </div>
+
+            {/* Gallery Images - Após conteúdo */}
+            {article.gallery_images && article.gallery_images.length > 0 && (
+              <div className="mt-12 pt-8 border-t border-neutral-200">
+                <h3 className="text-2xl font-bold mb-6">Galeria de Imagens</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {article.gallery_images.map((image, index) => (
+                    <div key={index} className="group cursor-pointer">
+                      <div className="relative aspect-video rounded-lg overflow-hidden">
+                        <Image
+                          src={image.url}
+                          alt={image.originalName.replace(/\.[^/.]+$/, '')}
+                          fill
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        />
+                      </div>
+                      <p className="text-sm text-neutral-600 mt-2 text-center">
+                        {image.originalName.replace(/\.[^/.]+$/, '')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Anúncio 2 - Após conteudo do artigo */}
             <div className="my-8">

@@ -6,6 +6,7 @@ import Image from 'next/image'
 import ShareButtons from '@/components/ShareButtons'
 import LeadForm from '@/components/LeadForm'
 import GoogleAd from '@/components/GoogleAd'
+import BannerAd from '@/components/BannerAd'
 import { useSiteConfig } from '@/hooks/useSiteConfig'
 import { 
   ArrowLeft, 
@@ -198,14 +199,9 @@ export default function ArticleContent({ article }: ArticleContentProps) {
       <article className="py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-7xl mx-auto flex gap-8">
-            {/* Anúncio Sidebar - Fixo durante a leitura */}
-            <div className="hidden lg:block fixed right-4 top-1/2 transform -translate-y-1/2 w-160px z-10">
-              <GoogleAd 
-                slot="3456789012"
-                format="vertical"
-                style={{ width: '160px', height: '600px' }}
-                className="shadow-lg rounded-lg overflow-hidden"
-              />
+            {/* Banner Sidebar - Fixo durante a leitura */}
+            <div className="hidden lg:block fixed right-4 top-1/2 transform -translate-y-1/2 w-40 z-10">
+              <BannerAd position="sidebar" className="shadow-lg rounded-lg overflow-hidden" />
             </div>
             
             {/* Conteúdo principal */}
@@ -276,13 +272,9 @@ export default function ArticleContent({ article }: ArticleContentProps) {
                 />
               </header>
               
-              {/* Anúncio 1 - Após header, antes da imagem */}
+              {/* Banner Topo - Após header, antes da imagem */}
               <div className="mb-8">
-                <GoogleAd 
-                  slot="1234567890"
-                  format="auto"
-                  className="text-center"
-                />
+                <BannerAd position="topo_artigo" className="text-center" />
               </div>
 
               {/* Featured Image */}
@@ -312,13 +304,12 @@ export default function ArticleContent({ article }: ArticleContentProps) {
                 />
               </div>
 
-              {/* Anúncio 2 - Após conteúdo */}
+              {/* Banner Meio/Rodapé - Após conteúdo */}
               <div className="my-12">
-                <GoogleAd 
-                  slot="0987654321"
-                  format="rectangle"
-                  className="text-center"
-                />
+                <BannerAd position="meio_artigo" className="text-center" />
+              </div>
+              <div className="my-8">
+                <BannerAd position="rodape_artigo" className="text-center" />
               </div>
 
               {/* Tags */}
