@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPS DASHBOARD — news-backend</title>
+<style>
+  :root {
+    --bg:         #0d1117;
+    --bg2:        #161b22;
+    --bg3:        #21262d;
+    --border:     #30363d;
+    --text:       #e6edf3;
+    --text2:      #8b949e;
+    --green:      #3fb950;
+    --yellow:     #d29922;
+    --red:        #f85149;
+    --blue:       #58a6ff;
+    --orange:     #e3b341;
+    --purple:     #bc8cff;
+    --font:       'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    min-height: 100vh;
+  }
+
+  /* ── Top bar ── */
+  #topbar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  #topbar .title { font-size: 14px; font-weight: 700; letter-spacing: 1px; color: var(--blue); }
+  #topbar .clock { color: var(--text2); font-size: 12px; }
+
+  /* ── Config panel ── */
+  #config-panel {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 20px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  #config-panel label { color: var(--text2); font-size: 11px; }
+  #config-panel input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--font);
+    font-size: 12px;
+    width: 260px;
+  }
+  #config-panel input:focus { outline: 1px solid var(--blue); }
+
+  /* ── Layout ── */
+  #main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .panel {
+    background: var(--bg2);
+    padding: 16px;
+  }
+  .panel.full-width { grid-column: 1 / -1; }
+
+  .panel-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text2);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── Status ── */
+  #status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+  }
+
+  .status-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .status-item .label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .status-item .value { font-size: 14px; font-weight: 700; }
+
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .dot-green  { background: var(--green);  box-shadow: 0 0 6px var(--green); }
+  .dot-yellow { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+  .dot-red    { background: var(--red);    box-shadow: 0 0 6px var(--red); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }
+
+  .tag-ok       { color: var(--green); }
+  .tag-degraded { color: var(--yellow); }
+  .tag-critical { color: var(--red); }
+  .tag-blue     { color: var(--blue); }
+
+  /* ── Metrics ── */
+  #metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+
+  .metric-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .metric-card .m-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .metric-card .m-value { font-size: 20px; font-weight: 700; color: var(--text); }
+  .metric-card .m-unit  { font-size: 10px; color: var(--text2); }
+  .metric-card.alert-yellow { border-color: var(--yellow); }
+  .metric-card.alert-red    { border-color: var(--red); }
+
+  /* ── Controls ── */
+  .control-group { margin-bottom: 16px; }
+  .control-group:last-child { margin-bottom: 0; }
+  .control-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+
+  .btn-group { display: flex; gap: 4px; flex-wrap: wrap; }
+
+  button {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: var(--font);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  button:hover { background: var(--bg); border-color: var(--blue); }
+  button.active-green  { background: rgba(63,185,80,.15);  border-color: var(--green);  color: var(--green); }
+  button.active-yellow { background: rgba(210,153,34,.15); border-color: var(--yellow); color: var(--yellow); }
+  button.active-red    { background: rgba(248,81,73,.15);  border-color: var(--red);    color: var(--red); }
+  button.active-blue   { background: rgba(88,166,255,.15); border-color: var(--blue);   color: var(--blue); }
+
+  .btn-danger {
+    background: rgba(248,81,73,.1);
+    border-color: var(--red);
+    color: var(--red);
+    font-weight: 700;
+  }
+  .btn-danger:hover { background: rgba(248,81,73,.25); }
+
+  .btn-action {
+    background: rgba(88,166,255,.1);
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+  .btn-action:hover { background: rgba(88,166,255,.25); }
+
+  /* ── Emergency ── */
+  #emergency-grid { display: flex; flex-direction: column; gap: 8px; }
+
+  .emergency-btn {
+    padding: 10px 14px;
+    font-size: 12px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .emergency-btn .e-icon { font-size: 16px; }
+  .emergency-btn .e-desc { color: var(--text2); font-size: 10px; display: block; margin-top: 2px; }
+
+  #survival-btn { border-color: var(--red); color: var(--red); background: rgba(248,81,73,.1); }
+  #survival-btn:hover { background: rgba(248,81,73,.25); }
+  #survival-btn.active-survival { border-color: var(--red); color: var(--red); background: rgba(248,81,73,.35); animation: pulse 1.5s infinite; }
+
+  /* ── IP Block form ── */
+  #block-ip-form { display: flex; gap: 6px; margin-top: 8px; }
+  #block-ip-form input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-family: var(--font);
+    font-size: 12px;
+    flex: 1;
+  }
+
+  /* ── Logs ── */
+  #log-container {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    height: 280px;
+    overflow-y: auto;
+    padding: 8px;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  #log-container::-webkit-scrollbar { width: 6px; }
+  #log-container::-webkit-scrollbar-track { background: var(--bg2); }
+  #log-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .log-line { display: flex; gap: 8px; padding: 1px 0; border-bottom: 1px solid rgba(48,54,61,.4); }
+  .log-time  { color: var(--text2); min-width: 80px; flex-shrink: 0; }
+  .log-level { min-width: 42px; flex-shrink: 0; font-weight: 700; }
+  .log-msg   { color: var(--text); }
+  .log-ERROR .log-level { color: var(--red); }
+  .log-WARN  .log-level { color: var(--yellow); }
+  .log-INFO  .log-level { color: var(--blue); }
+  .log-DEBUG .log-level { color: var(--text2); }
+
+  .log-filter-bar { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+  .log-filter-bar span { color: var(--text2); font-size: 10px; }
+  #log-search {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--font);
+    font-size: 11px;
+    margin-left: auto;
+    width: 180px;
+  }
+
+  /* ── Toast notification ── */
+  #toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 12px;
+    display: none;
+    z-index: 999;
+    max-width: 300px;
+  }
+  #toast.success { border-color: var(--green); color: var(--green); }
+  #toast.error   { border-color: var(--red);   color: var(--red); }
+
+  /* ── Conn indicator ── */
+  #sse-status { font-size: 10px; }
+
+  /* ── Help button ── */
+  #help-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 26px;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  #help-btn:hover { border-color: var(--blue); color: var(--blue); background: rgba(88,166,255,.1); }
+
+  /* ── Help modal ── */
+  #help-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.7);
+    z-index: 500;
+    backdrop-filter: blur(2px);
+  }
+  #help-overlay.open { display: flex; align-items: flex-start; justify-content: center; padding: 40px 20px; }
+
+  #help-modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 100%;
+    max-width: 820px;
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #help-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  #help-header h2 { font-size: 13px; color: var(--blue); letter-spacing: 1px; }
+  #help-close {
+    background: transparent; border: none;
+    color: var(--text2); font-size: 18px; cursor: pointer; padding: 0 4px;
+    line-height: 1;
+  }
+  #help-close:hover { color: var(--text); }
+
+  #help-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Sidebar tabs */
+  #help-tabs {
+    width: 160px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding: 10px 0;
+    overflow-y: auto;
+  }
+  .help-tab {
+    display: block; width: 100%;
+    background: transparent; border: none;
+    color: var(--text2);
+    text-align: left;
+    padding: 8px 16px;
+    font-family: var(--font);
+    font-size: 11px;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: all 0.12s;
+  }
+  .help-tab:hover { color: var(--text); background: var(--bg3); }
+  .help-tab.active { color: var(--blue); border-left-color: var(--blue); background: rgba(88,166,255,.08); }
+
+  /* Content */
+  #help-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    line-height: 1.7;
+  }
+  #help-content::-webkit-scrollbar { width: 5px; }
+  #help-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .help-section { display: none; }
+  .help-section.active { display: block; }
+
+  .help-section h3 {
+    color: var(--blue);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .help-section h4 {
+    color: var(--text);
+    font-size: 12px;
+    margin: 16px 0 6px;
+  }
+  .help-section p { color: var(--text2); font-size: 12px; margin-bottom: 10px; }
+  .help-section ul { color: var(--text2); font-size: 12px; padding-left: 18px; margin-bottom: 10px; }
+  .help-section li { margin-bottom: 4px; }
+
+  .help-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 14px; }
+  .help-table th { color: var(--text2); text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); font-weight: 600; letter-spacing: 0.5px; }
+  .help-table td { padding: 7px 10px; border-bottom: 1px solid rgba(48,54,61,.5); color: var(--text2); vertical-align: top; }
+  .help-table td:first-child { color: var(--text); font-weight: 600; white-space: nowrap; }
+  .help-table tr:last-child td { border-bottom: none; }
+
+  .help-code {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 10px 14px;
+    font-size: 11px;
+    color: var(--green);
+    margin-bottom: 12px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-right: 4px;
+  }
+  .badge-green  { background: rgba(63,185,80,.2);  color: var(--green); }
+  .badge-yellow { background: rgba(210,153,34,.2); color: var(--yellow); }
+  .badge-red    { background: rgba(248,81,73,.2);  color: var(--red); }
+  .badge-blue   { background: rgba(88,166,255,.2); color: var(--blue); }
+  .badge-orange { background: rgba(227,179,65,.2); color: var(--orange); }
+
+  .alert-box {
+    border-radius: 5px;
+    padding: 10px 14px;
+    font-size: 11px;
+    margin-bottom: 12px;
+  }
+  .alert-box.warn  { background: rgba(210,153,34,.1); border-left: 3px solid var(--yellow); color: var(--yellow); }
+  .alert-box.info  { background: rgba(88,166,255,.1); border-left: 3px solid var(--blue);   color: var(--blue); }
+  .alert-box.danger{ background: rgba(248,81,73,.1);  border-left: 3px solid var(--red);    color: var(--red); }
+
+  .scenario-block {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .scenario-block .s-title { color: var(--text); font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+  .scenario-block .s-steps { color: var(--text2); font-size: 11px; }
+  .scenario-block .s-steps li { margin-bottom: 3px; }
+
+  @media (max-width: 768px) {
+    #main { grid-template-columns: 1fr; }
+    .panel.full-width { grid-column: 1; }
+    #help-tabs { width: 120px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div id="topbar">
+  <div>
+    <span class="title">⚡ OPS DASHBOARD</span>
+    <span style="color:var(--text2);margin-left:12px;font-size:11px;" id="instance-label">news-backend</span>
+  </div>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <span id="sse-status">○ SSE</span>
+    <span class="clock" id="clock"></span>
+    <button id="help-btn" onclick="openHelp()" title="Como usar">?</button>
+  </div>
+</div>
+
+<!-- Config panel -->
+<div id="config-panel">
+  <label>BACKEND URL</label>
+  <input id="cfg-url" type="text" value="http://localhost:3001" placeholder="http://localhost:3001">
+  <label>OPS KEY</label>
+  <input id="cfg-key" type="password" placeholder="x-ops-key secret">
+  <button class="btn-action" onclick="reconnect()">Connect</button>
+</div>
+
+<!-- Main grid -->
+<div id="main">
+
+  <!-- 1. System Status -->
+  <div class="panel full-width">
+    <div class="panel-title">📡 Status do Sistema</div>
+    <div id="status-grid">
+      <div class="status-item"><div class="label">Overall</div><div class="value" id="s-overall">—</div></div>
+      <div class="status-item"><div class="label">Redis</div><div class="value" id="s-redis">—</div></div>
+      <div class="status-item"><div class="label">Database</div><div class="value" id="s-db">—</div></div>
+      <div class="status-item"><div class="label">Circuit Breaker</div><div class="value" id="s-cb">—</div></div>
+      <div class="status-item"><div class="label">Modo</div><div class="value" id="s-mode">—</div></div>
+      <div class="status-item"><div class="label">Rate Limit</div><div class="value" id="s-rl">—</div></div>
+      <div class="status-item"><div class="label">IPs Bloqueados</div><div class="value" id="s-ips">—</div></div>
+      <div class="status-item"><div class="label">Última Atualização</div><div class="value" id="s-updated" style="font-size:11px;">—</div></div>
+    </div>
+  </div>
+
+  <!-- 2. Métricas -->
+  <div class="panel">
+    <div class="panel-title">📈 Métricas em Tempo Real
+      <span style="color:var(--text2);font-size:10px;margin-left:auto;">janela 60s</span>
+    </div>
+    <div id="metrics-grid">
+      <div class="metric-card" id="mc-rps"><div class="m-label">Req / s</div><div class="m-value" id="m-rps">—</div></div>
+      <div class="metric-card" id="mc-dps"><div class="m-label">DB / s</div><div class="m-value" id="m-dps">—</div></div>
+      <div class="metric-card" id="mc-hit"><div class="m-label">Cache Hit</div><div class="m-value" id="m-hit">—</div><div class="m-unit">%</div></div>
+      <div class="metric-card" id="mc-err"><div class="m-label">Error Rate</div><div class="m-value" id="m-err">—</div><div class="m-unit">%</div></div>
+      <div class="metric-card" id="mc-p95"><div class="m-label">p95 Latency</div><div class="m-value" id="m-p95">—</div><div class="m-unit">ms</div></div>
+      <div class="metric-card" id="mc-p99"><div class="m-label">p99 Latency</div><div class="m-value" id="m-p99">—</div><div class="m-unit">ms</div></div>
+      <div class="metric-card"><div class="m-label">RL Hits</div><div class="m-value" id="m-rl">—</div></div>
+      <div class="metric-card"><div class="m-label">Uptime</div><div class="m-value" id="m-up" style="font-size:14px;">—</div></div>
+    </div>
+  </div>
+
+  <!-- 3. Controls -->
+  <div class="panel">
+    <div class="panel-title">🎛️ Controles Operacionais</div>
+
+    <div class="control-group">
+      <div class="control-label">Modo do Sistema</div>
+      <div class="btn-group">
+        <button id="mode-NORMAL"     onclick="setMode('NORMAL')">NORMAL</button>
+        <button id="mode-CACHE_ONLY" onclick="setMode('CACHE_ONLY')">CACHE ONLY</button>
+        <button id="mode-DEGRADED"   onclick="setMode('DEGRADED')">DEGRADED</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">Circuit Breaker</div>
+      <div class="btn-group">
+        <button id="cb-AUTO"        onclick="setCircuit('AUTO')">AUTO</button>
+        <button id="cb-FORCE_OPEN"  onclick="setCircuit('FORCE_OPEN')">FORCE OPEN</button>
+        <button id="cb-FORCE_CLOSE" onclick="setCircuit('FORCE_CLOSE')">FORCE CLOSE</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">Rate Limit</div>
+      <div class="btn-group">
+        <button id="rl-NORMAL"   onclick="setRateLimit('NORMAL')">NORMAL</button>
+        <button id="rl-STRICT"   onclick="setRateLimit('STRICT')">STRICT (20%)</button>
+        <button id="rl-DISABLED" onclick="setRateLimit('DISABLED')">DISABLED</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">Cache</div>
+      <div class="btn-group">
+        <button class="btn-action" onclick="refreshCache()">🔄 Reaquecer Cache</button>
+        <button class="btn-danger" onclick="purgeAllCache()">🗑️ Limpar Tudo</button>
+      </div>
+      <div style="margin-top:8px;display:flex;gap:6px;">
+        <input id="purge-key" placeholder="news:list:all:1:20" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:4px;font-family:var(--font);font-size:11px;flex:1;">
+        <button class="btn-action" onclick="purgeByKey()">Purgar Chave</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">Bloquear IP</div>
+      <div id="block-ip-form">
+        <input id="block-ip-input" placeholder="1.2.3.4">
+        <button class="btn-danger" onclick="blockIP()">Bloquear</button>
+        <button class="btn-action" onclick="unblockIP()">Desbloquear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Emergency -->
+  <div class="panel">
+    <div class="panel-title">⚡ Ações Emergenciais</div>
+    <div id="emergency-grid">
+
+      <button id="survival-btn" class="emergency-btn" onclick="toggleSurvival()">
+        <span class="e-icon">🔥</span>
+        <div>
+          <span>SURVIVAL MODE</span>
+          <span class="e-desc">CACHE_ONLY + STRICT rate limit — ativa com 1 clique</span>
+        </div>
+      </button>
+
+      <button class="emergency-btn btn-action" onclick="refreshCache()">
+        <span class="e-icon">🔄</span>
+        <div>
+          <span>REAQUECER CACHE</span>
+          <span class="e-desc">Executa warming manual das páginas críticas</span>
+        </div>
+      </button>
+
+      <button class="emergency-btn" onclick="setMode('CACHE_ONLY'); setCircuit('FORCE_OPEN')" style="border-color:var(--orange);color:var(--orange);background:rgba(227,179,65,.1)">
+        <span class="e-icon">🛡️</span>
+        <div>
+          <span>ISOLAR BANCO</span>
+          <span class="e-desc">CACHE_ONLY + FORCE_OPEN — zero queries no DB</span>
+        </div>
+      </button>
+
+      <button class="emergency-btn" style="border-color:var(--purple);color:var(--purple);background:rgba(188,140,255,.1)" onclick="setRateLimit('DISABLED')">
+        <span class="e-icon">🚪</span>
+        <div>
+          <span>LIBERAR RATE LIMIT</span>
+          <span class="e-desc">Desliga limite — use para desblocar falso positivo</span>
+        </div>
+      </button>
+
+      <button class="emergency-btn" onclick="resetAll()" style="border-color:var(--text2);color:var(--text2)">
+        <span class="e-icon">↺</span>
+        <div>
+          <span>RESET PARA NORMAL</span>
+          <span class="e-desc">Volta todos os controles para estado padrão</span>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- 5. Logs -->
+  <div class="panel full-width">
+    <div class="panel-title">
+      📜 Logs Recentes
+      <div class="log-filter-bar" style="margin-bottom:0;margin-left:auto;display:flex;gap:6px;">
+        <button id="lf-all"   onclick="setLogFilter('all')"   class="active-blue" style="padding:3px 8px;font-size:10px;">ALL</button>
+        <button id="lf-ERROR" onclick="setLogFilter('ERROR')" style="padding:3px 8px;font-size:10px;color:var(--red)">ERROR</button>
+        <button id="lf-WARN"  onclick="setLogFilter('WARN')"  style="padding:3px 8px;font-size:10px;color:var(--yellow)">WARN</button>
+        <button id="lf-INFO"  onclick="setLogFilter('INFO')"  style="padding:3px 8px;font-size:10px;color:var(--blue)">INFO</button>
+        <button onclick="clearLogDisplay()" style="padding:3px 8px;font-size:10px;color:var(--text2)">CLEAR</button>
+        <input id="log-search" placeholder="filtrar mensagem..." oninput="filterLogs()">
+      </div>
+    </div>
+    <div id="log-container"></div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ── Help Modal ─────────────────────────────────────────────────────────── -->
+<div id="help-overlay" onclick="closeHelpIfOutside(event)">
+  <div id="help-modal">
+    <div id="help-header">
+      <h2>📖 GUIA DE USO — OPS DASHBOARD</h2>
+      <button id="help-close" onclick="closeHelp()">✕</button>
+    </div>
+    <div id="help-body">
+
+      <!-- Sidebar tabs -->
+      <div id="help-tabs">
+        <button class="help-tab active" onclick="showSection('inicio')">🚀 Início Rápido</button>
+        <button class="help-tab" onclick="showSection('status')">📡 Status</button>
+        <button class="help-tab" onclick="showSection('metricas')">📈 Métricas</button>
+        <button class="help-tab" onclick="showSection('controles')">🎛️ Controles</button>
+        <button class="help-tab" onclick="showSection('emergencia')">⚡ Emergências</button>
+        <button class="help-tab" onclick="showSection('cenarios')">🔥 Cenários de Falha</button>
+        <button class="help-tab" onclick="showSection('api')">🔌 API Reference</button>
+      </div>
+
+      <!-- Content -->
+      <div id="help-content">
+
+        <!-- INÍCIO RÁPIDO -->
+        <div class="help-section active" id="sec-inicio">
+          <h3>Início Rápido</h3>
+
+          <h4>1. Conectar ao backend</h4>
+          <p>Preencha os dois campos no topo da página e clique em <strong>Connect</strong>:</p>
+          <table class="help-table">
+            <tr><th>Campo</th><th>O que colocar</th></tr>
+            <tr><td>BACKEND URL</td><td>URL do servidor Node.js (ex: <code>http://localhost:3001</code> ou <code>https://seu-backend.railway.app</code>)</td></tr>
+            <tr><td>OPS KEY</td><td>Valor da variável <code>OPS_SECRET</code> do seu <code>.env</code></td></tr>
+          </table>
+          <div class="alert-box info">Dica: você pode passar URL e chave via URL para salvar nos favoritos:<br><code>ops-dashboard.html?url=https://...&key=sua-chave</code></div>
+
+          <h4>2. Confirmar conexão</h4>
+          <ul>
+            <li>O indicador <strong>SSE</strong> no topo fica verde — stream de logs conectado</li>
+            <li>O card <strong>Overall</strong> mostra 🟢 OK, 🟡 DEGRADED ou 🔴 CRITICAL</li>
+            <li>As métricas começam a ser atualizadas a cada 2 segundos</li>
+          </ul>
+
+          <h4>3. O que fazer se aparecer OFFLINE</h4>
+          <ul>
+            <li>Verifique se o servidor está rodando (<code>npm start</code> na pasta <code>backend/</code>)</li>
+            <li>Confirme que a URL não tem barra no final</li>
+            <li>Confirme que o <code>OPS_SECRET</code> está correto</li>
+          </ul>
+        </div>
+
+        <!-- STATUS -->
+        <div class="help-section" id="sec-status">
+          <h3>Interpretando o Status</h3>
+
+          <h4>Status geral (Overall)</h4>
+          <table class="help-table">
+            <tr><th>Status</th><th>O que significa</th><th>Ação</th></tr>
+            <tr>
+              <td><span class="badge badge-green">OK</span></td>
+              <td>Tudo saudável — Redis UP, DB respondendo, Circuit CLOSED</td>
+              <td>Monitorar normalmente</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-yellow">DEGRADED</span></td>
+              <td>Fallback ativo — pode ser: Redis lento, Circuit HALF_OPEN, modo != NORMAL</td>
+              <td>Investigar; considerar Survival Mode se piorar</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-red">CRITICAL</span></td>
+              <td>Redis DOWN + DB falhando ou Circuit OPEN simultâneo</td>
+              <td>Intervenção imediata — veja aba Emergências</td>
+            </tr>
+          </table>
+
+          <h4>Cards individuais</h4>
+          <table class="help-table">
+            <tr><th>Card</th><th>Valores possíveis</th></tr>
+            <tr><td>Redis</td><td><span class="badge badge-green">UP</span> ou <span class="badge badge-red">DOWN</span></td></tr>
+            <tr><td>Database</td><td><span class="badge badge-green">OK</span> ou <span class="badge badge-red">SLOW</span></td></tr>
+            <tr><td>Circuit Breaker</td><td><span class="badge badge-green">CLOSED</span> (normal) · <span class="badge badge-yellow">HALF_OPEN</span> (testando) · <span class="badge badge-red">OPEN</span> (bloqueado)</td></tr>
+            <tr><td>Modo</td><td><span class="badge badge-green">NORMAL</span> · <span class="badge badge-yellow">CACHE_ONLY</span> · <span class="badge badge-red">DEGRADED</span></td></tr>
+            <tr><td>Rate Limit</td><td><span class="badge badge-green">NORMAL</span> · <span class="badge badge-yellow">STRICT</span> · <span class="badge badge-red">DISABLED</span></td></tr>
+          </table>
+        </div>
+
+        <!-- MÉTRICAS -->
+        <div class="help-section" id="sec-metricas">
+          <h3>Métricas em Tempo Real</h3>
+          <p>Todas as métricas são calculadas numa janela deslizante de 60 segundos.</p>
+
+          <table class="help-table">
+            <tr><th>Métrica</th><th>Normal</th><th>Alerta 🟡</th><th>Crítico 🔴</th></tr>
+            <tr><td>Cache Hit %</td><td>&gt; 95%</td><td>&lt; 90%</td><td>&lt; 85%</td></tr>
+            <tr><td>p99 Latência</td><td>&lt; 200ms</td><td>&gt; 500ms</td><td>&gt; 1000ms</td></tr>
+            <tr><td>Error Rate %</td><td>&lt; 0.5%</td><td>&gt; 1%</td><td>&gt; 5%</td></tr>
+            <tr><td>DB / s</td><td>Baixo e estável</td><td>Subindo enquanto req/s estável</td><td>Alto + circuit OPEN</td></tr>
+          </table>
+
+          <h4>Sinais de alerta a observar</h4>
+          <ul>
+            <li><strong>Cache Hit caindo</strong> com DB/s subindo → TTL muito curto ou Redis com problemas</li>
+            <li><strong>p99 alto</strong> mas p95 normal → consultas específicas lentas, verificar índices</li>
+            <li><strong>Error Rate subindo</strong> gradualmente → banco sobrecarregado, considerar DEGRADED mode</li>
+            <li><strong>RL Hits crescendo</strong> → possível ataque ou scraper, considerar STRICT mode</li>
+          </ul>
+
+          <div class="alert-box info">Os cards ficam com borda colorida automaticamente quando ultrapassam os thresholds de alerta.</div>
+        </div>
+
+        <!-- CONTROLES -->
+        <div class="help-section" id="sec-controles">
+          <h3>Controles Operacionais</h3>
+
+          <h4>Modo do Sistema</h4>
+          <table class="help-table">
+            <tr><th>Modo</th><th>Comportamento</th><th>Quando usar</th></tr>
+            <tr>
+              <td><span class="badge badge-green">NORMAL</span></td>
+              <td>Operação padrão — cache + banco normais</td>
+              <td>Sempre que possível</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-yellow">CACHE_ONLY</span></td>
+              <td>Ignora o banco completamente. Serve só o que está no Redis. Se não tiver cache, retorna lista vazia</td>
+              <td>Banco instável, manutenção, pico extremo</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-red">DEGRADED</span></td>
+              <td>Timeout do banco reduzido para 2s (vs 5s normal). Fallbacks mais agressivos</td>
+              <td>Banco lento mas ainda respondendo</td>
+            </tr>
+          </table>
+
+          <h4>Circuit Breaker</h4>
+          <table class="help-table">
+            <tr><th>Opção</th><th>Comportamento</th></tr>
+            <tr>
+              <td><span class="badge badge-green">AUTO</span></td>
+              <td>O breaker decide sozinho — abre após 5 falhas consecutivas, tenta reabrir após 30s. <strong>Recomendado.</strong></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-red">FORCE_OPEN</span></td>
+              <td>Bloqueia 100% das queries ao banco imediatamente. Zero pressão no DB. Use para isolar o banco manualmente.</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-yellow">FORCE_CLOSE</span></td>
+              <td>Ignora o estado do breaker e força chamadas ao banco. <strong>Cuidado:</strong> use só para testar recuperação.</td>
+            </tr>
+          </table>
+
+          <h4>Rate Limit</h4>
+          <table class="help-table">
+            <tr><th>Modo</th><th>Limite efetivo</th><th>Quando usar</th></tr>
+            <tr><td><span class="badge badge-green">NORMAL</span></td><td>Valor do env (padrão 120/min)</td><td>Operação normal</td></tr>
+            <tr><td><span class="badge badge-yellow">STRICT</span></td><td>20% do normal (≈ 24/min)</td><td>Pico de tráfego, possível ataque</td></tr>
+            <tr><td><span class="badge badge-red">DISABLED</span></td><td>Sem limite</td><td>Somente para desblocar falso positivo</td></tr>
+          </table>
+          <div class="alert-box warn">DISABLED remove toda proteção. Reative assim que resolver o problema.</div>
+
+          <h4>Cache</h4>
+          <ul>
+            <li><strong>Reaquecer Cache</strong> — executa o warming (page 1 + top categorias). Use após limpar ou após deploy</li>
+            <li><strong>Limpar Tudo</strong> — faz FLUSHDB no Redis. Aumenta carga no banco temporariamente</li>
+            <li><strong>Purgar Chave</strong> — invalida uma entrada específica. Formato: <code>news:list:all:1:20</code> ou <code>news:item:uuid</code></li>
+          </ul>
+
+          <h4>Bloquear IP</h4>
+          <p>Bloqueia um IP específico — retorna 403 imediatamente, antes de qualquer processamento. Útil para scrapers ou ataques direcionados. O bloqueio é em memória: é removido ao reiniciar o servidor.</p>
+        </div>
+
+        <!-- EMERGÊNCIAS -->
+        <div class="help-section" id="sec-emergencia">
+          <h3>Ações Emergenciais</h3>
+
+          <div class="scenario-block">
+            <div class="s-title">🔥 Survival Mode</div>
+            <p style="color:var(--text2);font-size:11px;margin-bottom:6px;">Ativa CACHE_ONLY + STRICT rate limit em um clique. Use quando o banco está lento e o tráfego está alto.</p>
+            <ul class="s-steps">
+              <li>Bloqueia queries ao banco</li>
+              <li>Reduz o rate limit para 20%</li>
+              <li>Usuários recebem dados do cache (podem estar até 5min desatualizados)</li>
+              <li>Clique de novo para desativar e voltar ao NORMAL</li>
+            </ul>
+          </div>
+
+          <div class="scenario-block">
+            <div class="s-title">🔄 Reaquecer Cache</div>
+            <ul class="s-steps">
+              <li>Popula page 1 da listagem + top categorias no Redis</li>
+              <li>Execute após limpar cache ou após um deploy frio</li>
+              <li>Roda em background — não bloqueia requests</li>
+            </ul>
+          </div>
+
+          <div class="scenario-block">
+            <div class="s-title">🛡️ Isolar Banco</div>
+            <ul class="s-steps">
+              <li>Combina CACHE_ONLY + FORCE_OPEN</li>
+              <li>Zero queries chegam ao Supabase</li>
+              <li>Use quando o banco está completamente fora e você quer evitar cascata de erros</li>
+              <li>Para voltar: clique em NORMAL e AUTO no circuit breaker</li>
+            </ul>
+          </div>
+
+          <div class="scenario-block">
+            <div class="s-title">🚪 Liberar Rate Limit</div>
+            <ul class="s-steps">
+              <li>Desativa o limite por IP</li>
+              <li>Use somente se usuários legítimos estão sendo bloqueados por falso positivo</li>
+              <li>Reative o NORMAL imediatamente após resolver</li>
+            </ul>
+          </div>
+
+          <div class="scenario-block">
+            <div class="s-title">↺ Reset para NORMAL</div>
+            <ul class="s-steps">
+              <li>Volta mode → NORMAL, circuit → AUTO, rate limit → NORMAL</li>
+              <li>Não afeta IPs bloqueados nem cache</li>
+              <li>Use ao finalizar uma intervenção de emergência</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- CENÁRIOS -->
+        <div class="help-section" id="sec-cenarios">
+          <h3>Cenários de Falha e Resposta</h3>
+
+          <div class="scenario-block">
+            <div class="s-title">Redis caiu</div>
+            <p style="color:var(--text2);font-size:11px;margin-bottom:6px;"><span class="badge badge-yellow">DEGRADED</span> O sistema funciona, mas cada request vai ao banco.</p>
+            <ol class="s-steps" style="padding-left:16px">
+              <li>Status → Redis: <span style="color:var(--red)">DOWN</span></li>
+              <li>Cache hit rate vai para 0% — DB/s vai subir muito</li>
+              <li>Se o banco aguentar → espere o Redis se recuperar</li>
+              <li>Se o banco começar a travar → ative <strong>DEGRADED mode</strong> para timeouts mais curtos</li>
+              <li>Quando Redis voltar → execute <strong>Reaquecer Cache</strong></li>
+            </ol>
+          </div>
+
+          <div class="scenario-block">
+            <div class="s-title">Banco lento / travado</div>
+            <p style="color:var(--text2);font-size:11px;margin-bottom:6px;"><span class="badge badge-red">CRITICAL</span> Queries demoram mais que 5s e começam a falhar.</p>
+            <ol class="s-steps" style="padding-left:16px">
+              <li>p99 sobe → Error Rate sobe → Circuit Breaker abre automaticamente</li>
+              <li>Com o breaker OPEN, sistema serve só cache por 30s</li>
+              <li>Se o banco não se recuperar em 30s → ative <strong>Survival Mode</strong></li>
+              <li>Opcional: use <strong>FORCE_OPEN</strong> para garantir zero queries enquanto investiga</li>
+              <li>Quando banco recuperar → <strong>Reset para NORMAL</strong></li>
+            </ol>
+          </div>
+
+          <div class="scenario-block">
+            <div class="s-title">Pico repentino de tráfego</div>
+            <p style="color:var(--text2);font-size:11px;margin-bottom:6px;"><span class="badge badge-yellow">DEGRADED</span> Req/s sobe abruptamente.</p>
+            <ol class="s-steps" style="padding-left:16px">
+              <li>Verifique cache hit rate — se estiver alto (&gt; 90%), o sistema está absorvendo bem</li>
+              <li>Se DB/s subir junto → cache falhando — execute <strong>Reaquecer Cache</strong></li>
+              <li>Se RL Hits subir → possível ataque — ative <strong>STRICT</strong> rate limit</li>
+              <li>Se banco começar a travar → ative <strong>Survival Mode</strong></li>
+            </ol>
+          </div>
+
+          <div class="scenario-block">
+            <div class="s-title">Circuit Breaker preso em OPEN</div>
+            <p style="color:var(--text2);font-size:11px;margin-bottom:6px;">O breaker tenta reabrir a cada 30s. Se o banco ainda estiver falhando, ele volta para OPEN.</p>
+            <ol class="s-steps" style="padding-left:16px">
+              <li>Verifique o banco diretamente no Supabase dashboard</li>
+              <li>Se banco está OK mas breaker não fecha → use <strong>FORCE_CLOSE</strong> para forçar</li>
+              <li>Se banco ainda lento → mantenha em OPEN e aguarde</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- API REFERENCE -->
+        <div class="help-section" id="sec-api">
+          <h3>API Reference</h3>
+          <p>Todos os endpoints requerem o header <code>x-ops-key: &lt;OPS_SECRET&gt;</code>.</p>
+
+          <h4>Status e Métricas</h4>
+          <div class="help-code">GET  /ops/status          → saúde geral + métricas resumidas
+GET  /metrics            → snapshot completo (counters, latência, process)
+GET  /health             → ping rápido (sem auth)</div>
+
+          <h4>Controles de Modo</h4>
+          <div class="help-code">POST /ops/mode
+{ "mode": "NORMAL" | "CACHE_ONLY" | "DEGRADED" }
+
+POST /ops/circuit
+{ "action": "AUTO" | "FORCE_OPEN" | "FORCE_CLOSE" }
+
+POST /ops/rate-limit
+{ "mode": "NORMAL" | "STRICT" | "DISABLED" }
+
+POST /ops/survival
+{ "active": true | false }</div>
+
+          <h4>Cache</h4>
+          <div class="help-code">POST /ops/cache/purge
+{ }                      → limpa TODO o Redis (FLUSHDB)
+{ "key": "news:list:all:1:20" } → purga chave específica
+
+POST /ops/cache/refresh  → dispara cache warming (async)</div>
+
+          <h4>IPs</h4>
+          <div class="help-code">POST /ops/block-ip
+{ "ip": "1.2.3.4", "action": "block" | "unblock" }</div>
+
+          <h4>Logs</h4>
+          <div class="help-code">GET  /ops/logs?limit=100&level=ERROR  → últimas N entradas
+GET  /ops/logs/stream    → SSE stream em tempo real</div>
+
+          <h4>Formato dos logs</h4>
+          <div class="help-code">{
+  "ts": 1714235060000,
+  "time": "2025-04-27T19:32:00.000Z",
+  "level": "ERROR" | "WARN" | "INFO" | "DEBUG",
+  "message": "DB timeout: getNewsList exceeded 5000ms"
+}</div>
+        </div>
+
+      </div><!-- /help-content -->
+    </div><!-- /help-body -->
+  </div><!-- /help-modal -->
+</div><!-- /help-overlay -->
+
+<div id="toast"></div>
+
+<script>
+// ─── Config ──────────────────────────────────────────────────────────────────
+let BASE_URL = 'http://localhost:3001'
+let OPS_KEY  = ''
+let logFilter = 'all'
+let allLogEntries = []
+let survivalActive = false
+let sseSource = null
+
+function getBase() { return document.getElementById('cfg-url').value.replace(/\/$/, '') }
+function getKey()  { return document.getElementById('cfg-key').value }
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  const url = getBase() + path
+  const res = await fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-ops-key': getKey(),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error || res.statusText)
+  return data
+}
+
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.className = type
+  el.style.display = 'block'
+  setTimeout(() => { el.style.display = 'none' }, 3000)
+}
+
+function fmt(v, decimals = 0) {
+  if (v === null || v === undefined) return '—'
+  return typeof v === 'number'
+    ? v.toLocaleString('pt-BR', { maximumFractionDigits: decimals })
+    : String(v)
+}
+
+function formatUptime(s) {
+  if (!s) return '—'
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60
+  if (h > 0) return `${h}h ${m}m`
+  if (m > 0) return `${m}m ${sec}s`
+  return `${sec}s`
+}
+
+// ─── Clock ────────────────────────────────────────────────────────────────────
+setInterval(() => {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-BR')
+}, 1000)
+
+// ─── Status polling ───────────────────────────────────────────────────────────
+async function pollStatus() {
+  try {
+    const d = await api('GET', '/ops/status')
+    renderStatus(d)
+    renderMetrics(d.metrics)
+  } catch (e) {
+    document.getElementById('s-overall').innerHTML = '<span class="tag-critical">OFFLINE</span>'
+  }
+}
+
+async function pollMetricsFull() {
+  try {
+    const d = await api('GET', '/metrics')
+    renderMetrics({
+      requests_per_second:   d.rates?.requests_per_second,
+      db_queries_per_second: d.rates?.db_queries_per_second,
+      cache_hit_rate:        d.derived?.cache_hit_rate,
+      error_rate:            d.derived?.error_rate,
+      p95_latency:           d.latency?.['GET /news']?.p95,
+      p99_latency:           d.latency?.['GET /news']?.p99,
+      rate_limited:          d.counters?.rate_limit_hits,
+      uptime:                d.process?.uptime_seconds,
+    })
+  } catch {}
+}
+
+function renderStatus(d) {
+  const overall = document.getElementById('s-overall')
+  const colorMap = { OK: 'tag-ok', DEGRADED: 'tag-degraded', CRITICAL: 'tag-critical' }
+  const dotMap   = { OK: 'dot-green', DEGRADED: 'dot-yellow', CRITICAL: 'dot-red' }
+  overall.innerHTML = `<span class="dot ${dotMap[d.status] || 'dot-yellow'}"></span><span class="${colorMap[d.status] || 'tag-degraded'}">${d.status}</span>`
+
+  const dot = (v, ok) => `<span class="dot ${v === ok ? 'dot-green' : 'dot-red'}"></span>${v}`
+  document.getElementById('s-redis').innerHTML = dot(d.redis, 'UP')
+  document.getElementById('s-db').innerHTML    = dot(d.database, 'OK')
+
+  const cb = d.circuit_breaker
+  const cbColor = cb === 'CLOSED' ? 'tag-ok' : cb === 'OPEN' ? 'tag-critical' : 'tag-degraded'
+  document.getElementById('s-cb').innerHTML = `<span class="${cbColor}">${cb}</span>`
+
+  const modeColor = d.mode === 'NORMAL' ? 'tag-ok' : d.mode === 'CACHE_ONLY' ? 'tag-degraded' : 'tag-critical'
+  document.getElementById('s-mode').innerHTML = `<span class="${modeColor}">${d.mode}</span>`
+
+  const rlColor = d.rate_limit === 'NORMAL' ? 'tag-ok' : d.rate_limit === 'DISABLED' ? 'tag-critical' : 'tag-degraded'
+  document.getElementById('s-rl').innerHTML = `<span class="${rlColor}">${d.rate_limit}</span>`
+  document.getElementById('s-ips').textContent = d.blocked_ips ?? 0
+
+  document.getElementById('s-updated').textContent =
+    new Date(d.timestamp).toLocaleTimeString('pt-BR')
+
+  // Sync button states
+  syncButtons('mode-', d.mode, { NORMAL: 'active-green', CACHE_ONLY: 'active-yellow', DEGRADED: 'active-red' })
+  syncButtons('cb-',   d.circuit_breaker === 'OPEN' && d.circuitOverride !== 'FORCE_CLOSE' ? d.circuitOverride ?? 'AUTO' : d.circuitOverride ?? 'AUTO',
+    { AUTO: 'active-green', FORCE_OPEN: 'active-red', FORCE_CLOSE: 'active-yellow' })
+  syncButtons('rl-', d.rate_limit, { NORMAL: 'active-green', STRICT: 'active-yellow', DISABLED: 'active-red' })
+
+  // Survival mode indicator
+  survivalActive = d.mode === 'CACHE_ONLY' && d.rate_limit === 'STRICT'
+  const sb = document.getElementById('survival-btn')
+  if (survivalActive) {
+    sb.classList.add('active-survival')
+    sb.querySelector('span').textContent = '🔥 SURVIVAL ATIVO — clique para desativar'
+  } else {
+    sb.classList.remove('active-survival')
+    sb.querySelector('.e-icon').textContent = '🔥'
+    sb.querySelector('span:not(.e-icon)').textContent = 'SURVIVAL MODE'
+  }
+}
+
+function syncButtons(prefix, activeKey, classMap) {
+  Object.keys(classMap).forEach(k => {
+    const btn = document.getElementById(prefix + k)
+    if (!btn) return
+    btn.className = ''  // reset
+    if (k === activeKey) btn.className = classMap[k]
+  })
+}
+
+function renderMetrics(m) {
+  if (!m) return
+  const set = (id, val, decimals = 0) => {
+    const el = document.getElementById(id)
+    if (el) el.textContent = fmt(val, decimals)
+  }
+
+  set('m-rps', m.requests_per_second, 1)
+  set('m-dps', m.db_queries_per_second, 1)
+  set('m-hit', m.cache_hit_rate, 1)
+  set('m-err', m.error_rate, 2)
+  set('m-p95', m.p95_latency)
+  set('m-p99', m.p99_latency)
+  set('m-rl',  m.rate_limited ?? m.rate_limit_hits)
+  document.getElementById('m-up').textContent = formatUptime(m.uptime ?? m.uptime_seconds)
+
+  // Alert coloring
+  const hitCard = document.getElementById('mc-hit')
+  hitCard.className = 'metric-card' +
+    (m.cache_hit_rate < 85 ? ' alert-red' : m.cache_hit_rate < 90 ? ' alert-yellow' : '')
+
+  const p99Card = document.getElementById('mc-p99')
+  p99Card.className = 'metric-card' +
+    (m.p99_latency > 1000 ? ' alert-red' : m.p99_latency > 500 ? ' alert-yellow' : '')
+
+  const errCard = document.getElementById('mc-err')
+  errCard.className = 'metric-card' +
+    (m.error_rate > 5 ? ' alert-red' : m.error_rate > 1 ? ' alert-yellow' : '')
+}
+
+// ─── Log stream (SSE) ─────────────────────────────────────────────────────────
+function connectSSE() {
+  if (sseSource) sseSource.close()
+
+  const base = getBase()
+  const key  = getKey()
+  if (!key) return
+
+  const url = `${base}/ops/logs/stream`
+  sseSource = new EventSource(url + `?_key=${encodeURIComponent(key)}`)
+  // Note: headers can't be set on EventSource; use query param as fallback
+  // In production, protect this endpoint at network level (VPN/proxy)
+
+  const sseEl = document.getElementById('sse-status')
+
+  sseSource.onopen = () => {
+    sseEl.textContent = '● SSE'
+    sseEl.style.color = 'var(--green)'
+  }
+
+  sseSource.onmessage = (e) => {
+    try {
+      const entry = JSON.parse(e.data)
+      addLogEntry(entry)
+    } catch {}
+  }
+
+  sseSource.onerror = () => {
+    sseEl.textContent = '○ SSE'
+    sseEl.style.color = 'var(--red)'
+    setTimeout(connectSSE, 5000)  // reconnect
+  }
+}
+
+function addLogEntry(entry) {
+  allLogEntries.unshift(entry)
+  if (allLogEntries.length > 500) allLogEntries.pop()
+  reRenderLogs()
+}
+
+function reRenderLogs() {
+  const search = document.getElementById('log-search')?.value?.toLowerCase() ?? ''
+  const filtered = allLogEntries.filter(e => {
+    if (logFilter !== 'all' && e.level !== logFilter) return false
+    if (search && !e.message.toLowerCase().includes(search)) return false
+    return true
+  })
+
+  const container = document.getElementById('log-container')
+  const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 40
+
+  container.innerHTML = filtered.slice(0, 200).map(e => {
+    const time = new Date(e.ts).toLocaleTimeString('pt-BR')
+    return `<div class="log-line log-${e.level}">
+      <span class="log-time">${time}</span>
+      <span class="log-level">${e.level}</span>
+      <span class="log-msg">${escapeHtml(e.message)}</span>
+    </div>`
+  }).join('')
+
+  if (wasAtBottom) container.scrollTop = container.scrollHeight
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+}
+
+function setLogFilter(f) {
+  logFilter = f
+  document.querySelectorAll('[id^="lf-"]').forEach(b => b.className = '')
+  const btn = document.getElementById('lf-' + f)
+  if (btn) btn.className = 'active-blue'
+  reRenderLogs()
+}
+
+function filterLogs() { reRenderLogs() }
+function clearLogDisplay() {
+  allLogEntries = []
+  document.getElementById('log-container').innerHTML = ''
+}
+
+// ─── Control actions ──────────────────────────────────────────────────────────
+async function setMode(mode) {
+  try {
+    await api('POST', '/ops/mode', { mode })
+    toast(`✓ Modo → ${mode}`)
+    pollStatus()
+  } catch (e) { toast(`✗ ${e.message}`, 'error') }
+}
+
+async function setCircuit(action) {
+  try {
+    await api('POST', '/ops/circuit', { action })
+    toast(`✓ Circuit → ${action}`)
+    pollStatus()
+  } catch (e) { toast(`✗ ${e.message}`, 'error') }
+}
+
+async function setRateLimit(mode) {
+  if (mode === 'DISABLED' && !confirm('Desativar rate limit pode expor o sistema a abuso. Continuar?')) return
+  try {
+    await api('POST', '/ops/rate-limit', { mode })
+    toast(`✓ Rate limit → ${mode}`)
+    pollStatus()
+  } catch (e) { toast(`✗ ${e.message}`, 'error') }
+}
+
+async function refreshCache() {
+  try {
+    await api('POST', '/ops/cache/refresh')
+    toast('✓ Cache warming iniciado')
+  } catch (e) { toast(`✗ ${e.message}`, 'error') }
+}
+
+async function purgeAllCache() {
+  if (!confirm('Isso vai limpar TODO o cache do Redis. Continuar?')) return
+  try {
+    await api('POST', '/ops/cache/purge', {})
+    toast('✓ Cache limpo')
+  } catch (e) { toast(`✗ ${e.message}`, 'error') }
+}
+
+async function purgeByKey() {
+  const key = document.getElementById('purge-key').value.trim()
+  if (!key) return toast('Informe uma chave', 'error')
+  try {
+    await api('POST', '/ops/cache/purge', { key })
+    toast(`✓ Chave purgada: ${key}`)
+  } catch (e) { toast(`✗ ${e.message}`, 'error') }
+}
+
+async function blockIP() {
+  const ip = document.getElementById('block-ip-input').value.trim()
+  if (!ip) return toast('Informe um IP', 'error')
+  try {
+    await api('POST', '/ops/block-ip', { ip, action: 'block' })
+    toast(`✓ IP bloqueado: ${ip}`)
+    pollStatus()
+  } catch (e) { toast(`✗ ${e.message}`, 'error') }
+}
+
+async function unblockIP() {
+  const ip = document.getElementById('block-ip-input').value.trim()
+  if (!ip) return toast('Informe um IP', 'error')
+  try {
+    await api('POST', '/ops/block-ip', { ip, action: 'unblock' })
+    toast(`✓ IP desbloqueado: ${ip}`)
+    pollStatus()
+  } catch (e) { toast(`✗ ${e.message}`, 'error') }
+}
+
+async function toggleSurvival() {
+  try {
+    await api('POST', '/ops/survival', { active: !survivalActive })
+    toast(survivalActive ? '✓ Survival mode desativado' : '🔥 SURVIVAL MODE ativado')
+    pollStatus()
+  } catch (e) { toast(`✗ ${e.message}`, 'error') }
+}
+
+async function resetAll() {
+  if (!confirm('Resetar todos os controles para NORMAL?')) return
+  try {
+    await Promise.all([
+      api('POST', '/ops/mode',       { mode: 'NORMAL' }),
+      api('POST', '/ops/circuit',    { action: 'AUTO' }),
+      api('POST', '/ops/rate-limit', { mode: 'NORMAL' }),
+    ])
+    toast('✓ Reset completo — sistema em NORMAL')
+    pollStatus()
+  } catch (e) { toast(`✗ ${e.message}`, 'error') }
+}
+
+// ─── SSE fallback: /ops/logs/stream requires auth via header,
+//     but EventSource doesn't support headers. Work around by
+//     polling /ops/logs every 3s as fallback.
+async function pollLogs() {
+  try {
+    const d = await api('GET', '/ops/logs?limit=100')
+    if (d.entries) {
+      allLogEntries = d.entries
+      reRenderLogs()
+    }
+  } catch {}
+}
+
+// ─── Init & reconnect ─────────────────────────────────────────────────────────
+function reconnect() {
+  connectSSE()
+  pollStatus()
+  pollMetricsFull()
+  toast('✓ Conectado')
+}
+
+// Polling loops
+setInterval(pollStatus, 2000)
+setInterval(pollMetricsFull, 5000)
+setInterval(pollLogs, 3000)  // fallback when SSE isn't authenticated
+
+// Auto-connect if key is pre-filled (e.g. from URL params)
+const params = new URLSearchParams(location.search)
+if (params.get('url'))  document.getElementById('cfg-url').value = params.get('url')
+if (params.get('key'))  document.getElementById('cfg-key').value = params.get('key')
+
+// ─── Help modal ───────────────────────────────────────────────────────────────
+function openHelp() {
+  document.getElementById('help-overlay').classList.add('open')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeHelp() {
+  document.getElementById('help-overlay').classList.remove('open')
+  document.body.style.overflow = ''
+}
+
+function closeHelpIfOutside(e) {
+  if (e.target === document.getElementById('help-overlay')) closeHelp()
+}
+
+function showSection(id) {
+  document.querySelectorAll('.help-section').forEach(s => s.classList.remove('active'))
+  document.querySelectorAll('.help-tab').forEach(t => t.classList.remove('active'))
+  document.getElementById('sec-' + id).classList.add('active')
+  event.currentTarget.classList.add('active')
+}
+
+// Close modal with Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeHelp()
+})
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  reconnect()
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-BR')
+})
+</script>
+</body>
+</html>
