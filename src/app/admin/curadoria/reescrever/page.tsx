@@ -342,7 +342,7 @@ export default function ReescreverPage() {
               <div>
                 <p className="text-sm font-medium">Não foi possível reescrever automaticamente</p>
                 <p className="text-xs mt-0.5">{rewriteError}</p>
-                <p className="text-xs mt-1">Edite o conteúdo manualmente ou clique em "Reescrever de novo"</p>
+                <p className="text-xs mt-1">Edite o conteúdo manualmente ou clique em &quot;Reescrever de novo&quot;</p>
               </div>
             </div>
           )}
