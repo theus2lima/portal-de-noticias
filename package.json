@@ -36,7 +36,20 @@
     "react-query": "^3.39.3",
     "rss-parser": "^3.13.0",
     "tailwind-merge": "^2.2.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "@tiptap/react": "^2.10.4",
+    "@tiptap/pm": "^2.10.4",
+    "@tiptap/starter-kit": "^2.10.4",
+    "@tiptap/extension-youtube": "^2.10.4",
+    "@tiptap/extension-color": "^2.10.4",
+    "@tiptap/extension-text-style": "^2.10.4",
+    "@tiptap/extension-text-align": "^2.10.4",
+    "@tiptap/extension-image": "^2.10.4",
+    "@tiptap/extension-link": "^2.10.4",
+    "@tiptap/extension-placeholder": "^2.10.4",
+    "@tiptap/extension-underline": "^2.10.4",
+    "@tiptap/extension-highlight": "^2.10.4",
+    "@tiptap/extension-character-count": "^2.10.4"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.16",
