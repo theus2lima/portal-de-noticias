@@ -2,10 +2,40 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { createClient } from '@/utils/supabase/server'
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
+// Rate limit: 5 tentativas por IP a cada 15 minutos
+// Só ativa se UPSTASH_REDIS_REST_URL estiver configurado
+const ratelimit =
+  process.env.UPSTASH_REDIS_REST_URL
+    ? new Ratelimit({
+        redis: Redis.fromEnv(),
+        limiter: Ratelimit.slidingWindow(5, '15 m'),
+        prefix: 'login_limit',
+      })
+    : null
+
 export async function POST(request: NextRequest) {
+  // Verificar rate limit
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    request.headers.get('x-real-ip') ??
+    'unknown'
+
+  if (ratelimit) {
+    const { success: rateLimitOk, reset } = await ratelimit.limit(ip)
+    if (!rateLimitOk) {
+      const retryAfter = Math.ceil((reset - Date.now()) / 1000)
+      return NextResponse.json(
+        { error: `Muitas tentativas. Aguarde ${Math.ceil(retryAfter / 60)} minutos.` },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      )
+    }
+  }
+
   try {
     const { email, password } = await request.json()
     console.log('📧 Login attempt:', { email, password: '***' })
@@ -75,22 +105,32 @@ export async function POST(request: NextRequest) {
 
     // Gerar JWT token
     const token = jwt.sign(
-      { 
-        userId: user.id, 
+      {
+        userId: user.id,
         email: user.email,
-        role: user.role 
+        role: user.role
       },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '8h' }
     )
 
-    // Retornar dados do usuário (sem senha) e token
+    // Retornar dados do usuário (sem senha) e setar cookie httpOnly
     const { password_hash, ...userWithoutPassword } = user
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       user: userWithoutPassword,
-      token
     })
+
+    // 🔐 Cookie httpOnly — JavaScript NÃO pode ler (bloqueia XSS)
+    response.cookies.set('admin_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 8, // 8 horas
+      path: '/',
+    })
+
+    return response
 
   } catch (error) {
     console.error('Erro no login:', error)

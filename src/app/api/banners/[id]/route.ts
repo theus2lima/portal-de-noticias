@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth'
 
 // GET - Buscar banner por ID
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -21,8 +22,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-// PUT - Atualizar banner
+// PUT - Atualizar banner (requer autenticação)
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const body = await request.json()
@@ -42,8 +46,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-// DELETE - Deletar banner
+// DELETE - Deletar banner (requer autenticação)
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const { error } = await supabase

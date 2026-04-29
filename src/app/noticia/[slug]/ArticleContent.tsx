@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import DOMPurify from 'isomorphic-dompurify'
 import Link from 'next/link'
 import Image from 'next/image'
 import ShareButtons from '@/components/ShareButtons'
@@ -364,10 +365,17 @@ export default function ArticleContent({ article }: ArticleContentProps) {
                 </div>
               )}
 
-              {/* Article Content */}
+              {/* Article Content — sanitizado com DOMPurify (bloqueia XSS) */}
               <div className="prose prose-lg max-w-none">
-                <div 
-                  dangerouslySetInnerHTML={{ __html: article.content }}
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(article.content, {
+                      ADD_TAGS: ['iframe', 'figure', 'figcaption', 'audio', 'source'],
+                      ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'loading', 'controls', 'data-photos', 'data-carousel-init'],
+                      FORBID_TAGS: ['script', 'style', 'object', 'embed'],
+                      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
+                    })
+                  }}
                 />
               </div>
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth'
 
 // GET - Buscar artigos
 export async function GET(request: NextRequest) {
@@ -84,8 +85,12 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Criar novo artigo
+// POST - Criar novo artigo (requer autenticação)
 export async function POST(request: NextRequest) {
+  // 🔐 Verificar autenticação
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   console.log('🚀 POST /api/articles - INÍCIO');
   console.log('Environment:', process.env.NODE_ENV);
   console.log('Vercel Region:', process.env.VERCEL_REGION || 'local');

@@ -14,7 +14,7 @@ interface User {
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string) => Promise<boolean>
-  logout: () => void
+  logout: () => Promise<void>
   loading: boolean
   isAuthenticated: boolean
 }
@@ -33,32 +33,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('admin_token')
-      if (!token) {
-        setLoading(false)
-        return
-      }
-
-      // Verificar token com a API
+      // 🔐 Cookie httpOnly é enviado automaticamente — sem localStorage
       const response = await fetch('/api/auth/verify', {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        credentials: 'include',
       })
 
       if (response.ok) {
         const data = await response.json()
         setUser(data.user)
       } else {
-        // Token inválido, remover e deslogar
-        localStorage.removeItem('admin_token')
         setUser(null)
       }
     } catch (error) {
       console.error('Erro ao verificar autenticação:', error)
-      localStorage.removeItem('admin_token')
       setUser(null)
     } finally {
       setLoading(false)
@@ -69,15 +57,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Recebe o cookie httpOnly na resposta
         body: JSON.stringify({ email, password })
       })
 
       if (response.ok) {
         const data = await response.json()
-        localStorage.setItem('admin_token', data.token)
         setUser(data.user)
         return true
       } else {
@@ -89,10 +75,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const logout = () => {
-    localStorage.removeItem('admin_token')
-    setUser(null)
-    router.push('/admin/login')
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      })
+    } catch {
+      // Mesmo em erro de rede, limpar estado local
+    } finally {
+      setUser(null)
+      router.push('/admin/login')
+    }
   }
 
   const isAuthenticated = !!user

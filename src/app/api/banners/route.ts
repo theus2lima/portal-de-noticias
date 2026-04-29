@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth'
 
 // GET - Listar banners
 export async function GET(request: NextRequest) {
@@ -37,8 +38,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Criar banner
+// POST - Criar banner (requer autenticação)
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const body = await request.json()

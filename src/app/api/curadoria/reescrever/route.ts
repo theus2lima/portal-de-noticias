@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
 import * as cheerio from 'cheerio'
+import { requireAuth } from '@/lib/auth'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' })
 
@@ -53,6 +54,10 @@ async function fetchArticleContent(url: string): Promise<string> {
 }
 
 export async function POST(request: NextRequest) {
+  // 🔐 Verificar autenticação (previne uso não autorizado dos tokens Groq)
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     if (!process.env.GROQ_API_KEY) {
       return NextResponse.json(

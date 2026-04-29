@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { createClient } from '@/utils/supabase/server'
 
-// Configurar runtime para edge (opcional, mas otimiza performance)
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
@@ -10,16 +9,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // 🔐 Ler token do cookie httpOnly (não mais do Authorization header)
+    const token = request.cookies.get('admin_token')?.value
+
+    if (!token) {
       return NextResponse.json(
         { error: 'Token não fornecido' },
         { status: 401 }
       )
     }
-
-    const token = authHeader.substring(7) // Remove 'Bearer '
 
     // Verificar e decodificar JWT
     const decoded = jwt.verify(token, JWT_SECRET) as any

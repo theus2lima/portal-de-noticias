@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import fs from 'fs'
 import path from 'path'
+import { requireAuth } from '@/lib/auth'
 
 // Função para ler artigos do arquivo local
 function readLocalArticles() {
@@ -101,11 +102,14 @@ export async function GET(
   }
 }
 
-// PUT - Atualizar artigo
+// PUT - Atualizar artigo (requer autenticação)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const { id } = params
@@ -263,11 +267,14 @@ export async function PUT(
   }
 }
 
-// DELETE - Deletar artigo
+// DELETE - Deletar artigo (requer autenticação)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const { id } = params

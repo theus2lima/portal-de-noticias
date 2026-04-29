@@ -2,10 +2,10 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://portal-de-noticias.vercel.app/sitemap.xml
+Sitemap: https://radarnoroestepr.com.br/sitemap.xml
 
 # Preferred domain
-Host: https://portal-de-noticias.vercel.app
+Host: https://radarnoroestepr.com.br
 
 # Crawl delay (optional)
 Crawl-delay: 1

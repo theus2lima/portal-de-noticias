@@ -15,7 +15,7 @@ import {
   BarChart3,
   Settings,
   Database,
-  Image,
+  Megaphone,
   Menu,
   X,
   LogOut,
@@ -189,7 +189,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         {
           name: 'Banners',
           href: '/admin/banners',
-          icon: Image,
+          icon: Megaphone,
           description: 'Gerenciar publicidade',
           badge: null
         },
