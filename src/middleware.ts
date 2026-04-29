@@ -1,12 +1,10 @@
 // src/middleware.ts
 // Proteção server-side de todas as rotas /admin
-// Roda ANTES de qualquer page component ou layout
+// Roda no Edge runtime — usa jose (compatível com Edge, sem Node.js APIs)
 
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import jwt from 'jsonwebtoken'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+import { jwtVerify } from 'jose'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -22,7 +20,10 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-      jwt.verify(token, JWT_SECRET)
+      const secret = new TextEncoder().encode(
+        process.env.JWT_SECRET || 'your-secret-key'
+      )
+      await jwtVerify(token, secret)
       return NextResponse.next()
     } catch {
       // Token inválido ou expirado
