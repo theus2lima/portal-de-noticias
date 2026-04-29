@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { requireAuth } from '@/lib/auth'
+import { auditLog, getClientIp } from '@/lib/audit'
 
 // GET - Listar banners
 export async function GET(request: NextRequest) {
@@ -68,6 +69,16 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) throw error
+
+    // 📋 Audit log
+    await auditLog({
+      userEmail: auth.email,
+      action: 'CREATE_BANNER',
+      resourceType: 'banner',
+      resourceId: data.id,
+      ip: getClientIp(request),
+      metadata: { title, position },
+    })
 
     return NextResponse.json({ data }, { status: 201 })
   } catch (error) {

@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import fs from 'fs'
 import path from 'path'
 import { requireAuth } from '@/lib/auth'
+import { auditLog, getClientIp } from '@/lib/audit'
 
 // Função para ler artigos do arquivo local
 function readLocalArticles() {
@@ -207,9 +208,18 @@ export async function PUT(
             }
           }
         }
+        // 📋 Audit log
+        await auditLog({
+          userEmail: auth.email,
+          action: 'UPDATE_ARTICLE',
+          resourceType: 'article',
+          resourceId: id,
+          ip: getClientIp(request),
+          metadata: { title: article.title, status: article.status },
+        })
         return NextResponse.json({ data: article })
       }
-      
+
       console.log('Supabase update error, using local fallback:', error)
     } catch (supabaseError) {
       console.log('Supabase connection error, using local fallback:', supabaseError)
@@ -299,7 +309,16 @@ export async function DELETE(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
-    
+
+    // 📋 Audit log
+    await auditLog({
+      userEmail: auth.email,
+      action: 'DELETE_ARTICLE',
+      resourceType: 'article',
+      resourceId: id,
+      ip: getClientIp(request),
+    })
+
     return NextResponse.json({ message: 'Artigo deletado com sucesso' })
   } catch (error) {
     return NextResponse.json(

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { requireAuth } from '@/lib/auth'
+import { auditLog, getClientIp } from '@/lib/audit'
 
 // GET - Buscar banner por ID
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -40,6 +41,15 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     if (error) throw error
 
+    // 📋 Audit log
+    await auditLog({
+      userEmail: auth.email,
+      action: 'UPDATE_BANNER',
+      resourceType: 'banner',
+      resourceId: params.id,
+      ip: getClientIp(request),
+    })
+
     return NextResponse.json({ data })
   } catch (error) {
     return NextResponse.json({ error: 'Erro ao atualizar banner' }, { status: 500 })
@@ -59,6 +69,15 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       .eq('id', params.id)
 
     if (error) throw error
+
+    // 📋 Audit log
+    await auditLog({
+      userEmail: auth.email,
+      action: 'DELETE_BANNER',
+      resourceType: 'banner',
+      resourceId: params.id,
+      ip: getClientIp(request),
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

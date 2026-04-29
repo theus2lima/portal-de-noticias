@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import { createClient } from '@/utils/supabase/server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
+import { auditLog, getClientIp } from '@/lib/audit'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
@@ -128,6 +129,15 @@ export async function POST(request: NextRequest) {
       sameSite: 'lax',
       maxAge: 60 * 60 * 8, // 8 horas
       path: '/',
+    })
+
+    // 📋 Audit log
+    await auditLog({
+      userEmail: user.email,
+      action: 'LOGIN',
+      resourceType: 'session',
+      ip: getClientIp(request),
+      metadata: { role: user.role },
     })
 
     return response

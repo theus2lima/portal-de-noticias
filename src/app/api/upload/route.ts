@@ -3,6 +3,7 @@ import path from 'path'
 import fs from 'fs'
 import { fileTypeFromBuffer } from 'file-type'
 import { requireAuth } from '@/lib/auth'
+import { auditLog, getClientIp } from '@/lib/audit'
 
 // Tipos permitidos — validados por magic bytes, não por extensão
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
@@ -67,6 +68,17 @@ export async function POST(request: NextRequest) {
         type: detectedType.mime,
       })
     }
+
+    // 📋 Audit log
+    await auditLog({
+      userEmail: auth.email,
+      action: 'UPLOAD_FILE',
+      resourceType: 'file',
+      ip: getClientIp(request),
+      metadata: {
+        files: uploadedFiles.map(f => ({ name: f.originalName, size: f.size, type: f.type })),
+      },
+    })
 
     if (singleFile) {
       return NextResponse.json({ success: true, message: 'Upload realizado com sucesso!', data: uploadedFiles[0] })

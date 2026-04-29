@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { requireAuth } from '@/lib/auth'
+import { auditLog, getClientIp } from '@/lib/audit'
 
 // GET - Buscar artigos
 export async function GET(request: NextRequest) {
@@ -206,6 +207,16 @@ export async function POST(request: NextRequest) {
         }
       }
       
+      // 📋 Audit log
+      await auditLog({
+        userEmail: auth.email,
+        action: 'CREATE_ARTICLE',
+        resourceType: 'article',
+        resourceId: article.id,
+        ip: getClientIp(request),
+        metadata: { title: article.title, status: article.status },
+      })
+
       return NextResponse.json({ data: article }, { status: 201 })
     } catch (supabaseError) {
       console.error('Erro ao criar artigo no Supabase:', supabaseError)
