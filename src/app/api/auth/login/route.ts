@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     // Sem MFA — emitir sessão completa normalmente
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '8h' }
     )
 
