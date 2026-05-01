@@ -4,7 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/auth'
-import { authenticator } from 'otplib'
+import * as OTPLib from 'otplib'
+const authenticator = OTPLib.authenticator
 import { auditLog, getClientIp } from '@/lib/audit'
 
 const supabase = createClient(

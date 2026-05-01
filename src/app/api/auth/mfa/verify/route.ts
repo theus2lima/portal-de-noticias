@@ -3,7 +3,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { authenticator } from 'otplib'
+import * as OTPLib from 'otplib'
+const authenticator = OTPLib.authenticator
 import jwt from 'jsonwebtoken'
 import { auditLog, getClientIp } from '@/lib/audit'
 
