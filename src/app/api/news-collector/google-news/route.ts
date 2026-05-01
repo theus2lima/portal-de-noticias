@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth'
 
 // Interface para estruturar as notícias coletadas
 interface GoogleNewsItem {
@@ -13,6 +14,9 @@ interface GoogleNewsItem {
 
 // POST - Coletar notícias do Google News
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const body = await request.json()

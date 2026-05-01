@@ -12,7 +12,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) throw new Error('JWT_SECRET não configurado nas variáveis de ambiente')
 
 export async function POST(request: NextRequest) {
   const { code, mfaTempToken } = await request.json()

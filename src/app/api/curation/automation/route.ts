@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth'
 
 // GET - Status do sistema de automação
 export async function GET(request: NextRequest) {
@@ -46,6 +47,9 @@ export async function GET(request: NextRequest) {
 
 // POST - Executar automação manualmente
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const body = await request.json()
     const { action, options = {} } = body

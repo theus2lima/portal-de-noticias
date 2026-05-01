@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs/promises'
 import path from 'path'
+import { requireAuth } from '@/lib/auth'
 
 interface WhatsAppSettings {
   id: string
@@ -75,6 +76,9 @@ export async function GET() {
 
 // PUT - Atualizar configurações
 export async function PUT(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const body = await request.json()
     

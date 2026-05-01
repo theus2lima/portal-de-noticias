@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createScraperForSite } from '@/utils/smart-scraper'
+import { requireAuth } from '@/lib/auth'
 
 // POST - Coleta histórica por período para fontes externas selecionadas
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
   try {
     const supabase = await createClient()
     const body = await request.json()

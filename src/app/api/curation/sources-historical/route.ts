@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth'
 
 // POST - Coletar notícias históricas das fontes externas
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
   try {
     const supabase = await createClient()
     const body = await request.json()

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { LeadsStorage, Lead } from '@/utils/localStorage'
+import { requireAuth } from '@/lib/auth'
 
 // GET - Buscar leads
 export async function GET(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const { searchParams } = new URL(request.url)
@@ -173,15 +177,10 @@ export async function POST(request: NextRequest) {
       leadId: simulatedLead.id
     })
     
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      data: simulatedLead, 
+      data: simulatedLead,
       message: 'Lead criado com sucesso!',
-      useLocalStorage: !supabaseSuccess, // Usar localStorage se Supabase falhou
-      debug: {
-        supabaseSuccess,
-        responseTime
-      }
     }, { status: 201 })
     
   } catch (error) {
@@ -191,16 +190,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Erro interno do servidor',
-      debug: {
-        responseTime,
-        errorMessage: error instanceof Error ? error.message : 'Erro desconhecido'
-      }
     }, { status: 500 })
   }
 }
 
 // PATCH - Atualizar múltiplos leads (ex: marcar como contatados)
 export async function PATCH(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const body = await request.json()
@@ -252,6 +250,9 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE - Deletar múltiplos leads
 export async function DELETE(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const body = await request.json()

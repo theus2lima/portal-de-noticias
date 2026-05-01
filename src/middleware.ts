@@ -20,9 +20,12 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-      const secret = new TextEncoder().encode(
-        process.env.JWT_SECRET || 'your-secret-key'
-      )
+      const jwtSecret = process.env.JWT_SECRET
+      if (!jwtSecret) {
+        const loginUrl = new URL('/admin/login', request.url)
+        return NextResponse.redirect(loginUrl)
+      }
+      const secret = new TextEncoder().encode(jwtSecret)
       await jwtVerify(token, secret)
       return NextResponse.next()
     } catch {

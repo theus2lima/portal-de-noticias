@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import OpenAI from 'openai'
+import { requireAuth } from '@/lib/auth'
 
 // Configurar OpenAI (em produção, use variável de ambiente)
 const openai = new OpenAI({
@@ -9,6 +10,9 @@ const openai = new OpenAI({
 
 // POST - Classificar notícias pendentes
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const body = await request.json()
@@ -327,6 +331,9 @@ A confiança deve ser um número entre 0 e 1.
 
 // PUT - Treinar o classificador com feedback
 export async function PUT(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const body = await request.json()

@@ -6,7 +6,8 @@ import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import { auditLog, getClientIp } from '@/lib/audit'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) throw new Error('JWT_SECRET não configurado nas variáveis de ambiente')
 
 // Rate limit: 5 tentativas por IP a cada 15 minutos
 // Só ativa se UPSTASH_REDIS_REST_URL estiver configurado
@@ -39,8 +40,6 @@ export async function POST(request: NextRequest) {
 
   try {
     const { email, password } = await request.json()
-    console.log('📧 Login attempt:', { email, password: '***' })
-
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email e senha são obrigatórios' },
@@ -59,8 +58,6 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true)
       .single()
     
-    console.log('🔍 User query result:', { user: user ? 'found' : 'not found', error: error?.message })
-
     if (error || !user) {
       return NextResponse.json(
         { error: 'Credenciais inválidas' },
@@ -76,33 +73,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar senha - USO TEMPORÁRIO APENAS PARA DESENVOLVIMENTO
-    console.log('🔐 Password verification:', { 
-      providedPassword: password, 
-      expectedEmail: 'admin@portalnoticias.com.br',
-      expectedPassword: 'admin123'
-    })
-    
-    // Verificação simples apenas para usuário temporário
-    let isValidPassword = false;
-    if (user.email === 'admin@portalnoticias.com.br' && password === 'admin123') {
-      isValidPassword = true;
-    } else {
-      // Para outros casos (quando Supabase estiver configurado), usar bcrypt
-      isValidPassword = await bcrypt.compare(password, user.password_hash)
-    }
-    
-    console.log('🔍 Password valid:', isValidPassword)
-    
+    // Verificar senha via bcrypt
+    const isValidPassword = await bcrypt.compare(password, user.password_hash)
+
     if (!isValidPassword) {
-      console.log('❌ Password verification failed')
       return NextResponse.json(
         { error: 'Credenciais inválidas' },
         { status: 401 }
       )
     }
-    
-    console.log('✅ Login successful!')
 
     // 🔐 MFA: se o usuário tem totp_secret, exigir segundo fator
     if (user.totp_secret) {

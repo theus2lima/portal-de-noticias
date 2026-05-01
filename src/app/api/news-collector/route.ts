@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import Parser from 'rss-parser'
 import * as cheerio from 'cheerio'
+import { requireAuth } from '@/lib/auth'
 
 // Configuração do parser RSS
 const rssParser = new Parser({
@@ -22,6 +23,9 @@ const rssParser = new Parser({
 
 // POST - Executar coleta de notícias
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const body = await request.json()

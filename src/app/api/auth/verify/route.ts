@@ -5,7 +5,8 @@ import { createClient } from '@/utils/supabase/server'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) throw new Error('JWT_SECRET não configurado nas variáveis de ambiente')
 
 export async function GET(request: NextRequest) {
   try {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth'
 
 // GET - Listar fontes de notícias
 export async function GET(request: NextRequest) {
@@ -48,6 +49,9 @@ export async function GET(request: NextRequest) {
 
 // POST - Criar nova fonte
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const body = await request.json()
@@ -131,6 +135,9 @@ export async function POST(request: NextRequest) {
 
 // PUT - Atualizar fonte
 export async function PUT(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const body = await request.json()
@@ -209,6 +216,9 @@ export async function PUT(request: NextRequest) {
 
 // DELETE - Remover fonte
 export async function DELETE(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const { searchParams } = new URL(request.url)

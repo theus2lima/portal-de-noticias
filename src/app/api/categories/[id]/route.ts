@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth'
 
 // GET - Buscar categoria específica
 export async function GET(
@@ -56,6 +57,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
   try {
     const supabase = await createClient()
     const { id } = params
@@ -154,6 +157,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
   try {
     const supabase = await createClient()
     const { id } = params

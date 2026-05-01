@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth'
 
 // Categorias padrão como fallback
 const defaultCategories = [
@@ -64,6 +65,9 @@ export async function GET(request: NextRequest) {
 
 // POST - Criar nova categoria
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const body = await request.json()
@@ -139,6 +143,9 @@ export async function POST(request: NextRequest) {
 
 // PUT - Atualizar todas as categorias (bulk update - raramente usado)
 export async function PUT(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     return NextResponse.json(
       { error: 'Use PATCH para atualizações em lote ou PUT em /api/categories/[id] para categoria específica' },
@@ -154,6 +161,9 @@ export async function PUT(request: NextRequest) {
 
 // DELETE - Deletar múltiplas categorias
 export async function DELETE(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   try {
     const supabase = await createClient()
     const body = await request.json()
