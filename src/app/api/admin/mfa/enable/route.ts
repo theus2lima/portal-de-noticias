@@ -4,8 +4,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/auth'
-import * as OTPLib from 'otplib'
-const authenticator = OTPLib.authenticator
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const otplibModule = require('otplib') as any
+const authenticator = otplibModule.authenticator as {
+  verify(opts: { token: string; secret: string }): boolean
+}
 import { auditLog, getClientIp } from '@/lib/audit'
 
 const supabase = createClient(

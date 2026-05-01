@@ -5,8 +5,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/auth'
-import * as OTPLib from 'otplib'
-const authenticator = OTPLib.authenticator
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const otplibModule = require('otplib') as any
+const authenticator = otplibModule.authenticator as {
+  generateSecret(): string
+  keyuri(email: string, service: string, secret: string): string
+}
 import QRCode from 'qrcode'
 
 const supabase = createClient(
