@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Eye, EyeOff, LogIn, Shield, Smartphone } from 'lucide-react'
+import { Eye, EyeOff, LogIn, Shield, Smartphone, AlertTriangle, Clock } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function AdminLogin() {
@@ -11,6 +11,13 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Tentativas restantes (null = Upstash não configurado / desconhecido)
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null)
+
+  // Bloqueio por rate limit
+  const [blockedSeconds, setBlockedSeconds] = useState(0)
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Segundo passo — MFA
   const [mfaStep, setMfaStep] = useState(false)
@@ -26,21 +33,58 @@ export default function AdminLogin() {
     }
   }, [isAuthenticated, router])
 
+  // Countdown do bloqueio
+  useEffect(() => {
+    if (blockedSeconds <= 0) {
+      if (countdownRef.current) clearInterval(countdownRef.current)
+      return
+    }
+    countdownRef.current = setInterval(() => {
+      setBlockedSeconds((s) => {
+        if (s <= 1) {
+          clearInterval(countdownRef.current!)
+          setError('')
+          return 0
+        }
+        return s - 1
+      })
+    }, 1000)
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current) }
+  }, [blockedSeconds])
+
+  const formatCountdown = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    if (m > 0) return `${m}m ${s.toString().padStart(2, '0')}s`
+    return `${s}s`
+  }
+
+  const isBlocked = blockedSeconds > 0
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isBlocked) return
     setLoading(true)
     setError('')
 
     try {
       const result = await login(email, password)
 
+      if (result.rateLimited) {
+        setBlockedSeconds(result.retryAfter ?? 900)
+        setRemainingAttempts(0)
+        return
+      }
+
       if (result.mfaRequired && result.mfaTempToken) {
-        // Avançar para o segundo passo
         setMfaTempToken(result.mfaTempToken)
         setMfaStep(true)
+        setRemainingAttempts(null)
       } else if (result.success) {
         window.location.href = '/admin/dashboard'
       } else {
+        const remaining = result.remaining ?? null
+        setRemainingAttempts(remaining)
         setError('Credenciais inválidas. Verifique seu email e senha.')
       }
     } catch {
@@ -93,14 +137,41 @@ export default function AdminLogin() {
         </div>
 
         <div className="bg-white rounded-lg shadow-xl p-8">
-          {/* Passo 1 — Email e senha */}
+
+          {/* ── Passo 1 — Email e senha ─────────────────────────────── */}
           {!mfaStep && (
             <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
-                  {error}
+
+              {/* Bloqueado por rate limit */}
+              {isBlocked && (
+                <div className="bg-red-50 border border-red-300 rounded-md px-4 py-3 flex items-start gap-3">
+                  <Clock className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
+                  <div className="text-sm text-red-700">
+                    <p className="font-semibold">Acesso temporariamente bloqueado</p>
+                    <p>Muitas tentativas incorretas. Tente novamente em{' '}
+                      <span className="font-mono font-bold">{formatCountdown(blockedSeconds)}</span>.
+                    </p>
+                  </div>
                 </div>
               )}
+
+              {/* Erro de credencial + aviso de tentativas restantes */}
+              {!isBlocked && error && (
+                <div className="space-y-2">
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+                    {error}
+                  </div>
+                  {remainingAttempts !== null && remainingAttempts <= 3 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-md px-4 py-2 flex items-center gap-2 text-sm text-amber-700">
+                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                      {remainingAttempts === 0
+                        ? 'Esta foi sua última tentativa. O acesso será bloqueado na próxima.'
+                        : `Atenção: ${remainingAttempts} tentativa${remainingAttempts > 1 ? 's' : ''} restante${remainingAttempts > 1 ? 's' : ''} antes do bloqueio.`}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-2">Email</label>
                 <input
@@ -111,7 +182,7 @@ export default function AdminLogin() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-3 border border-neutral-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                   placeholder="admin@exemplo.com"
-                  disabled={loading}
+                  disabled={loading || isBlocked}
                 />
               </div>
               <div>
@@ -125,31 +196,34 @@ export default function AdminLogin() {
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full px-4 py-3 pr-12 border border-neutral-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                     placeholder="Digite sua senha"
-                    disabled={loading}
+                    disabled={loading || isBlocked}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-neutral-600"
-                    disabled={loading}
+                    disabled={loading || isBlocked}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
               </div>
+
               <button
                 type="submit"
-                disabled={loading || !email || !password}
+                disabled={loading || isBlocked || !email || !password}
                 className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-neutral-400 text-white font-medium py-3 px-4 rounded-md transition-colors duration-200 flex items-center justify-center gap-2"
               >
                 {loading
                   ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                  : isBlocked
+                  ? <><Clock className="h-5 w-5" />Bloqueado — {formatCountdown(blockedSeconds)}</>
                   : <><LogIn className="h-5 w-5" />Entrar</>}
               </button>
             </form>
           )}
 
-          {/* Passo 2 — Código TOTP */}
+          {/* ── Passo 2 — Código TOTP ───────────────────────────────── */}
           {mfaStep && (
             <form onSubmit={handleMfaSubmit} className="space-y-6">
               {error && (

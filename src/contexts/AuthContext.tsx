@@ -15,6 +15,9 @@ interface LoginResult {
   success: boolean
   mfaRequired?: boolean
   mfaTempToken?: string
+  rateLimited?: boolean
+  retryAfter?: number   // segundos até desbloquear
+  remaining?: number    // tentativas restantes antes do bloqueio
 }
 
 interface AuthContextType {
@@ -69,17 +72,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ email, password })
       })
 
+      const data = await response.json()
+
+      if (response.status === 429) {
+        return { success: false, rateLimited: true, retryAfter: data.retryAfter }
+      }
+
       if (response.ok) {
-        const data = await response.json()
-        // MFA requerido — retornar token temporário para segunda etapa
         if (data.mfaRequired) {
           return { success: false, mfaRequired: true, mfaTempToken: data.mfaTempToken }
         }
         setUser(data.user)
         return { success: true }
-      } else {
-        return { success: false }
       }
+
+      return { success: false, remaining: data.remaining ?? null }
     } catch (error) {
       console.error('Erro no login:', error)
       return { success: false }

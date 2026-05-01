@@ -36,15 +36,18 @@ export async function POST(request: NextRequest) {
     request.headers.get('x-real-ip') ??
     'unknown'
 
+  let remainingAttempts: number | null = null
+
   if (ratelimit) {
-    const { success: rateLimitOk, reset } = await ratelimit.limit(ip)
+    const { success: rateLimitOk, reset, remaining } = await ratelimit.limit(ip)
     if (!rateLimitOk) {
       const retryAfter = Math.ceil((reset - Date.now()) / 1000)
       return NextResponse.json(
-        { error: `Muitas tentativas. Aguarde ${Math.ceil(retryAfter / 60)} minutos.` },
+        { error: `Muitas tentativas. Tente novamente em ${Math.ceil(retryAfter / 60)} minuto(s).`, retryAfter },
         { status: 429, headers: { 'Retry-After': String(retryAfter) } }
       )
     }
+    remainingAttempts = remaining
   }
 
   try {
@@ -75,7 +78,7 @@ export async function POST(request: NextRequest) {
         metadata: { reason: 'user_not_found' },
       })
       return NextResponse.json(
-        { error: 'Credenciais inválidas' },
+        { error: 'Credenciais inválidas', remaining: remainingAttempts },
         { status: 401 }
       )
     }
@@ -100,7 +103,7 @@ export async function POST(request: NextRequest) {
         metadata: { reason: 'invalid_password' },
       })
       return NextResponse.json(
-        { error: 'Credenciais inválidas' },
+        { error: 'Credenciais inválidas', remaining: remainingAttempts },
         { status: 401 }
       )
     }
