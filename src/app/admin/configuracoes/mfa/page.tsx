@@ -23,14 +23,10 @@ export default function MfaConfigPage() {
   const checkMfaStatus = async () => {
     try {
       const res = await fetch('/api/admin/mfa/setup', { credentials: 'include' })
-      // Se retornou 400 "já ativo", MFA está ativo
       if (res.status === 400) {
         setMfaStatus('active')
-      } else if (res.ok) {
-        const data = await res.json()
-        // Retornou QR code — MFA não está ativo, mas já buscamos o setup
-        setQrCode(data.qrCode)
-        setSecret(data.secret)
+      } else {
+        // Qualquer outra resposta (200, 401, 500...) → trata como inativo para mostrar o botão
         setMfaStatus('inactive')
       }
     } catch {
