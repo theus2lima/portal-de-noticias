@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs/promises'
 import path from 'path'
 import { requireAuth } from '@/lib/auth'
+import { auditLog, getClientIp } from '@/lib/audit'
 
 interface WhatsAppSettings {
   id: string
@@ -124,6 +125,14 @@ export async function PUT(request: NextRequest) {
     }
 
     await saveSettings(updatedSettings)
+
+    await auditLog({
+      userEmail: auth.email,
+      action: 'UPDATE_WHATSAPP_SETTINGS',
+      resourceType: 'settings',
+      ip: getClientIp(request),
+      metadata: { isActive: updatedSettings.isActive },
+    })
 
     return NextResponse.json({
       success: true,

@@ -57,10 +57,9 @@ export async function POST(request: NextRequest) {
 
   await auditLog({
     userEmail: auth.email,
-    action: 'LOGIN',
+    action: 'DISABLE_MFA',
     resourceType: 'mfa',
     ip: getClientIp(request),
-    metadata: { event: 'mfa_disabled' },
   })
 
   return NextResponse.json({ success: true, message: 'MFA desativado.' })

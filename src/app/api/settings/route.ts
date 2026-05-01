@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { requireAuth } from '@/lib/auth'
+import { auditLog, getClientIp } from '@/lib/audit'
 
 interface TickerItem {
   id: string
@@ -124,6 +125,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { category, action, data } = body
     const supabase = await createClient()
+    const ip = getClientIp(request)
     
     if (category === 'ticker') {
       switch (action) {
@@ -262,6 +264,14 @@ export async function POST(request: NextRequest) {
         return acc
       }, { tickerEnabled: true, tickerSpeed: 30 }) || { tickerEnabled: true, tickerSpeed: 30 }
       
+      await auditLog({
+        userEmail: auth.email,
+        action: 'UPDATE_SETTINGS',
+        resourceType: 'settings',
+        ip,
+        metadata: { category: 'ticker', action },
+      })
+
       return NextResponse.json({
         success: true,
         message: 'Configurações do ticker atualizadas com sucesso',
@@ -271,7 +281,7 @@ export async function POST(request: NextRequest) {
         }
       })
     }
-    
+
     // Atualizar outras configurações
     for (const [key, value] of Object.entries(data)) {
       await supabase
@@ -282,7 +292,15 @@ export async function POST(request: NextRequest) {
           value: value
         })
     }
-    
+
+    await auditLog({
+      userEmail: auth.email,
+      action: 'UPDATE_SETTINGS',
+      resourceType: 'settings',
+      ip,
+      metadata: { category },
+    })
+
     return NextResponse.json({
       success: true,
       message: 'Configurações atualizadas com sucesso'
@@ -303,7 +321,7 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
     const supabase = await createClient()
-    
+
     // Atualizar configurações específicas
     for (const [key, value] of Object.entries(body)) {
       await supabase
@@ -314,7 +332,15 @@ export async function PUT(request: NextRequest) {
           value: value
         })
     }
-    
+
+    await auditLog({
+      userEmail: auth.email,
+      action: 'UPDATE_SETTINGS',
+      resourceType: 'settings',
+      ip: getClientIp(request),
+      metadata: { keys: Object.keys(body) },
+    })
+
     return NextResponse.json({
       success: true,
       message: 'Configurações atualizadas com sucesso'

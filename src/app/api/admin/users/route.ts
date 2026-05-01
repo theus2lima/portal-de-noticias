@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { createClient } from '@/utils/supabase/server'
 import { requireAuth } from '@/lib/auth'
+import { auditLog, getClientIp } from '@/lib/audit'
 
 // GET - Listar usuários
 export async function GET(_request: NextRequest) {
@@ -33,6 +34,7 @@ export async function GET(_request: NextRequest) {
 export async function POST(request: NextRequest) {
   const auth = await requireAuth()
   if (auth instanceof NextResponse) return auth
+  const ip = getClientIp(request)
 
   try {
     const { email, password, name, role = 'admin' } = await request.json()
@@ -88,6 +90,15 @@ export async function POST(request: NextRequest) {
     if (error) {
       throw error
     }
+
+    await auditLog({
+      userEmail: auth.email,
+      action: 'CREATE_USER',
+      resourceType: 'user',
+      resourceId: newUser.id,
+      ip,
+      metadata: { createdEmail: email, role },
+    })
 
     return NextResponse.json({ user: newUser }, { status: 201 })
 

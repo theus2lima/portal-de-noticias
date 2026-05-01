@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { requireAuth } from '@/lib/auth'
+import { auditLog, getClientIp } from '@/lib/audit'
 
 // PUT - Atualizar usuário
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireAuth()
   if (auth instanceof NextResponse) return auth
+  const ip = getClientIp(request)
 
   try {
     const userId = params.id
@@ -68,6 +70,17 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       throw error
     }
 
+    // Detectar se houve mudança de role
+    const action = updatedUser.role !== auth.role ? 'CHANGE_ROLE' : 'UPDATE_USER'
+    await auditLog({
+      userEmail: auth.email,
+      action,
+      resourceType: 'user',
+      resourceId: userId,
+      ip,
+      metadata: { updatedEmail: email, role },
+    })
+
     return NextResponse.json({ user: updatedUser })
 
   } catch (error) {
@@ -83,6 +96,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireAuth()
   if (auth instanceof NextResponse) return auth
+  const ip = getClientIp(request)
 
   try {
     const userId = params.id
@@ -128,8 +142,17 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       throw error
     }
 
-    return NextResponse.json({ 
-      message: `Usuário ${existingUser.name} removido com sucesso` 
+    await auditLog({
+      userEmail: auth.email,
+      action: 'DELETE_USER',
+      resourceType: 'user',
+      resourceId: userId,
+      ip,
+      metadata: { deletedName: existingUser.name },
+    })
+
+    return NextResponse.json({
+      message: `Usuário ${existingUser.name} removido com sucesso`
     })
 
   } catch (error) {

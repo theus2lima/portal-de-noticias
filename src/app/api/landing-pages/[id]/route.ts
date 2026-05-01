@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/auth'
+import { auditLog, getClientIp } from '@/lib/audit'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -113,6 +114,15 @@ export async function PUT(
       )
     }
 
+    await auditLog({
+      userEmail: auth.email,
+      action: 'UPDATE_LANDING_PAGE',
+      resourceType: 'landing_page',
+      resourceId: params.id,
+      ip: getClientIp(request),
+      metadata: { updatedFields: Object.keys(updateData) },
+    })
+
     return NextResponse.json(data)
   } catch (error) {
     console.error('Erro na API de atualização de landing page:', error)
@@ -158,6 +168,15 @@ export async function DELETE(
         { status: 500 }
       )
     }
+
+    await auditLog({
+      userEmail: auth.email,
+      action: 'DELETE_LANDING_PAGE',
+      resourceType: 'landing_page',
+      resourceId: params.id,
+      ip: getClientIp(request),
+      metadata: { title: existingPage.title },
+    })
 
     return NextResponse.json(
       { message: 'Landing page excluída com sucesso' },

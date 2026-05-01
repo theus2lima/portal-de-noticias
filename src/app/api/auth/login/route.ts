@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import { auditLog, getClientIp } from '@/lib/audit'
@@ -17,6 +17,17 @@ const ratelimit =
         prefix: 'login_limit',
       })
     : null
+
+// Cliente com service_role para autenticação:
+// A tabela users tem RLS bloqueando leitura anônima (inclusive password_hash e totp_secret).
+// O login precisa de service_role — nunca exposto no bundle JS pois está em API route (server-only).
+function getAuthClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+}
 
 export async function POST(request: NextRequest) {
   // Verificar rate limit
@@ -45,18 +56,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Criar cliente Supabase
-    const supabase = await createClient()
+    // Buscar usuário com service_role (RLS bloqueia anon na tabela users)
+    const supabase = getAuthClient()
 
-    // Buscar usuário no banco de dados
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
       .eq('is_active', true)
       .single()
-    
+
     if (error || !user) {
+      await auditLog({
+        userEmail: email,
+        action: 'LOGIN_FAILED',
+        resourceType: 'session',
+        ip,
+        metadata: { reason: 'user_not_found' },
+      })
       return NextResponse.json(
         { error: 'Credenciais inválidas' },
         { status: 401 }
@@ -75,6 +92,13 @@ export async function POST(request: NextRequest) {
     const isValidPassword = await bcrypt.compare(password, user.password_hash)
 
     if (!isValidPassword) {
+      await auditLog({
+        userEmail: email,
+        action: 'LOGIN_FAILED',
+        resourceType: 'session',
+        ip,
+        metadata: { reason: 'invalid_password' },
+      })
       return NextResponse.json(
         { error: 'Credenciais inválidas' },
         { status: 401 }
@@ -99,10 +123,10 @@ export async function POST(request: NextRequest) {
       { expiresIn: '8h' }
     )
 
-    const { password_hash, ...userWithoutPassword } = user
+    const { password_hash, totp_secret, ...userWithoutSecrets } = user
 
     const response = NextResponse.json({
-      user: userWithoutPassword,
+      user: userWithoutSecrets,
     })
 
     response.cookies.set('admin_token', token, {

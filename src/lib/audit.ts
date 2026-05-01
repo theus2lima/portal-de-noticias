@@ -23,6 +23,16 @@ export type AuditAction =
   | 'DELETE_BANNER'
   | 'UPLOAD_FILE'
   | 'REWRITE_AI'
+  | 'DISABLE_MFA'
+  | 'CREATE_USER'
+  | 'DELETE_USER'
+  | 'UPDATE_USER'
+  | 'CHANGE_ROLE'
+  | 'UPDATE_SETTINGS'
+  | 'UPDATE_WHATSAPP_SETTINGS'
+  | 'CREATE_LANDING_PAGE'
+  | 'UPDATE_LANDING_PAGE'
+  | 'DELETE_LANDING_PAGE'
 
 export interface AuditOptions {
   userEmail: string

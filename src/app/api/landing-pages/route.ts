@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/auth'
+import { auditLog, getClientIp } from '@/lib/audit'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -166,6 +167,15 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    await auditLog({
+      userEmail: auth.email,
+      action: 'CREATE_LANDING_PAGE',
+      resourceType: 'landing_page',
+      resourceId: data.id,
+      ip: getClientIp(request),
+      metadata: { title: data.title, slug: data.slug },
+    })
 
     return NextResponse.json(data, { status: 201 })
   } catch (error) {
