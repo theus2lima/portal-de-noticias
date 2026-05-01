@@ -5,9 +5,7 @@ import { createClient } from '@/utils/supabase/server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import { auditLog, getClientIp } from '@/lib/audit'
-
-if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET não configurado nas variáveis de ambiente')
-const JWT_SECRET: string = process.env.JWT_SECRET
+import { getJwtSecret } from '@/lib/auth'
 
 // Rate limit: 5 tentativas por IP a cada 15 minutos
 // Só ativa se UPSTASH_REDIS_REST_URL estiver configurado
@@ -88,7 +86,7 @@ export async function POST(request: NextRequest) {
       // Emitir token temporário de MFA (5 minutos, sem cookie de sessão)
       const mfaTempToken = jwt.sign(
         { type: 'mfa_pending', userId: user.id, email: user.email, role: user.role },
-        JWT_SECRET,
+        getJwtSecret(),
         { expiresIn: '5m' }
       )
       return NextResponse.json({ mfaRequired: true, mfaTempToken })

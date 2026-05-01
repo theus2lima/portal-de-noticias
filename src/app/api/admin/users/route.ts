@@ -2,21 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { createClient } from '@/utils/supabase/server'
-
-if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET não configurado nas variáveis de ambiente')
-const JWT_SECRET: string = process.env.JWT_SECRET
+import { getJwtSecret } from '@/lib/auth'
 
 // Middleware para verificar autenticação
 async function verifyAuth(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return null
     }
 
     const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const decoded = jwt.verify(token, getJwtSecret()) as any
 
     const supabase = await createClient()
     const { data: user, error } = await supabase

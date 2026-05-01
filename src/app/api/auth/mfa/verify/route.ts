@@ -6,14 +6,13 @@ import { createClient } from '@supabase/supabase-js'
 import speakeasy from 'speakeasy'
 import jwt from 'jsonwebtoken'
 import { auditLog, getClientIp } from '@/lib/audit'
+import { getJwtSecret } from '@/lib/auth'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET não configurado nas variáveis de ambiente')
-const JWT_SECRET: string = process.env.JWT_SECRET
 
 export async function POST(request: NextRequest) {
   const { code, mfaTempToken } = await request.json()
@@ -25,7 +24,7 @@ export async function POST(request: NextRequest) {
   // Verificar token temporário de MFA
   let pendingPayload: { type: string; userId: string; email: string; role: string }
   try {
-    pendingPayload = jwt.verify(mfaTempToken, JWT_SECRET) as typeof pendingPayload
+    pendingPayload = jwt.verify(mfaTempToken, getJwtSecret()) as typeof pendingPayload
     if (pendingPayload.type !== 'mfa_pending') throw new Error('Token inválido')
   } catch {
     return NextResponse.json(
@@ -64,7 +63,7 @@ export async function POST(request: NextRequest) {
   // Código correto — emitir sessão completa
   const sessionToken = jwt.sign(
     { userId: user.id, email: user.email, role: user.role },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '8h' }
   )
 

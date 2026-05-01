@@ -6,13 +6,21 @@ import { cookies } from 'next/headers'
 import jwt from 'jsonwebtoken'
 import { NextResponse } from 'next/server'
 
-if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET não configurado nas variáveis de ambiente')
-const JWT_SECRET: string = process.env.JWT_SECRET
-
 export interface AdminPayload {
   userId: string
   email: string
   role: string
+}
+
+/**
+ * Retorna JWT_SECRET validado em runtime.
+ * Chamado dentro das funções (não no nível do módulo) para evitar
+ * erros durante o build do Next.js, quando as envs ainda não estão disponíveis.
+ */
+export function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret) throw new Error('JWT_SECRET não configurado nas variáveis de ambiente')
+  return secret
 }
 
 /**
@@ -36,7 +44,7 @@ export async function requireAuth(): Promise<AdminPayload | NextResponse> {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as AdminPayload
+    const decoded = jwt.verify(token, getJwtSecret()) as AdminPayload
     return decoded
   } catch {
     return NextResponse.json(

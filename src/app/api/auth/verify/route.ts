@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { createClient } from '@/utils/supabase/server'
+import { getJwtSecret } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET não configurado nas variáveis de ambiente')
-const JWT_SECRET: string = process.env.JWT_SECRET
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +20,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar e decodificar JWT
-    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const decoded = jwt.verify(token, getJwtSecret()) as any
 
     // Buscar dados atualizados do usuário
     const supabase = await createClient()
