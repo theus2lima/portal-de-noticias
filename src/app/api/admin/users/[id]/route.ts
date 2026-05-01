@@ -1,45 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
 import { createClient } from '@/utils/supabase/server'
-import { getJwtSecret } from '@/lib/auth'
-
-// Middleware para verificar autenticação
-async function verifyAuth(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, getJwtSecret()) as any
-
-    const supabase = await createClient()
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, email, name, role')
-      .eq('id', decoded.userId)
-      .eq('is_active', true)
-      .single()
-
-    if (error || !user || user.role !== 'admin') {
-      return null
-    }
-
-    return user
-  } catch {
-    return null
-  }
-}
+import { requireAuth } from '@/lib/auth'
 
 // PUT - Atualizar usuário
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const user = await verifyAuth(request)
-  if (!user) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-  }
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
 
   try {
     const userId = params.id
@@ -115,14 +81,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 // DELETE - Remover usuário
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const user = await verifyAuth(request)
-  if (!user) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-  }
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
 
   try {
     const userId = params.id
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: 'ID do usuário é obrigatório' },
@@ -131,7 +95,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     // Não permitir que o usuário delete a si mesmo
-    if (userId === user.id) {
+    if (userId === auth.userId) {
       return NextResponse.json(
         { error: 'Não é possível deletar sua própria conta' },
         { status: 400 }
@@ -178,11 +142,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 }
 
 // GET - Buscar usuário específico
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  const user = await verifyAuth(request)
-  if (!user) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-  }
+export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
 
   try {
     const userId = params.id

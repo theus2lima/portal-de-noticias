@@ -49,25 +49,17 @@ export default function UsersPage() {
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingUser) return
-    
+
     setSubmitLoading(true)
     setError('')
     setSuccess('')
 
     try {
-      const token = localStorage.getItem('admin_token')
-      if (!token) {
-        setError('Token de autenticação não encontrado')
-        return
-      }
-
-      // Atualizar usuário via API
+      // Atualizar usuário via API — cookie httpOnly enviado automaticamente
       const response = await fetch(`/api/admin/users/${editingUser.id}`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: editingUser.name,
           email: editingUser.email,
@@ -110,19 +102,10 @@ export default function UsersPage() {
     setSuccess('')
 
     try {
-      const token = localStorage.getItem('admin_token')
-      if (!token) {
-        setError('Token de autenticação não encontrado')
-        return
-      }
-
-      // Deletar usuário via API
+      // Deletar usuário via API — cookie httpOnly enviado automaticamente
       const response = await fetch(`/api/admin/users/${userToDelete.id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        credentials: 'include',
       })
       
       if (response.ok) {
@@ -145,27 +128,16 @@ export default function UsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('admin_token')
-      if (!token) {
-        setError('Token de autenticação não encontrado')
-        setLoading(false)
-        return
-      }
-
-      // Carregar usuários reais da API
+      // Carregar usuários reais da API — cookie httpOnly enviado automaticamente
       const response = await fetch('/api/admin/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        credentials: 'include',
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         setUsers(data.users || [])
       } else if (response.status === 401) {
         setError('Não autorizado. Faça login novamente.')
-        localStorage.removeItem('admin_token')
       } else {
         setUsers([])
       }
@@ -198,22 +170,14 @@ export default function UsersPage() {
         return
       }
 
-      const token = localStorage.getItem('admin_token')
-      if (!token) {
-        setError('Token de autenticação não encontrado')
-        return
-      }
-
-      // Criar usuário via API
+      // Criar usuário via API — cookie httpOnly enviado automaticamente
       const response = await fetch('/api/admin/users', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newUser)
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         setUsers([data.user, ...users])
@@ -223,7 +187,6 @@ export default function UsersPage() {
         setTimeout(() => setSuccess(''), 3000)
       } else if (response.status === 401) {
         setError('Não autorizado. Faça login novamente.')
-        localStorage.removeItem('admin_token')
       } else {
         const errorData = await response.json().catch(() => ({}))
         setError(errorData.error || 'Erro ao criar usuário')

@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
 import * as cheerio from 'cheerio'
 import { requireAuth } from '@/lib/auth'
+import { validateExternalUrl, SsrfBlockedError } from '@/lib/ssrf'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' })
 
 async function fetchArticleContent(url: string): Promise<string> {
   try {
+    // 🛡️ Bloquear SSRF — rejeita IPs internos, cloud metadata, esquemas não-HTTP
+    validateExternalUrl(url)
+
     const res = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
@@ -48,6 +52,10 @@ async function fetchArticleContent(url: string): Promise<string> {
       .filter((t: string) => t.length > 60)
       .join('\n\n')
   } catch (err) {
+    if (err instanceof SsrfBlockedError) {
+      console.warn('SSRF bloqueado em fetchArticleContent:', err.message)
+      return ''
+    }
     console.error('Fetch article error:', err)
     return ''
   }

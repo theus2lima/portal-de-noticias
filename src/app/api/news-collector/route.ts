@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import Parser from 'rss-parser'
 import * as cheerio from 'cheerio'
 import { requireAuth } from '@/lib/auth'
+import { validateExternalUrl, SsrfBlockedError } from '@/lib/ssrf'
 
 // Configuração do parser RSS
 const rssParser = new Parser({
@@ -246,6 +247,16 @@ async function collectFromSource(supabase: any, sourceId: string, forceRefresh: 
 
 // Função para coletar via RSS
 async function collectFromRSS(source: any) {
+  // 🛡️ Bloquear SSRF — validar URL antes de fazer fetch
+  try {
+    validateExternalUrl(source.url)
+  } catch (err) {
+    if (err instanceof SsrfBlockedError) {
+      throw new Error(`URL da fonte RSS bloqueada por segurança: ${err.message}`)
+    }
+    throw err
+  }
+
   const feed = await rssParser.parseURL(source.url)
   const newsItems: any[] = []
 
@@ -294,6 +305,16 @@ function extractImageFromRSS(item: any): string | null {
 
 // Função para coletar via scraping
 async function collectFromScraping(source: any) {
+  // 🛡️ Bloquear SSRF — validar URL antes de fazer fetch
+  try {
+    validateExternalUrl(source.url)
+  } catch (err) {
+    if (err instanceof SsrfBlockedError) {
+      throw new Error(`URL da fonte bloqueada por segurança: ${err.message}`)
+    }
+    throw err
+  }
+
   // Headers mais robustos para contornar proteções anti-bot
   const headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

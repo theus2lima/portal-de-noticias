@@ -1,45 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
 import { createClient } from '@/utils/supabase/server'
-import { getJwtSecret } from '@/lib/auth'
-
-// Middleware para verificar autenticação
-async function verifyAuth(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, getJwtSecret()) as any
-
-    const supabase = await createClient()
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, email, name, role')
-      .eq('id', decoded.userId)
-      .eq('is_active', true)
-      .single()
-
-    if (error || !user || user.role !== 'admin') {
-      return null
-    }
-
-    return user
-  } catch {
-    return null
-  }
-}
+import { requireAuth } from '@/lib/auth'
 
 // GET - Listar usuários
-export async function GET(request: NextRequest) {
-  const user = await verifyAuth(request)
-  if (!user) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-  }
+export async function GET(_request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
 
   try {
     const supabase = await createClient()
@@ -64,10 +31,8 @@ export async function GET(request: NextRequest) {
 
 // POST - Criar novo usuário
 export async function POST(request: NextRequest) {
-  const user = await verifyAuth(request)
-  if (!user) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-  }
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
 
   try {
     const { email, password, name, role = 'admin' } = await request.json()
