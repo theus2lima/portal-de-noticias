@@ -3,8 +3,8 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { createClient } from '@/utils/supabase/server'
 
-const JWT_SECRET = process.env.JWT_SECRET
-if (!JWT_SECRET) throw new Error('JWT_SECRET não configurado nas variáveis de ambiente')
+if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET não configurado nas variáveis de ambiente')
+const JWT_SECRET: string = process.env.JWT_SECRET
 
 // Middleware para verificar autenticação
 async function verifyAuth(request: NextRequest) {

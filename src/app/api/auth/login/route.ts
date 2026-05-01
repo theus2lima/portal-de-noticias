@@ -6,8 +6,8 @@ import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import { auditLog, getClientIp } from '@/lib/audit'
 
-const JWT_SECRET = process.env.JWT_SECRET
-if (!JWT_SECRET) throw new Error('JWT_SECRET não configurado nas variáveis de ambiente')
+if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET não configurado nas variáveis de ambiente')
+const JWT_SECRET: string = process.env.JWT_SECRET
 
 // Rate limit: 5 tentativas por IP a cada 15 minutos
 // Só ativa se UPSTASH_REDIS_REST_URL estiver configurado
