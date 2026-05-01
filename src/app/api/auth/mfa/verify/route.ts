@@ -3,8 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const otplibModule = require('otplib') as any
+const otplibModule = require('otplib') as any // eslint-disable-line
 const authenticator = otplibModule.authenticator as {
   verify(opts: { token: string; secret: string }): boolean
 }
