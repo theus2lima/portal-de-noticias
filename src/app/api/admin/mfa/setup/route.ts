@@ -5,11 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/auth'
-const otplibModule = require('otplib') as any // eslint-disable-line
-const authenticator = otplibModule.authenticator as {
-  generateSecret(): string
-  keyuri(email: string, service: string, secret: string): string
-}
+import speakeasy from 'speakeasy'
 import QRCode from 'qrcode'
 
 const supabase = createClient(
@@ -33,9 +29,15 @@ export async function GET(request: NextRequest) {
   }
 
   // Gerar segredo novo
-  const secret = authenticator.generateSecret()
+  const secretObj = speakeasy.generateSecret({ length: 20 })
+  const secret = secretObj.base32
   const appName = 'Radar Noroeste PR'
-  const otpauthUrl = authenticator.keyuri(auth.email, appName, secret)
+  const otpauthUrl = speakeasy.otpauthURL({
+    secret,
+    label: encodeURIComponent(auth.email),
+    issuer: appName,
+    encoding: 'base32',
+  })
 
   // Gerar QR code em base64
   const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl)
@@ -43,6 +45,6 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     secret,
     qrCode: qrCodeDataUrl,
-    manualEntry: secret, // Para quem não conseguir escanear
+    manualEntry: secret,
   })
 }

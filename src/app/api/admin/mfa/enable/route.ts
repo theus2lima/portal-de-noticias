@@ -4,10 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/auth'
-const otplibModule = require('otplib') as any // eslint-disable-line
-const authenticator = otplibModule.authenticator as {
-  verify(opts: { token: string; secret: string }): boolean
-}
+import speakeasy from 'speakeasy'
 import { auditLog, getClientIp } from '@/lib/audit'
 
 const supabase = createClient(
@@ -26,7 +23,12 @@ export async function POST(request: NextRequest) {
   }
 
   // Verificar se o código está correto antes de salvar
-  const isValid = authenticator.verify({ token: code, secret })
+  const isValid = speakeasy.totp.verify({
+    secret,
+    encoding: 'base32',
+    token: code,
+    window: 1,
+  })
 
   if (!isValid) {
     return NextResponse.json(
