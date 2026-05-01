@@ -11,9 +11,16 @@ interface User {
   created_at: string
 }
 
+interface LoginResult {
+  success: boolean
+  mfaRequired?: boolean
+  mfaTempToken?: string
+}
+
 interface AuthContextType {
   user: User | null
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<LoginResult>
+  verifyMfa: (code: string, tempToken: string) => Promise<boolean>
   logout: () => Promise<void>
   loading: boolean
   isAuthenticated: boolean
@@ -53,24 +60,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<LoginResult> => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Recebe o cookie httpOnly na resposta
+        credentials: 'include',
         body: JSON.stringify({ email, password })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // MFA requerido — retornar token temporário para segunda etapa
+        if (data.mfaRequired) {
+          return { success: false, mfaRequired: true, mfaTempToken: data.mfaTempToken }
+        }
+        setUser(data.user)
+        return { success: true }
+      } else {
+        return { success: false }
+      }
+    } catch (error) {
+      console.error('Erro no login:', error)
+      return { success: false }
+    }
+  }
+
+  const verifyMfa = async (code: string, tempToken: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/auth/mfa/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ code, mfaTempToken: tempToken })
       })
 
       if (response.ok) {
         const data = await response.json()
         setUser(data.user)
         return true
-      } else {
-        return false
       }
-    } catch (error) {
-      console.error('Erro no login:', error)
+      return false
+    } catch {
       return false
     }
   }
@@ -95,6 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{
       user,
       login,
+      verifyMfa,
       logout,
       loading,
       isAuthenticated

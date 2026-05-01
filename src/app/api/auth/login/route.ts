@@ -104,30 +104,35 @@ export async function POST(request: NextRequest) {
     
     console.log('✅ Login successful!')
 
-    // Gerar JWT token
+    // 🔐 MFA: se o usuário tem totp_secret, exigir segundo fator
+    if (user.totp_secret) {
+      // Emitir token temporário de MFA (5 minutos, sem cookie de sessão)
+      const mfaTempToken = jwt.sign(
+        { type: 'mfa_pending', userId: user.id, email: user.email, role: user.role },
+        JWT_SECRET,
+        { expiresIn: '5m' }
+      )
+      return NextResponse.json({ mfaRequired: true, mfaTempToken })
+    }
+
+    // Sem MFA — emitir sessão completa normalmente
     const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: user.role
-      },
+      { userId: user.id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: '8h' }
     )
 
-    // Retornar dados do usuário (sem senha) e setar cookie httpOnly
     const { password_hash, ...userWithoutPassword } = user
 
     const response = NextResponse.json({
       user: userWithoutPassword,
     })
 
-    // 🔐 Cookie httpOnly — JavaScript NÃO pode ler (bloqueia XSS)
     response.cookies.set('admin_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 8, // 8 horas
+      maxAge: 60 * 60 * 8,
       path: '/',
     })
 
