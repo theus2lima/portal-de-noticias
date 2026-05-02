@@ -1,15 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { getJwtSecret } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+// Usa service_role pois a tabela users tem RLS bloqueando leitura anônima
+function getServiceRoleClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+}
 
 export async function GET(request: NextRequest) {
   try {
-    // 🔐 Ler token do cookie httpOnly (não mais do Authorization header)
     const token = request.cookies.get('admin_token')?.value
 
     if (!token) {
@@ -22,8 +29,8 @@ export async function GET(request: NextRequest) {
     // Verificar e decodificar JWT
     const decoded = jwt.verify(token, getJwtSecret()) as any
 
-    // Buscar dados atualizados do usuário
-    const supabase = await createClient()
+    // Buscar dados atualizados do usuário com service_role (RLS bloqueia anon)
+    const supabase = getServiceRoleClient()
     const { data: user, error } = await supabase
       .from('users')
       .select('id, email, name, role, created_at, is_active')
@@ -38,7 +45,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Verificar se ainda é admin
     if (user.role !== 'admin') {
       return NextResponse.json(
         { error: 'Acesso negado' },

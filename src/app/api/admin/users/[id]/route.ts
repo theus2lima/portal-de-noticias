@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/auth'
 import { auditLog, getClientIp } from '@/lib/audit'
+
+// Usa service_role pois a tabela users tem RLS bloqueando leitura anônima
+function getServiceRoleClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+}
 
 // PUT - Atualizar usuário
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
@@ -36,7 +45,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       )
     }
 
-    const supabase = await createClient()
+    const supabase = getServiceRoleClient()
 
     // Verificar se email já existe em outro usuário
     const { data: existingUser } = await supabase
@@ -116,7 +125,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       )
     }
 
-    const supabase = await createClient()
+    const supabase = getServiceRoleClient()
 
     // Verificar se o usuário existe
     const { data: existingUser, error: fetchError } = await supabase
@@ -179,7 +188,7 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
       )
     }
 
-    const supabase = await createClient()
+    const supabase = getServiceRoleClient()
     const { data: foundUser, error } = await supabase
       .from('users')
       .select('id, email, name, role, is_active, created_at, updated_at')

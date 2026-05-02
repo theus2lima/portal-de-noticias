@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/auth'
 import { auditLog, getClientIp } from '@/lib/audit'
+
+// Usa service_role pois a tabela users tem RLS bloqueando leitura anônima
+function getServiceRoleClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+}
 
 // GET - Listar usuários
 export async function GET(_request: NextRequest) {
@@ -10,7 +19,7 @@ export async function GET(_request: NextRequest) {
   if (auth instanceof NextResponse) return auth
 
   try {
-    const supabase = await createClient()
+    const supabase = getServiceRoleClient()
     const { data: users, error } = await supabase
       .from('users')
       .select('id, email, name, role, is_active, created_at, updated_at')
@@ -54,7 +63,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const supabase = getServiceRoleClient()
 
     // Verificar se email já existe
     const { data: existingUser } = await supabase
