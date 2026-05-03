@@ -128,13 +128,19 @@ export default function CuradoriaPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/curadoria/buscar?q=${encodeURIComponent(q)}&source=${src}`)
+      const res = await fetch(
+        `/api/curadoria/buscar?q=${encodeURIComponent(q)}&source=${src}`,
+        { credentials: 'include' }
+      )
       const data = await res.json()
       if (data.success) {
         setNews(data.data || [])
         setHasSearched(true)
+        if (data.errors?.length) {
+          console.warn('Algumas fontes falharam:', data.errors)
+        }
       } else {
-        setError('Erro ao buscar notícias')
+        setError(data.error || 'Erro ao buscar notícias')
       }
     } catch (err) {
       setError('Não foi possível conectar. Tente novamente.')

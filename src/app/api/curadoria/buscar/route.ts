@@ -1,35 +1,47 @@
+// src/app/api/curadoria/buscar/route.ts
+// Busca notícias de 3 fontes: Google News RSS, Sites do Paraná (hardcoded), Fontes RSS do banco
+// 🔐 Exige autenticação de admin
+
 import { NextRequest, NextResponse } from 'next/server'
 import Parser from 'rss-parser'
 import * as cheerio from 'cheerio'
+import { createClient } from '@supabase/supabase-js'
+import { requireAuth } from '@/lib/auth'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 const rssParser = new Parser({
   customFields: {
     item: ['media:content', 'enclosure', 'source', 'description', 'content:encoded'],
   },
-  requestOptions: {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
-      Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
-      'Accept-Language': 'pt-BR,pt;q=0.9',
-    },
-  },
 })
 
-// Fontes RSS fixas do Paraná com seus feeds
+// Fontes RSS fixas do Paraná
 const PARANA_RSS_SOURCES = [
-  { name: 'Bem Paraná', url: 'https://www.bemparana.com.br/feed/' },
-  { name: 'Banda B', url: 'https://bandab.com.br/feed/' },
-  { name: 'Paraná Portal', url: 'https://paranaportal.uol.com.br/feed/' },
-  { name: 'Ric Mais', url: 'https://ricmais.com.br/feed/' },
-  { name: 'G1 Paraná', url: 'https://g1.globo.com/rss/g1/parana/' },
-  { name: 'CBN Maringá', url: 'https://cbncascavel.com.br/feed/' },
+  { name: 'Bem Paraná',        url: 'https://www.bemparana.com.br/feed/' },
+  { name: 'Banda B',           url: 'https://bandab.com.br/feed/' },
+  { name: 'Paraná Portal',     url: 'https://paranaportal.uol.com.br/feed/' },
+  { name: 'G1 Paraná',         url: 'https://g1.globo.com/rss/g1/parana/' },
   { name: 'Folha de Londrina', url: 'https://www.folhadelondrina.com.br/rss.xml' },
   { name: 'Tribuna do Paraná', url: 'https://tribunapr.uol.com.br/feed/' },
+  { name: 'Ric Mais',          url: 'https://ricmais.com.br/feed/' },
+  { name: 'RPC',               url: 'https://g1.globo.com/rss/g1/pr/parana/' },
 ]
+
+// Timeout real usando Promise.race — o rss-parser não suporta AbortController
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(`Timeout após ${ms}ms`)), ms)
+  )
+  return Promise.race([promise, timeout])
+}
 
 function extractImage(item: any): string | null {
   if (item['media:content']?.$?.url) return item['media:content'].$.url
-  if (item.enclosure?.url && item.enclosure.url.match(/\.(jpg|jpeg|png|webp)/i)) return item.enclosure.url
+  if (item.enclosure?.url && /\.(jpg|jpeg|png|webp)/i.test(item.enclosure.url)) return item.enclosure.url
   const html = item['content:encoded'] || item.content || item.description || ''
   const match = html.match(/<img[^>]+src=["']([^"']+)["']/i)
   if (match?.[1] && !match[1].includes('pixel') && !match[1].includes('tracking')) return match[1]
@@ -39,51 +51,59 @@ function extractImage(item: any): string | null {
 function cleanSummary(text: string): string {
   return text
     .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z]+;/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .substring(0, 300)
+    .substring(0, 400)
 }
 
-async function fetchWithTimeout(url: string, timeoutMs = 6000): Promise<any> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    return await rssParser.parseURL(url)
-  } finally {
-    clearTimeout(timer)
+async function parseRSSFeed(url: string, timeoutMs = 7000) {
+  return withTimeout(
+    rssParser.parseURL(url),
+    timeoutMs
+  )
+}
+
+function buildItem(item: any, sourceName: string, sourceUrl: string, origin: 'google' | 'parana' | 'rss') {
+  return {
+    id: item.guid || item.link || Math.random().toString(36),
+    title: (item.title || '').replace(/\s*-\s*[^-]+$/, '').trim(),
+    url: item.link || '',
+    summary: cleanSummary(item.contentSnippet || item.summary || item.description || ''),
+    source_name: sourceName,
+    source_url: sourceUrl,
+    published_at: item.pubDate
+      ? new Date(item.pubDate).toISOString()
+      : new Date().toISOString(),
+    image_url: extractImage(item),
+    origin,
   }
 }
 
 export async function GET(request: NextRequest) {
+  // 🔐 Apenas admins autenticados
+  const auth = await requireAuth()
+  if (auth instanceof NextResponse) return auth
+
   const { searchParams } = new URL(request.url)
-  const query = searchParams.get('q') || 'Paraná Noroeste'
-  const source = searchParams.get('source') || 'google' // google | parana | rss | all
+  const query = searchParams.get('q') || 'Noroeste do Paraná'
+  const source = searchParams.get('source') || 'google'
 
   const results: any[] = []
   const errors: string[] = []
 
-  // ── Google News RSS ──────────────────────────────────────────────────────────
+  // ── 1. Google News RSS ────────────────────────────────────────────────────────
   if (source === 'google' || source === 'all') {
     try {
-      const googleUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=pt-BR&gl=BR&ceid=BR:pt-BR&num=30`
-      const feed = await fetchWithTimeout(googleUrl, 8000)
+      const googleUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=pt-BR&gl=BR&ceid=BR:pt-BR`
+      const feed = await parseRSSFeed(googleUrl, 10000)
 
       for (const item of (feed.items || []).slice(0, 25)) {
-        const sourceName = (item as any).source?._
-          || (item as any).source?.name
-          || 'Google News'
-
-        results.push({
-          id: item.guid || item.link || Math.random().toString(),
-          title: (item.title || '').replace(/\s*-\s*[^-]+$/, '').trim(), // remove source suffix
-          url: item.link || '',
-          summary: cleanSummary(item.contentSnippet || item.summary || ''),
-          source_name: sourceName,
-          source_url: '',
-          published_at: item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString(),
-          image_url: extractImage(item),
-          origin: 'google',
-        })
+        const sourceName =
+          (item as any).source?._ ||
+          (item as any).source?.name ||
+          'Google News'
+        results.push(buildItem(item, sourceName, '', 'google'))
       }
     } catch (err: any) {
       errors.push(`Google News: ${err.message}`)
@@ -91,85 +111,91 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ── Sites do Paraná (RSS fixos) ──────────────────────────────────────────────
+  // ── 2. Sites do Paraná (RSS fixos) ────────────────────────────────────────────
   if (source === 'parana' || source === 'all') {
     const promises = PARANA_RSS_SOURCES.map(async (src) => {
       try {
-        const feed = await fetchWithTimeout(src.url, 6000)
-        const items = []
-        for (const item of (feed.items || []).slice(0, 6)) {
-          items.push({
-            id: item.guid || item.link || Math.random().toString(),
-            title: item.title || '',
-            url: item.link || '',
-            summary: cleanSummary(item.contentSnippet || item.summary || ''),
-            source_name: src.name,
-            source_url: src.url,
-            published_at: item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString(),
-            image_url: extractImage(item),
-            origin: 'parana',
-          })
-        }
-        return items
+        const feed = await parseRSSFeed(src.url, 7000)
+        return (feed.items || []).slice(0, 6).map((item) =>
+          buildItem(item, src.name, src.url, 'parana')
+        )
       } catch (err: any) {
         errors.push(`${src.name}: ${err.message}`)
         return []
       }
     })
 
-    const allItems = await Promise.all(promises)
-    results.push(...allItems.flat())
+    const allItems = (await Promise.allSettled(promises))
+      .filter((r): r is PromiseFulfilledResult<any[]> => r.status === 'fulfilled')
+      .flatMap((r) => r.value)
+
+    results.push(...allItems)
   }
 
-  // ── Fontes RSS do banco (Supabase) ───────────────────────────────────────────
+  // ── 3. Fontes RSS do banco (Supabase) ─────────────────────────────────────────
   if (source === 'rss' || source === 'all') {
     try {
-      const { createClient } = await import('@/utils/supabase/server')
-      const supabase = await createClient()
-      const { data: dbSources } = await supabase
+      const { data: dbSources, error } = await supabase
         .from('news_sources')
-        .select('id, name, url, type')
+        .select('id, name, url')
         .eq('is_active', true)
         .eq('type', 'rss')
-        .limit(10)
+        .limit(15)
 
-      if (dbSources && dbSources.length > 0) {
+      if (error) {
+        // Tabela ainda não existe — silencia o erro
+        if (error.code !== '42P01') {
+          errors.push(`Fontes RSS (banco): ${error.message}`)
+        }
+      } else if (dbSources && dbSources.length > 0) {
         const promises = dbSources.map(async (src: any) => {
           try {
-            const feed = await fetchWithTimeout(src.url, 6000)
-            const items = []
-            for (const item of (feed.items || []).slice(0, 5)) {
-              items.push({
-                id: item.guid || item.link || Math.random().toString(),
-                title: item.title || '',
-                url: item.link || '',
-                summary: cleanSummary(item.contentSnippet || item.summary || ''),
-                source_name: src.name,
-                source_url: src.url,
-                published_at: item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString(),
-                image_url: extractImage(item),
-                origin: 'rss',
-              })
-            }
-            return items
+            const feed = await parseRSSFeed(src.url, 7000)
+            return (feed.items || []).slice(0, 5).map((item) =>
+              buildItem(item, src.name, src.url, 'rss')
+            )
           } catch (err: any) {
+            errors.push(`${src.name}: ${err.message}`)
             return []
           }
         })
-        const allItems = await Promise.all(promises)
-        results.push(...allItems.flat())
+
+        const allItems = (await Promise.allSettled(promises))
+          .filter((r): r is PromiseFulfilledResult<any[]> => r.status === 'fulfilled')
+          .flatMap((r) => r.value)
+
+        results.push(...allItems)
+      } else if (source === 'rss') {
+        // Nenhuma fonte cadastrada ainda — mostra as fixas do Paraná como fallback
+        const promises = PARANA_RSS_SOURCES.map(async (src) => {
+          try {
+            const feed = await parseRSSFeed(src.url, 7000)
+            return (feed.items || []).slice(0, 4).map((item) =>
+              buildItem(item, src.name, src.url, 'rss')
+            )
+          } catch {
+            return []
+          }
+        })
+
+        const allItems = (await Promise.allSettled(promises))
+          .filter((r): r is PromiseFulfilledResult<any[]> => r.status === 'fulfilled')
+          .flatMap((r) => r.value)
+
+        results.push(...allItems)
       }
-    } catch (err) {
-      // Supabase not needed for basic fetching
+    } catch (err: any) {
+      errors.push(`Fontes RSS: ${err.message}`)
     }
   }
 
-  // Sort by date descending, deduplicate by URL
+  // Deduplica por URL e ordena por data desc
   const seen = new Set<string>()
   const unique = results
+    .filter((item) => item.url && item.title)
     .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
     .filter((item) => {
-      if (!item.url || seen.has(item.url)) return false
+      if (seen.has(item.url)) return false
       seen.add(item.url)
       return true
     })
@@ -178,6 +204,6 @@ export async function GET(request: NextRequest) {
     success: true,
     data: unique,
     total: unique.length,
-    errors: errors.length > 0 ? errors : undefined,
+    ...(errors.length > 0 ? { errors } : {}),
   })
 }
