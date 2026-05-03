@@ -48,9 +48,8 @@ export default function ReescreverPage() {
   const [rewriteDone, setRewriteDone] = useState(false)
   const [originalContent, setOriginalContent] = useState('')
   const [showPreview, setShowPreview] = useState(false)
-  const [showIframe, setShowIframe] = useState(false)
-  const [iframeUrl, setIframeUrl] = useState('')
-  const [resolvingUrl, setResolvingUrl] = useState(false)
+  const [fetchingContent, setFetchingContent] = useState(false)
+  const [fetchContentError, setFetchContentError] = useState('')
 
   // Load original from sessionStorage
   useEffect(() => {
@@ -311,71 +310,58 @@ export default function ReescreverPage() {
               ) : !rewriting && (
                 <div className="pt-1 space-y-3">
                   <p className="text-xs text-neutral-400 italic">
-                    Conteúdo completo não disponível — o site pode bloquear leitura automática.
+                    Conteúdo completo não disponível automaticamente.
                   </p>
 
-                  {/* Botão para tentar carregar o artigo em iframe */}
-                  {!showIframe && (
+                  {fetchContentError && (
+                    <p className="text-xs text-amber-600">{fetchContentError}</p>
+                  )}
+
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={async () => {
                         if (!original?.url) return
-                        setResolvingUrl(true)
+                        setFetchingContent(true)
+                        setFetchContentError('')
                         try {
-                          // Resolve o redirect do Google News → URL real do artigo
-                          const res = await fetch('/api/curadoria/resolve-url', {
+                          const res = await fetch('/api/curadoria/fetch-content', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
                             body: JSON.stringify({ url: original.url }),
                           })
                           const data = await res.json()
-                          setIframeUrl(data.resolvedUrl || original.url)
+                          if (data.success && data.content) {
+                            setOriginalContent(data.content)
+                          } else {
+                            setFetchContentError(data.error || 'Não foi possível extrair o conteúdo.')
+                          }
                         } catch {
-                          setIframeUrl(original.url)
+                          setFetchContentError('Erro ao buscar conteúdo.')
                         } finally {
-                          setResolvingUrl(false)
-                          setShowIframe(true)
+                          setFetchingContent(false)
                         }
                       }}
-                      disabled={resolvingUrl}
-                      className="flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-700 underline disabled:opacity-50"
+                      disabled={fetchingContent}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg transition-colors disabled:opacity-50"
                     >
-                      {resolvingUrl
-                        ? <><Loader2 size={11} className="animate-spin" />Resolvendo link...</>
-                        : <><ExternalLink size={11} />Carregar artigo inline</>}
+                      {fetchingContent
+                        ? <><Loader2 size={11} className="animate-spin" />Buscando...</>
+                        : <><RefreshCw size={11} />Tentar buscar conteúdo</>}
                     </button>
-                  )}
 
-                  {showIframe && iframeUrl && (
-                    <div className="space-y-2">
-                      <div className="relative rounded-lg border border-neutral-200 overflow-hidden bg-neutral-50" style={{ height: '500px' }}>
-                        <iframe
-                          src={iframeUrl}
-                          className="w-full h-full"
-                          title="Artigo original"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="absolute bottom-0 left-0 right-0 bg-white/90 border-t border-neutral-200 px-3 py-2 flex items-center justify-between">
-                          <span className="text-xs text-neutral-500">Se aparecer em branco, o site bloqueia exibição inline.</span>
-                          <a
-                            href={iframeUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 underline"
-                          >
-                            <ExternalLink size={11} />
-                            Abrir em nova aba
-                          </a>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => { setShowIframe(false); setIframeUrl('') }}
-                        className="text-xs text-neutral-400 hover:text-neutral-600 underline"
+                    {original?.url && (
+                      <a
+                        href={original.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 underline"
                       >
-                        Fechar
-                      </button>
-                    </div>
-                  )}
+                        <ExternalLink size={11} />
+                        Abrir em nova aba
+                      </a>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
