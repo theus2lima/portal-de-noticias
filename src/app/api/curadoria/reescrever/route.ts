@@ -142,6 +142,7 @@ Responda APENAS com um objeto JSON válido, sem texto antes ou depois, neste for
         content: parsed.content,
         excerpt: parsed.excerpt || '',
         keywords: parsed.keywords || [],
+        originalContent: content.substring(0, 6000),
       },
     })
   } catch (error: any) {
