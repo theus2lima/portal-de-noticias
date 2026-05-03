@@ -74,16 +74,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { title, summary, url } = await request.json()
+    const { title, summary, url, sourceUrl } = await request.json()
 
     if (!title) {
       return NextResponse.json({ success: false, error: 'Título obrigatório' }, { status: 400 })
     }
 
     // Tentar buscar conteúdo completo do artigo
+    // Ordem: url direto → sourceUrl (site de origem) → summary
     let content = summary || ''
-    if (url && (!content || content.length < 400)) {
+
+    // Ignora URLs do Google News pois são redirects com JS que o servidor não resolve
+    const isGoogleNews = url && url.includes('news.google.com')
+
+    if (!isGoogleNews && url && content.length < 400) {
       const fetched = await fetchArticleContent(url)
+      if (fetched.length > content.length) content = fetched
+    }
+
+    // Se ainda sem conteúdo suficiente, tenta a URL do site de origem
+    if (content.length < 400 && sourceUrl) {
+      const fetched = await fetchArticleContent(sourceUrl)
       if (fetched.length > content.length) content = fetched
     }
 

@@ -87,6 +87,7 @@ export default function ReescreverPage() {
           title: source.title,
           summary: source.summary,
           url: source.url,
+          sourceUrl: source.source_url,
         }),
       })
       const data = await res.json()
@@ -275,24 +276,43 @@ export default function ReescreverPage() {
 
               <hr className="border-neutral-100" />
 
-              {/* Conteúdo completo capturado pela IA */}
-              {rewriting && !originalContent ? (
+              {/* Resumo sempre visível */}
+              {original?.summary && (
+                <p className="text-sm text-neutral-600 leading-relaxed">
+                  {original.summary}
+                </p>
+              )}
+
+              {/* Conteúdo completo capturado — só aparece se trouxer mais do que o resumo */}
+              {rewriting ? (
                 <div className="space-y-2.5 animate-pulse pt-1">
-                  {[...Array(8)].map((_, i) => (
+                  {[...Array(6)].map((_, i) => (
                     <div key={i} className={`h-3 bg-neutral-100 rounded ${i % 5 === 4 ? 'w-3/5' : 'w-full'}`} />
                   ))}
                 </div>
-              ) : originalContent ? (
-                <div className="space-y-3">
-                  {originalContent.split('\n\n').filter(p => p.trim()).map((para, i) => (
-                    <p key={i} className="text-sm text-neutral-700 leading-relaxed">
-                      {para.trim()}
-                    </p>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-neutral-500 italic">
-                  {original?.summary || 'Conteúdo completo não disponível. Clique em "Ver no site" para ler o original.'}
+              ) : originalContent && originalContent.trim() !== original?.summary?.trim() ? (
+                <>
+                  <div className="flex items-center gap-2 pt-1">
+                    <div className="h-px flex-1 bg-neutral-100" />
+                    <span className="text-xs text-neutral-400">conteúdo completo</span>
+                    <div className="h-px flex-1 bg-neutral-100" />
+                  </div>
+                  <div className="space-y-3">
+                    {originalContent.split('\n\n').filter(p => p.trim()).map((para, i) => (
+                      <p key={i} className="text-sm text-neutral-700 leading-relaxed">
+                        {para.trim()}
+                      </p>
+                    ))}
+                  </div>
+                </>
+              ) : !rewriting && (
+                <p className="text-xs text-neutral-400 italic pt-1">
+                  Conteúdo completo não disponível — o site de origem pode bloquear leitura automática.{' '}
+                  {original?.url && (
+                    <a href={original.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-neutral-600">
+                      Abrir no site original
+                    </a>
+                  )}
                 </p>
               )}
             </div>
