@@ -49,7 +49,8 @@ export default function ReescreverPage() {
   const [originalContent, setOriginalContent] = useState('')
   const [showPreview, setShowPreview] = useState(false)
   const [showIframe, setShowIframe] = useState(false)
-  const [iframeBlocked, setIframeBlocked] = useState(false)
+  const [iframeUrl, setIframeUrl] = useState('')
+  const [resolvingUrl, setResolvingUrl] = useState(false)
 
   // Load original from sessionStorage
   useEffect(() => {
@@ -316,39 +317,59 @@ export default function ReescreverPage() {
                   {/* Botão para tentar carregar o artigo em iframe */}
                   {!showIframe && (
                     <button
-                      onClick={() => { setShowIframe(true); setIframeBlocked(false) }}
-                      className="flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-700 underline"
+                      onClick={async () => {
+                        if (!original?.url) return
+                        setResolvingUrl(true)
+                        try {
+                          // Resolve o redirect do Google News → URL real do artigo
+                          const res = await fetch('/api/curadoria/resolve-url', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ url: original.url }),
+                          })
+                          const data = await res.json()
+                          setIframeUrl(data.resolvedUrl || original.url)
+                        } catch {
+                          setIframeUrl(original.url)
+                        } finally {
+                          setResolvingUrl(false)
+                          setShowIframe(true)
+                        }
+                      }}
+                      disabled={resolvingUrl}
+                      className="flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-700 underline disabled:opacity-50"
                     >
-                      <ExternalLink size={11} />
-                      Carregar artigo inline
+                      {resolvingUrl
+                        ? <><Loader2 size={11} className="animate-spin" />Resolvendo link...</>
+                        : <><ExternalLink size={11} />Carregar artigo inline</>}
                     </button>
                   )}
 
-                  {showIframe && (
+                  {showIframe && iframeUrl && (
                     <div className="space-y-2">
                       <div className="relative rounded-lg border border-neutral-200 overflow-hidden bg-neutral-50" style={{ height: '500px' }}>
                         <iframe
-                          src={original?.url}
+                          src={iframeUrl}
                           className="w-full h-full"
                           title="Artigo original"
                           referrerPolicy="no-referrer"
                         />
-                        {/* Overlay caso o site bloqueie o iframe (aparece transparente por baixo) */}
                         <div className="absolute bottom-0 left-0 right-0 bg-white/90 border-t border-neutral-200 px-3 py-2 flex items-center justify-between">
                           <span className="text-xs text-neutral-500">Se aparecer em branco, o site bloqueia exibição inline.</span>
                           <a
-                            href={original?.url}
+                            href={iframeUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 underline"
                           >
                             <ExternalLink size={11} />
-                            Nova aba
+                            Abrir em nova aba
                           </a>
                         </div>
                       </div>
                       <button
-                        onClick={() => setShowIframe(false)}
+                        onClick={() => { setShowIframe(false); setIframeUrl('') }}
                         className="text-xs text-neutral-400 hover:text-neutral-600 underline"
                       >
                         Fechar
