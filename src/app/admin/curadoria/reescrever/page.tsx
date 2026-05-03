@@ -48,6 +48,8 @@ export default function ReescreverPage() {
   const [rewriteDone, setRewriteDone] = useState(false)
   const [originalContent, setOriginalContent] = useState('')
   const [showPreview, setShowPreview] = useState(false)
+  const [showIframe, setShowIframe] = useState(false)
+  const [iframeBlocked, setIframeBlocked] = useState(false)
 
   // Load original from sessionStorage
   useEffect(() => {
@@ -306,14 +308,54 @@ export default function ReescreverPage() {
                   </div>
                 </>
               ) : !rewriting && (
-                <p className="text-xs text-neutral-400 italic pt-1">
-                  Conteúdo completo não disponível — o site de origem pode bloquear leitura automática.{' '}
-                  {original?.url && (
-                    <a href={original.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-neutral-600">
-                      Abrir no site original
-                    </a>
+                <div className="pt-1 space-y-3">
+                  <p className="text-xs text-neutral-400 italic">
+                    Conteúdo completo não disponível — o site pode bloquear leitura automática.
+                  </p>
+
+                  {/* Botão para tentar carregar o artigo em iframe */}
+                  {!showIframe && (
+                    <button
+                      onClick={() => { setShowIframe(true); setIframeBlocked(false) }}
+                      className="flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-700 underline"
+                    >
+                      <ExternalLink size={11} />
+                      Carregar artigo inline
+                    </button>
                   )}
-                </p>
+
+                  {showIframe && (
+                    <div className="space-y-2">
+                      <div className="relative rounded-lg border border-neutral-200 overflow-hidden bg-neutral-50" style={{ height: '500px' }}>
+                        <iframe
+                          src={original?.url}
+                          className="w-full h-full"
+                          title="Artigo original"
+                          referrerPolicy="no-referrer"
+                        />
+                        {/* Overlay caso o site bloqueie o iframe (aparece transparente por baixo) */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-white/90 border-t border-neutral-200 px-3 py-2 flex items-center justify-between">
+                          <span className="text-xs text-neutral-500">Se aparecer em branco, o site bloqueia exibição inline.</span>
+                          <a
+                            href={original?.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 underline"
+                          >
+                            <ExternalLink size={11} />
+                            Nova aba
+                          </a>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowIframe(false)}
+                        className="text-xs text-neutral-400 hover:text-neutral-600 underline"
+                      >
+                        Fechar
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
