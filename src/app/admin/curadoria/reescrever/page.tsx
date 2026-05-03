@@ -48,6 +48,7 @@ export default function ReescreverPage() {
   const [rewriteDone, setRewriteDone] = useState(false)
   const [originalContent, setOriginalContent] = useState('')
   const [fetchingContent, setFetchingContent] = useState(false)
+  const [fetchContentError, setFetchContentError] = useState('')
   const [showPreview, setShowPreview] = useState(false)
 
   // Load original from sessionStorage
