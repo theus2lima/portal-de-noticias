@@ -344,91 +344,53 @@ export default function ReescreverPage() {
 
               <hr className="border-neutral-100" />
 
-              {/* Resumo sempre visível */}
-              {original?.summary && (
-                <p className="text-sm text-neutral-600 leading-relaxed">
-                  {original.summary}
-                </p>
-              )}
-
-              {/* Conteúdo completo capturado — só aparece se trouxer mais do que o resumo */}
+              {/* Conteúdo completo — loading, conteúdo, ou fallback */}
               {fetchingContent ? (
-                <div className="space-y-2.5 animate-pulse pt-1">
-                  {[...Array(6)].map((_, i) => (
+                <div className="space-y-2.5 animate-pulse">
+                  {[...Array(7)].map((_, i) => (
                     <div key={i} className={`h-3 bg-neutral-100 rounded ${i % 5 === 4 ? 'w-3/5' : 'w-full'}`} />
                   ))}
                   <p className="text-xs text-neutral-400">Buscando conteúdo original...</p>
                 </div>
               ) : originalContent && originalContent.trim() !== original?.summary?.trim() ? (
-                <>
-                  <div className="flex items-center gap-2 pt-1">
-                    <div className="h-px flex-1 bg-neutral-100" />
-                    <span className="text-xs text-neutral-400">conteúdo completo</span>
-                    <div className="h-px flex-1 bg-neutral-100" />
-                  </div>
-                  <div className="space-y-3">
-                    {originalContent.split('\n\n').filter(p => p.trim()).map((para, i) => (
-                      <p key={i} className="text-sm text-neutral-700 leading-relaxed">
-                        {para.trim()}
-                      </p>
-                    ))}
-                  </div>
-                </>
-              ) : !rewriting && (
-                <div className="pt-1 space-y-3">
-                  <p className="text-xs text-neutral-400 italic">
-                    Conteúdo completo não disponível automaticamente.
-                  </p>
-
-                  {fetchContentError && (
-                    <p className="text-xs text-amber-600">{fetchContentError}</p>
+                /* ✅ Conteúdo completo encontrado */
+                <div className="space-y-3">
+                  {originalContent.split('\n\n').filter(p => p.trim()).map((para, i) => (
+                    <p key={i} className="text-sm text-neutral-700 leading-relaxed">
+                      {para.trim()}
+                    </p>
+                  ))}
+                </div>
+              ) : !fetchingContent && (
+                /* ⚠️ Só o resumo RSS disponível — avisa o usuário */
+                <div className="space-y-3">
+                  {original?.summary && (
+                    <p className="text-sm text-neutral-600 leading-relaxed">
+                      {original.summary}
+                    </p>
                   )}
 
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={async () => {
-                        if (!original?.url) return
-                        setFetchingContent(true)
-                        setFetchContentError('')
-                        try {
-                          const res = await fetch('/api/curadoria/fetch-content', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify({ url: original.url }),
-                          })
-                          const data = await res.json()
-                          if (data.success && data.content) {
-                            setOriginalContent(data.content)
-                          } else {
-                            setFetchContentError(data.error || 'Não foi possível extrair o conteúdo.')
-                          }
-                        } catch {
-                          setFetchContentError('Erro ao buscar conteúdo.')
-                        } finally {
-                          setFetchingContent(false)
-                        }
-                      }}
-                      disabled={fetchingContent}
-                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg transition-colors disabled:opacity-50"
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
+                    <p className="text-xs font-medium text-amber-800">
+                      ⚠️ A IA reescreveu usando apenas este resumo
+                    </p>
+                    <p className="text-xs text-amber-700">
+                      O artigo completo não pôde ser buscado automaticamente (link do Google News requer JavaScript). Abra o original para comparar antes de publicar.
+                    </p>
+                    <a
+                      href={original?.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-amber-800 underline hover:text-amber-900"
                     >
-                      {fetchingContent
-                        ? <><Loader2 size={11} className="animate-spin" />Buscando...</>
-                        : <><RefreshCw size={11} />Tentar buscar conteúdo</>}
-                    </button>
-
-                    {original?.url && (
-                      <a
-                        href={original.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 underline"
-                      >
-                        <ExternalLink size={11} />
-                        Abrir em nova aba
-                      </a>
-                    )}
+                      <ExternalLink size={11} />
+                      Abrir artigo original em nova aba
+                    </a>
                   </div>
+
+                  {fetchContentError && (
+                    <p className="text-xs text-neutral-400 italic">{fetchContentError}</p>
+                  )}
                 </div>
               )}
             </div>
