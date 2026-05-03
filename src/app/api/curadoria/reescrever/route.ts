@@ -74,28 +74,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { title, summary, url, sourceUrl } = await request.json()
+    const { title, summary, url, sourceUrl, prefetchedContent } = await request.json()
 
     if (!title) {
       return NextResponse.json({ success: false, error: 'Título obrigatório' }, { status: 400 })
     }
 
-    // Tentar buscar conteúdo completo do artigo
-    // Ordem: url direto → sourceUrl (site de origem) → summary
-    let content = summary || ''
+    // Se o frontend já buscou o conteúdo, usa direto — sem buscar duas vezes
+    let content: string = prefetchedContent || summary || ''
 
-    // Ignora URLs do Google News pois são redirects com JS que o servidor não resolve
-    const isGoogleNews = url && url.includes('news.google.com')
-
-    if (!isGoogleNews && url && content.length < 400) {
-      const fetched = await fetchArticleContent(url)
-      if (fetched.length > content.length) content = fetched
-    }
-
-    // Se ainda sem conteúdo suficiente, tenta a URL do site de origem
-    if (content.length < 400 && sourceUrl) {
-      const fetched = await fetchArticleContent(sourceUrl)
-      if (fetched.length > content.length) content = fetched
+    // Só busca se não tiver conteúdo suficiente
+    if (content.length < 400) {
+      const isGoogleNews = url && url.includes('news.google.com')
+      if (!isGoogleNews && url) {
+        const fetched = await fetchArticleContent(url)
+        if (fetched.length > content.length) content = fetched
+      }
+      if (content.length < 400 && sourceUrl) {
+        const fetched = await fetchArticleContent(sourceUrl)
+        if (fetched.length > content.length) content = fetched
+      }
     }
 
     const prompt = `Você é um jornalista experiente do portal de notícias regional do Noroeste do Paraná.
@@ -153,7 +151,6 @@ Responda APENAS com um objeto JSON válido, sem texto antes ou depois, neste for
         content: parsed.content,
         excerpt: parsed.excerpt || '',
         keywords: parsed.keywords || [],
-        originalContent: content.substring(0, 6000),
       },
     })
   } catch (error: any) {

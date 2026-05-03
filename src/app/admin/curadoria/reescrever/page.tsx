@@ -47,9 +47,8 @@ export default function ReescreverPage() {
   const [publishError, setPublishError] = useState<string | null>(null)
   const [rewriteDone, setRewriteDone] = useState(false)
   const [originalContent, setOriginalContent] = useState('')
-  const [showPreview, setShowPreview] = useState(false)
   const [fetchingContent, setFetchingContent] = useState(false)
-  const [fetchContentError, setFetchContentError] = useState('')
+  const [showPreview, setShowPreview] = useState(false)
 
   // Load original from sessionStorage
   useEffect(() => {
@@ -60,7 +59,7 @@ export default function ReescreverPage() {
     }
     const item: NewsItem = JSON.parse(stored)
     setOriginal(item)
-    setTitle(item.title) // Pre-fill with original title
+    setTitle(item.title)
 
     // Fetch categories
     fetch('/api/categories')
@@ -68,11 +67,77 @@ export default function ReescreverPage() {
       .then((d) => setCategories(d.data || []))
       .catch(() => {})
 
-    // Auto-start rewriting
-    rewriteArticle(item)
+    // 1) Busca o texto original PRIMEIRO — mostra à esquerda e passa para a IA
+    fetchAndRewrite(item)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Passo 1: busca o texto original → mostra à esquerda imediatamente
+  // Passo 2: passa o texto para a IA → resultado aparece à direita
+  const fetchAndRewrite = async (item?: NewsItem) => {
+    const source = item || original
+    if (!source) return
+
+    setFetchingContent(true)
+    setRewriting(true)
+    setRewriteError(null)
+    setRewriteDone(false)
+
+    // Busca o conteúdo original primeiro
+    let prefetchedContent = ''
+    try {
+      const res = await fetch('/api/curadoria/fetch-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ url: source.url }),
+      })
+      const data = await res.json()
+      if (data.success && data.content) {
+        prefetchedContent = data.content
+        setOriginalContent(data.content) // ← aparece à esquerda imediatamente
+      }
+    } catch {
+      // Segue sem o conteúdo — a IA usa o summary
+    } finally {
+      setFetchingContent(false)
+    }
+
+    // Passa o conteúdo já buscado para a IA (evita buscar duas vezes)
+    try {
+      const res = await fetch('/api/curadoria/reescrever', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          title: source.title,
+          summary: source.summary,
+          url: source.url,
+          sourceUrl: source.source_url,
+          prefetchedContent,
+        }),
+      })
+      const data = await res.json()
+
+      if (data.success) {
+        setTitle(data.data.title)
+        setContent(data.data.content)
+        setExcerpt(data.data.excerpt)
+        setKeywords(data.data.keywords || [])
+        setRewriteDone(true)
+      } else {
+        setRewriteError(data.error || 'Erro ao reescrever')
+        setContent(`<p>${source.summary}</p>`)
+      }
+    } catch (err: any) {
+      setRewriteError(err.message || 'Erro de conexão')
+      setContent(`<p>${source.summary}</p>`)
+    } finally {
+      setRewriting(false)
+    }
+  }
+
+  // Botão "Reescrever de novo" — usa o conteúdo já carregado
   const rewriteArticle = async (item?: NewsItem) => {
     const source = item || original
     if (!source) return
@@ -85,11 +150,13 @@ export default function ReescreverPage() {
       const res = await fetch('/api/curadoria/reescrever', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           title: source.title,
           summary: source.summary,
           url: source.url,
           sourceUrl: source.source_url,
+          prefetchedContent: originalContent, // reutiliza o que já está na tela
         }),
       })
       const data = await res.json()
@@ -99,11 +166,9 @@ export default function ReescreverPage() {
         setContent(data.data.content)
         setExcerpt(data.data.excerpt)
         setKeywords(data.data.keywords || [])
-        setOriginalContent(data.data.originalContent || '')
         setRewriteDone(true)
       } else {
         setRewriteError(data.error || 'Erro ao reescrever')
-        // Keep original title so user can edit manually
         setContent(`<p>${source.summary}</p>`)
       }
     } catch (err: any) {
@@ -286,11 +351,12 @@ export default function ReescreverPage() {
               )}
 
               {/* Conteúdo completo capturado — só aparece se trouxer mais do que o resumo */}
-              {rewriting ? (
+              {fetchingContent ? (
                 <div className="space-y-2.5 animate-pulse pt-1">
                   {[...Array(6)].map((_, i) => (
                     <div key={i} className={`h-3 bg-neutral-100 rounded ${i % 5 === 4 ? 'w-3/5' : 'w-full'}`} />
                   ))}
+                  <p className="text-xs text-neutral-400">Buscando conteúdo original...</p>
                 </div>
               ) : originalContent && originalContent.trim() !== original?.summary?.trim() ? (
                 <>
