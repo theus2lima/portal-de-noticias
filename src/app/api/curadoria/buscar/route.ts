@@ -142,16 +142,19 @@ export async function GET(request: NextRequest) {
         .eq('type', 'rss')
         .limit(15)
 
-      if (error) {
-        // Tabela ainda não existe — silencia o erro
-        if (error.code !== '42P01') {
-          errors.push(`Fontes RSS (banco): ${error.message}`)
-        }
-      } else if (dbSources && dbSources.length > 0) {
+      const tableNotFound = error?.code === '42P01'
+      const hasCustomSources = !error && dbSources && dbSources.length > 0
+
+      if (error && !tableNotFound) {
+        errors.push(`Fontes RSS (banco): ${error.message}`)
+      }
+
+      if (hasCustomSources) {
+        // Busca das fontes cadastradas pelo usuário
         const promises = dbSources.map(async (src: any) => {
           try {
             const feed = await parseRSSFeed(src.url, 7000)
-            return (feed.items || []).slice(0, 5).map((item) =>
+            return (feed.items || []).slice(0, 8).map((item) =>
               buildItem(item, src.name, src.url, 'rss')
             )
           } catch (err: any) {
@@ -165,12 +168,12 @@ export async function GET(request: NextRequest) {
           .flatMap((r) => r.value)
 
         results.push(...allItems)
-      } else if (source === 'rss') {
-        // Nenhuma fonte cadastrada ainda — mostra as fixas do Paraná como fallback
+      } else {
+        // Tabela não existe ou sem fontes cadastradas → usa fontes fixas do Paraná como fallback
         const promises = PARANA_RSS_SOURCES.map(async (src) => {
           try {
             const feed = await parseRSSFeed(src.url, 7000)
-            return (feed.items || []).slice(0, 4).map((item) =>
+            return (feed.items || []).slice(0, 5).map((item) =>
               buildItem(item, src.name, src.url, 'rss')
             )
           } catch {

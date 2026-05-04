@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { fetchJSON } from "@/utils/http"
-import { Rss, Plus, Edit3, Trash2, Globe, Activity, PlayCircle } from "lucide-react"
+import { Rss, Plus, Edit3, Trash2, Globe, Activity, PlayCircle, AlertTriangle, Copy, Check } from "lucide-react"
 
 type NewsSource = {
   id: string
@@ -41,13 +41,35 @@ export default function FontesPage() {
   })
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [sqlCopied, setSqlCopied] = useState(false)
+
+  const SQL_SETUP = `CREATE TABLE IF NOT EXISTS news_sources (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  url TEXT NOT NULL UNIQUE,
+  type TEXT NOT NULL DEFAULT 'rss' CHECK (type IN ('rss', 'scraping')),
+  description TEXT,
+  is_active BOOLEAN DEFAULT true,
+  crawl_interval INTEGER DEFAULT 1,
+  last_crawled TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);`
+
+  const copySQL = () => {
+    navigator.clipboard.writeText(SQL_SETUP)
+    setSqlCopied(true)
+    setTimeout(() => setSqlCopied(false), 2000)
+  }
+
+  const [tableReady, setTableReady] = useState(true)
 
   const fetchSources = async () => {
     setLoading(true)
     try {
-      const res = await fetchJSON<{ success: boolean; data: NewsSource[] }>("/api/news-sources")
+      const res = await fetchJSON<{ success: boolean; data: NewsSource[]; hint?: string }>("/api/news-sources")
       if (res.success) {
         setSources(res.data)
+        setTableReady(!res.hint) // hint present means table doesn't exist yet
       }
     } catch (e: any) {
       setError(e.message)
@@ -153,6 +175,38 @@ export default function FontesPage() {
       {success && (
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md">
           {success}
+        </div>
+      )}
+
+      {!tableReady && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-5 space-y-3">
+          <div className="flex items-center gap-2 text-amber-800 font-medium">
+            <AlertTriangle size={18} />
+            Tabela <code className="bg-amber-100 px-1 rounded text-sm">news_sources</code> não existe no Supabase
+          </div>
+          <p className="text-sm text-amber-700">
+            Execute o SQL abaixo no <strong>Supabase SQL Editor</strong> para criar a tabela e começar a cadastrar fontes RSS.
+          </p>
+          <div className="relative">
+            <pre className="bg-amber-900 text-amber-100 text-xs rounded-md p-4 overflow-x-auto leading-relaxed whitespace-pre">
+              {SQL_SETUP}
+            </pre>
+            <button
+              onClick={copySQL}
+              className="absolute top-2 right-2 flex items-center gap-1.5 bg-amber-700 hover:bg-amber-600 text-white text-xs px-2.5 py-1.5 rounded transition-colors"
+            >
+              {sqlCopied ? <Check size={12} /> : <Copy size={12} />}
+              {sqlCopied ? "Copiado!" : "Copiar SQL"}
+            </button>
+          </div>
+          <a
+            href="https://supabase.com/dashboard/project/_/sql/new"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-amber-800 underline hover:text-amber-900"
+          >
+            Abrir Supabase SQL Editor →
+          </a>
         </div>
       )}
 
@@ -268,7 +322,10 @@ export default function FontesPage() {
         {loading ? (
           <div className="p-6 text-center text-neutral-600">Carregando...</div>
         ) : sources.length === 0 ? (
-          <div className="p-6 text-center text-neutral-600">Nenhuma fonte configurada.</div>
+          <div className="p-6 text-center text-neutral-500 space-y-1">
+            <p className="font-medium">{tableReady ? "Nenhuma fonte configurada." : "Aguardando criação da tabela no banco."}</p>
+            {tableReady && <p className="text-sm">Clique em <strong>Nova Fonte</strong> para adicionar um feed RSS.</p>}
+          </div>
         ) : (
           <div className="divide-y">
             {sources.map(source => (
